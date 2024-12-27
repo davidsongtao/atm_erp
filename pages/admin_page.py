@@ -7,6 +7,7 @@ Description:
 @Time     ：2024/12/26 下午10:08
 @Contact  ：king.songtao@gmail.com
 """
+import datetime
 import time
 
 import streamlit as st
@@ -17,52 +18,94 @@ import os
 def admin_page():
     login_state, role = check_login_state()
     # login_state = True
-    st.title("📊管理控制台")
+    st.sidebar.title("🏠ATM Cleaning Service")
+    st.sidebar.divider()
+    if st.sidebar.button("➕创建收据", key="open_receipt_button", use_container_width=True, type="primary"):
+        st.switch_page("pages/receipt_page.py")
+    # 工单管理
+    if st.sidebar.button("🔍工单管理", key="order_management", use_container_width=True, type="primary"):
+        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    # 保洁阿姨管理
+    if st.sidebar.button("👩‍👩‍👧‍👦阿姨管理", key="staff_management_button", use_container_width=True, type="primary"):
+        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    # 自动化报价
+    if st.sidebar.button("💰生成报价", key="auto_quote_button", use_container_width=True, type="primary"):
+        # st.switch_page("pages/auto_quote_page.py")
+        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    # 自动化报价
+    if st.sidebar.button("🤖智能助理", key="ai_assistant", use_container_width=True, type="primary"):
+        # st.switch_page("pages/auto_quote_page.py")
+        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+
+    # 用户管理模块
+    if st.sidebar.button("👥账户管理", key="user_management_button", use_container_width=True, type="primary"):
+        st.switch_page("pages/staff_acc.py")
+        # st.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    st.sidebar.divider()
+
+    # 退出登录模块
+    if st.sidebar.button("🛏️退出登录", key="logout_button", use_container_width=True):
+        log_out()
+
+    st.sidebar.write("Copyright 2025 © ATM Cleaning Inc.")
+    st.sidebar.write("Version：V2024.12.27.00.01")
+
+    st.title("📊员工管理控制台")
     st.divider()
     if login_state == True and role == "admin":
         # username = cookies.get("name")
         username = st.session_state['name']
         # 销售额计算模块
-        total_sale = 1000
-        col1, col2 = st.columns([1, 1])
+        total_sale = "29,814"
+        col1, col2, col3 = st.columns([0.33, 0.33, 0.33])
         with col1:
             st.write(f"本月总成交额: ", )
             if total_sale == None:
                 total_sale_value = 0
             else:
                 total_sale_value = total_sale
-            st.subheader(f"$ {total_sale_value}(示例数据)")
+            st.subheader(f"$ {total_sale_value}")
         with col2:
-            st.write(f"本月已赚取佣金: ", )
-            if total_sale == None:
-                total_commission = 0
-            else:
-                total_commission = round(total_sale * 0.024, 2)
-            st.subheader(f"$ {total_commission}(示例数据)")
-        st.divider()
-        st.success(f"{username} 您好，欢迎来到ATM员工管理控制台！", icon="👋")
-        st.info("请选择您要使用的模块", icon="ℹ️")
-        # 开收据模块
-        if st.button("🧾收据自动化", key="open_receipt_button", use_container_width=True, type="primary"):
-            st.switch_page("pages/receipt_page.py")
-        # 自动化报价
-        if st.button("💰自动化报价", key="auto_quote_button", use_container_width=True, type="primary"):
-            # st.switch_page("pages/auto_quote_page.py")
-            st.warning("该功能正在开发中，敬请期待！", icon="⚠️")
-        # 用户管理模块
-        if st.button("👥员工账户管理", key="user_management_button", use_container_width=True, type="primary"):
-            st.switch_page("pages/staff_acc.py")
-            # st.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+            st.write(f"悉尼时间: ", )
+            st.subheader(f"{datetime.datetime.now().astimezone(datetime.timezone(datetime.timedelta(hours=11))).strftime('%H:%M:%S')}")
+        with col3:
+            st.write(f"北京时间: ", )
+            st.subheader(f"{datetime.datetime.now().astimezone(datetime.timezone(datetime.timedelta(hours=8))).strftime('%H:%M:%S')}")
 
-        # 退出登录模块
-        st.session_state["logout_button_disabled"] = False
-        logout_check = st.checkbox("我希望退出登录！")
-        if logout_check:
-            if st.button("🛏️退出登录", key="logout_button", use_container_width=True, disabled=st.session_state["logout_button_disabled"]):
-                log_out()
-        else:
-            st.session_state["logout_button_disabled"] = True
-            st.button("🛏️退出登录", key="logout_button", use_container_width=True, disabled=st.session_state["logout_button_disabled"])
+        st.divider()
+        st.info("空闲阿姨情况概览", icon="ℹ️")
+        # 实现空闲阿姨显示
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            st.subheader(f"{datetime.datetime.now().astimezone(datetime.timezone(datetime.timedelta(hours=11))).strftime('%Y-%m-%d')}")
+            st.write("小鱼组 | 🔵 空闲")
+            st.write("海叔组 | 🔵 空闲")
+            st.write("李姨组 | 🔵 空闲")
+        with col2:
+            st.subheader(f"{(datetime.datetime.now().astimezone(datetime.timezone(datetime.timedelta(hours=11))) + datetime.timedelta(days=1)).strftime('%Y-%m-%d')}")
+            st.write("小鱼组 | 🔵 空闲")
+            st.write("李姨组 | 🔵 空闲")
+
+        with col3:
+            st.subheader(f"{(datetime.datetime.now().astimezone(datetime.timezone(datetime.timedelta(hours=11))) + datetime.timedelta(days=2)).strftime('%Y-%m-%d')}")
+            st.write("小鱼组 | 🔵 空闲")
+            st.write("海叔组 | 🔵 空闲")
+            st.write("李姨组 | 🔵 空闲")
+            st.write("Kitty组 | 🔵 空闲")
+        col4, col5, col6 = st.columns([1, 1, 1])
+        with col4:
+            st.subheader(f"{(datetime.datetime.now().astimezone(datetime.timezone(datetime.timedelta(hours=11))) + datetime.timedelta(days=3)).strftime('%Y-%m-%d')}")
+            st.write("海叔组 | 🔵 空闲")
+            st.write("李姨组 | 🔵 空闲")
+        with col5:
+            st.subheader(f"{(datetime.datetime.now().astimezone(datetime.timezone(datetime.timedelta(hours=11))) + datetime.timedelta(days=4)).strftime('%Y-%m-%d')}")
+            st.write("李姨组 | 🔵 空闲")
+        with col6:
+            st.subheader(f"{(datetime.datetime.now().astimezone(datetime.timezone(datetime.timedelta(hours=11))) + datetime.timedelta(days=5)).strftime('%Y-%m-%d')}")
+            st.write("小鱼组 | 🔵 空闲")
+            st.write("海叔组 | 🔵 空闲")
+
+
 
     elif login_state and role != "admin":
         error = st.error("您的权限不足！请联系系统管理员！3秒后跳转...", icon="⚠️")

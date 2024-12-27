@@ -100,6 +100,8 @@ def receipt_preview():
 
             st.info("该模块仅用于收据快速生成，数据并不会保存至服务器，请及时下载留存，以防数据丢失！", icon="ℹ️")
 
+            print(st.session_state['receipt_data']['ready_doc'])
+
             st.download_button(
                 label="下载Word格式收据",
                 data=output_buffer,
