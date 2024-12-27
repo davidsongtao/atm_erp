@@ -50,7 +50,7 @@ def receipt_preview():
                         font-family: Arial, sans-serif; /* Word 内容字体设置为 Arial */
                     }
                     .other-content img {
-                        max-width: 600px;
+                        max-width: 200px;
                         height: auto;
                         display: block;
                         margin: 10px auto;
