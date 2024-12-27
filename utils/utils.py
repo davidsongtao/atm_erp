@@ -14,7 +14,7 @@ import re
 from docx.shared import Pt
 
 # 创建一个加密的Cookie 管理器
-cookies = EncryptedCookieManager(prefix="atm_erp", password="123456")
+cookies = EncryptedCookieManager(prefix="atm_erp", password="dst881009...")
 if not cookies.ready():
     st.stop()
 
