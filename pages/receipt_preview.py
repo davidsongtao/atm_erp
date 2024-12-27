@@ -12,7 +12,6 @@ import time
 import mammoth
 import streamlit as st
 from utils.utils import check_login_state, extract_date_from_html
-from configs.log_config import *
 
 
 def receipt_preview():
@@ -20,7 +19,6 @@ def receipt_preview():
     收据预览界面
     :return:
     """
-
     # 验证登录状态
     login_state, role = check_login_state()
 
