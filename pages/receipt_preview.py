@@ -49,11 +49,17 @@ def receipt_preview():
                         text-align: left;
                         font-family: Arial, sans-serif; /* Word 内容字体设置为 Arial */
                     }
+                    .image-container {
+                        width: 100%;
+                        text-align: right;
+                        margin: 10px 0;
+                    }
+                    /* 控制图片大小并右对齐 */
                     .other-content img {
-                        max-width: 300px;
+                        max-width: 200px;
                         height: auto;
-                        display: block;
-                        margin: 10px auto;
+                        display: inline-block;  /* 改为inline-block以支持右对齐 */
+                        margin: 0;  /* 移除自动边距 */
                     }
                     </style>
                     """
