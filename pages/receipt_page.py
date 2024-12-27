@@ -20,8 +20,6 @@ def receipt_page():
     :return:
     """
     login_state, role = check_login_state()
-    # login_state = True
-    # role = "admin"
 
     if login_state:
         st.title("🧾收据自动化生成")
