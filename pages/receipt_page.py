@@ -94,13 +94,14 @@ def receipt_page():
                         "rooms": rooms_selection,
                         "other": other_selection,
                         "custom_notes": custom_notes_content,
-                        "receipt_file_name": f"Receipt.{address}.docx"
+                        "receipt_file_name": f"Receipt.{address}.docx",
 
                     }
-                    if st.session_state['receipt_data']['selected_template'] == "完整版（带exclude模块）":
+                    if st.session_state['receipt_data']['selected_template'] == "完整版（带excluded模块）":
                         st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项.docx")
-                    elif st.session_state['receipt_data']['selected_template'] == "精简版（不带exclude模块）":
+                    elif st.session_state['receipt_data']['selected_template'] == "精简版（不带excluded模块）":
                         st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项2.docx")
+                        print(st.session_state['receipt_data']['output_doc'])
                     elif st.session_state['receipt_data']['selected_template'] == "手动版（手动选择excluded中的内容）":
                         st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项.docx")
                     # 准备要替换的数据
@@ -147,7 +148,7 @@ def receipt_page():
                     for item in new_list:
                         included_content += f"{item}\n"
 
-                    if st.session_state['receipt_data']['selected_template'] == "完整版（带exclude模块）":
+                    if st.session_state['receipt_data']['selected_template'] == "完整版（带excluded模块）":
 
                         # TODO 准备excluded模块的内容
                         excluded_content = ""
@@ -203,8 +204,12 @@ def receipt_page():
                         "$exculded_content$": excluded_content
                     }
                     # 替换模板文件，生成收据
-                    template_doc = st.session_state['receipt_data']['output_doc']
-                    ready_doc = generate_receipt(template_doc, replace_dic)
+                    if 'output_doc' in st.session_state['receipt_data'] and st.session_state['receipt_data']['output_doc'] is not None:
+                        template_doc = st.session_state['receipt_data']['output_doc']
+                        ready_doc = generate_receipt(template_doc, replace_dic)
+                    else:
+                        ready_doc = None
+                        st.error("模板文档未正确加载，请重试！")
                     st.session_state['receipt_data']['ready_doc'] = ready_doc
                     st.switch_page("pages/receipt_preview.py")
                 else:
