@@ -50,14 +50,14 @@ def admin_page():
     st.sidebar.write("Copyright 2025 © ATM Cleaning Inc.")
     st.sidebar.write("Version：V2024.12.27.00.01")
 
-    st.title("📊员工管理控制台")
+    st.title("📊管理控制台")
     st.divider()
     if login_state == True and role == "admin":
         # username = cookies.get("name")
         username = st.session_state['name']
         # 销售额计算模块
         total_sale = "29,814"
-        col1, col2, col3 = st.columns([0.33, 0.33, 0.33])
+        col1, col2 = st.columns([0.5, 0.5])
         with col1:
             st.write(f"本月总成交额: ", )
             if total_sale == None:
@@ -68,9 +68,6 @@ def admin_page():
         with col2:
             st.write(f"悉尼时间: ", )
             st.subheader(f"{datetime.datetime.now().astimezone(datetime.timezone(datetime.timedelta(hours=11))).strftime('%H:%M:%S')}")
-        with col3:
-            st.write(f"北京时间: ", )
-            st.subheader(f"{datetime.datetime.now().astimezone(datetime.timezone(datetime.timedelta(hours=8))).strftime('%H:%M:%S')}")
 
         st.divider()
         st.info("空闲阿姨情况概览", icon="ℹ️")
