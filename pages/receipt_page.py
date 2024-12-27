@@ -41,7 +41,7 @@ def receipt_page():
                 "ready_doc": None
             }
 
-            selected_template = st.selectbox('选择收据模板', ["完整版（带exclude模块）", "精简版（不带exclude模块）"], placeholder="请选择收据模板", index=None)
+            selected_template = st.selectbox('选择收据模板', ["完整版（带excluded模块）", "精简版（不带excluded模块）", "手动版（手动选择excluded中的内容）"], placeholder="请选择收据模板", index=None)
             # 构建选项
             basic_service = ["Steam clean of the carpet", "Steam clean of the mattress", "Steam clean of the sofa", "Vacuum clean of carpet", "Floor boards/Floor tiles mopping"]
             rooms = ["Bedroom", "Bathroom", "Kitchen"]
@@ -67,6 +67,13 @@ def receipt_page():
                 amount = st.number_input('收据金额', min_value=0.0, step=1.0, format='%f')
                 rooms_selection = st.multiselect('房间（多选）', rooms, placeholder="请选择房间...")
                 other_selection = st.multiselect('其他服务（多选）', others, placeholder="请输入其他服务...")
+
+            # 手动勾选excluded的内容，这个列表要从总部表中去掉上面勾选的
+            all_services = basic_service + rooms + electrical + others
+            selected = basic_service_selection + electrical_selections + rooms_selection + other_selection
+            manual_excluded = [service for service in all_services if service not in selected]
+            if selected_template == "手动版（手动选择excluded中的内容）":
+                manual_excluded_selection = st.multiselect("手动添加Excluded中包含的内容：", manual_excluded, placeholder="请输入其他服务...")
             custom_notes = st.checkbox("我希望添加自定义项目", value=False)
             if custom_notes:
                 custom_notes_content = st.text_input("自定义项目", placeholder="请填写自定义项目内容...")
@@ -94,7 +101,8 @@ def receipt_page():
                         st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项.docx")
                     elif st.session_state['receipt_data']['selected_template'] == "精简版（不带exclude模块）":
                         st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项2.docx")
-
+                    elif st.session_state['receipt_data']['selected_template'] == "手动版（手动选择excluded中的内容）":
+                        st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项.docx")
                     # 准备要替换的数据
                     # 准备included模块的内容(处理排序问题，不管用户怎么选择，最终都要按照规定的顺序排序)
                     order_map = {}
@@ -139,35 +147,54 @@ def receipt_page():
                     for item in new_list:
                         included_content += f"{item}\n"
 
-                    # TODO 准备excluded模块的内容
-                    excluded_content = ""
-                    all_unselected = []
+                    if st.session_state['receipt_data']['selected_template'] == "完整版（带exclude模块）":
 
-                    for item in basic_service:
-                        if item not in basic_service_selection:
-                            all_unselected.append((order_map[item], f"{item}"))
+                        # TODO 准备excluded模块的内容
+                        excluded_content = ""
+                        all_unselected = []
 
-                    for item in rooms:
-                        if item not in rooms_selection:
-                            all_unselected.append((order_map[item], f"{item}"))
+                        for item in basic_service:
+                            if item not in basic_service_selection:
+                                all_unselected.append((order_map[item], f"{item}"))
 
-                    for item in electrical:
-                        if item not in electrical_selections:
-                            all_unselected.append((order_map[item], f"{item}"))
+                        for item in rooms:
+                            if item not in rooms_selection:
+                                all_unselected.append((order_map[item], f"{item}"))
 
-                    for item in others:
-                        if item not in other_selection:
-                            all_unselected.append((order_map[item], f"{item}"))
+                        for item in electrical:
+                            if item not in electrical_selections:
+                                all_unselected.append((order_map[item], f"{item}"))
 
-                    all_unselected.sort(key=lambda x: x[0])
+                        for item in others:
+                            if item not in other_selection:
+                                all_unselected.append((order_map[item], f"{item}"))
 
-                    new_unselected_list = []
-                    if all_unselected:
-                        for i, (_, service) in enumerate(all_unselected, 1):
-                            new_unselected_list.append(f"{i}.{service}")
+                        all_unselected.sort(key=lambda x: x[0])
 
-                    for item in new_unselected_list:
-                        excluded_content += f"{item}\n"
+                        new_unselected_list = []
+                        if all_unselected:
+                            for i, (_, service) in enumerate(all_unselected, 1):
+                                new_unselected_list.append(f"{i}.{service}")
+
+                        for item in new_unselected_list:
+                            excluded_content += f"{item}\n"
+
+                    if st.session_state['receipt_data']['selected_template'] == "手动版（手动选择excluded中的内容）":
+
+                        # 将手动选择的excluded中的内容按照总表的顺序排序
+                        excluded_content = ""
+                        excluded_content_list_new = []
+                        order_list = {item: index for index, item in enumerate(all_services)}
+                        excluded_content_list = sorted(manual_excluded_selection, key=lambda x: order_list.get(x, len(all_services)))
+                        if excluded_content_list:
+                            print(excluded_content_list)
+                            for i, service in enumerate(excluded_content_list, 1):
+                                excluded_content_list_new.append(f"{i}.{service}")
+                        for item in excluded_content_list_new:
+                            excluded_content += f"{item}\n"
+
+                    else:
+                        excluded_content = ""
 
                     replace_dic = {
                         "$receipt_date$": formate_date(selected_date),

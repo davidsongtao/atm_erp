@@ -56,9 +56,11 @@ def login_auth(username, password):
 def get_all_staff_acc():
     try:
         conn = connect_db()
-        query_result = conn.query("SELECT * FROM users WHERE ").to_dict()
-
-        return query_result, None
+        query_result = conn.query("SELECT *  FROM users", ttl=600)
+        df = query_result[['id', 'username', 'password', 'role', 'name']]
+        df['password'] = "********"
+        df = df.rename(columns=BaseConfig().CUSTOM_HEADER)
+        return df, None
     except Exception as e:
         logger.error(f"获取所有员工信息失败！错误信息：{e}")
         error_message = "获取所有员工信息失败!"

@@ -74,11 +74,9 @@ def check_login_state():
 
 
 def set_login_state(is_logged_in, role, name):
-
     st.session_state["login_state"] = True if is_logged_in else False
     st.session_state["role"] = role
     st.session_state["name"] = name
-
 
     # cookies["is_logged_in"] = "1" if is_logged_in else "0"
     # cookies["role"] = role
@@ -185,3 +183,11 @@ def formate_date(input_date):
         suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
 
     return f"{day}{suffix} {month_abbr}. {year}"
+
+
+def formate_acc_info(data):
+    formatted_orders = []
+    for i in range(len(data['账户编号'])):
+        formatted_order = f"{data['账户编号'][i]} | {data['登录账号'][i]} | {data['用户名'][i]}"
+        formatted_orders.append(formatted_order)
+    return formatted_orders

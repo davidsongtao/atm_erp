@@ -25,3 +25,12 @@ class BaseConfig(object):
 
         # 日志相关配置信息
         self.LOG_DIRECTORY = "logs"
+
+        # 自定义员工管理页账户信息表头
+        self.CUSTOM_HEADER = {
+            "id": "账户编号",
+            "username": "登录账号",
+            "password": "登录密码",
+            "role": "角色权限",
+            "name": "用户名",
+        }
