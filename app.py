@@ -9,6 +9,7 @@ Description: 程序入口，直接进入登录界面
 """
 import streamlit as st
 from utils.utils import check_login_state, log_out
+from pages.login_page import login_page
 
 
 def main():
@@ -38,4 +39,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    login_page()
