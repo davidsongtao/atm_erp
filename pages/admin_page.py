@@ -10,7 +10,7 @@ Description:
 import time
 
 import streamlit as st
-from utils.utils import check_login_state, log_out, cookies
+from utils.utils import check_login_state, log_out
 import os
 
 
@@ -20,7 +20,8 @@ def admin_page():
     st.title("📊管理控制台")
     st.divider()
     if login_state == True and role == "admin":
-        username = cookies.get("name")
+        # username = cookies.get("name")
+        username = st.session_state['name']
         # 销售额计算模块
         total_sale = 1000
         col1, col2 = st.columns([1, 1])
@@ -72,7 +73,8 @@ def admin_page():
         error.empty()
         st.error("您的权限不足！请联系系统管理员！1秒后跳转...", icon="⚠️")
         time.sleep(1)
-        cookies['is_logged_in'] = "0"
+        # cookies['is_logged_in'] = "0"
+        st.session_state["login_state"] = False
         st.switch_page("pages/login_page.py")
     else:
         error = st.error("您还没有登录！请先登录！3秒后跳转...", icon="⚠️")

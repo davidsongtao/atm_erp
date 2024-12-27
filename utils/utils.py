@@ -9,28 +9,29 @@ Description: 项目中用到的工具函数
 """
 import streamlit as st
 import time
-from streamlit_cookies_manager import EncryptedCookieManager
 import re
 from docx.shared import Pt
-
-# 创建一个加密的Cookie 管理器
-cookies = EncryptedCookieManager(prefix="atm_erp", password="dst881009...")
-if not cookies.ready():
-    st.stop()
+from configs.log_config import *
 
 
-# 权限管理装饰器
-def role_required(allowed_roles):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            if st.session_state['role'] not in allowed_roles:
-                st.warning("您没有权限访问此功能!")
-                return
-            return func(*args, **kwargs)
+# # 创建一个加密的Cookie 管理器
+# cookies = EncryptedCookieManager(prefix="atm_erp", password="dst881009...")
+# if not cookies.ready():
+#     st.stop()
 
-        return wrapper
 
-    return decorator
+# # 权限管理装饰器
+# def role_required(allowed_roles):
+#     def decorator(func):
+#         def wrapper(*args, **kwargs):
+#             if st.session_state['role'] not in allowed_roles:
+#                 st.warning("您没有权限访问此功能!")
+#                 return
+#             return func(*args, **kwargs)
+#
+#         return wrapper
+#
+#     return decorator
 
 
 def stream_res(res):
@@ -42,28 +43,59 @@ def stream_res(res):
 
 def check_login_state():
     """获取或存储登录状态"""
-    if cookies.get("is_logged_in") == "1":
-        st.session_state['is_logged_in'] = True
-        st.session_state['role'] = cookies.get("role", "user")
-        return True, cookies.get("role")
-    else:
-        st.session_state['is_logged_in'] = False
-        return False, cookies.get("role")
+    try:
+        if "login_state" not in st.session_state:
+            st.session_state["login_state"] = False
+            st.session_state["role"] = None
+            return False, st.session_state["role"]
+        elif st.session_state["login_state"]:
+            # 用户已登陆
+            st.session_state["login_state"] = True
+            return True, st.session_state["role"]
+        else:
+            st.session_state["login_state"] = False
+            st.session_state["role"] = None
+            print("用户未登录")
+            return False, st.session_state["role"]
+            # 用户未登录
+    except Exception as e:
+        logger.error(f"检测登录状态时发生错误！错误信息：{e}")
+        st.error("发生未知错误！即将跳转到首页...")
+        st.switch_page("pages/login_page.py")
+
+    # """通过cookies管理登陆状态"""
+    # if cookies.get("is_logged_in") == "1":
+    #     st.session_state['is_logged_in'] = True
+    #     st.session_state['role'] = cookies.get("role", "user")
+    #     return True, cookies.get("role")
+    # else:
+    #     st.session_state['is_logged_in'] = False
+    #     return False, cookies.get("role")
 
 
-def set_login_state(is_logged_in, role, username, name):
-    cookies["is_logged_in"] = "1" if is_logged_in else "0"
-    cookies["role"] = role
-    cookies["name"] = name
-    cookies.save()  # 保存 Cookie
+def set_login_state(is_logged_in, role, name):
+
+    st.session_state["login_state"] = True if is_logged_in else False
+    st.session_state["role"] = role
+    st.session_state["name"] = name
+
+
+    # cookies["is_logged_in"] = "1" if is_logged_in else "0"
+    # cookies["role"] = role
+    # cookies["name"] = name
+    # cookies.save()  # 保存 Cookie
 
 
 def log_out():
     """注销登录"""
     # 清除与登录状态相关的 Cookie
-    cookies["is_logged_in"] = "0"  # 或直接删除整个 key
-    cookies["role"] = ""
-    cookies.save()  # 必须调用 save() 才能生效
+    # cookies["is_logged_in"] = "0"  # 或直接删除整个 key
+    # cookies["role"] = ""
+    # cookies.save()  # 必须调用 save() 才能生效
+
+    st.session_state["login_state"] = False
+    st.session_state["role"] = None
+
     success = st.success("您已成功退出登录！3秒后跳转...", icon="✅")
     time.sleep(1)
     success.empty()

@@ -16,6 +16,8 @@ from utils.db_operations import login_auth
 
 def login_page():
     login_state, role = check_login_state()
+    print(login_state)
+    print(role)
     if login_state:
         st.success("您已登录，无需重新登录！", icon="👋")
         if role == "admin":
@@ -47,10 +49,10 @@ def login_page():
             else:
                 login_state, role, error_message, name = login_auth(username, password)
                 if login_state and role == "admin":
-                    set_login_state(True, role, username, name)
+                    set_login_state(True, role, name)
                     st.switch_page("pages/admin_page.py")
                 if login_state and role == "customer_service":
-                    set_login_state(True, role, username, name)
+                    set_login_state(True, role, name)
                     st.switch_page("pages/customer_service_page.py")
                 elif error_message == "用户名不存在":
                     st.error("用户名不存在！", icon="⚠️")
