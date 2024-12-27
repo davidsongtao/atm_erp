@@ -24,4 +24,4 @@ class BaseConfig(object):
         }
 
         # 日志相关配置信息
-        self.LOG_DIRECTORY = r"D:\atm_erp\logs"
+        self.LOG_DIRECTORY = "logs"
