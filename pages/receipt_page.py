@@ -41,7 +41,7 @@ def receipt_page():
                 "ready_doc": None
             }
 
-            selected_template = st.selectbox('选择收据模板', ["完整版（带excluded模块）", "精简版（不带excluded模块）", "手动版（手动选择excluded中的内容）"], placeholder="请选择收据模板", index=None)
+            selected_template = st.selectbox('选择收据版本', ["手动版（手动选择excluded中的内容）", "精简版（不带excluded模块）", "完整版（带excluded模块）"], placeholder="请选择收据模板", index=None)
             # 构建选项
             basic_service = ["Steam clean of the carpet", "Steam clean of the mattress", "Steam clean of the sofa", "Vacuum clean of carpet", "Floor boards/Floor tiles mopping"]
             rooms = ["Bedroom", "Bathroom", "Kitchen"]
