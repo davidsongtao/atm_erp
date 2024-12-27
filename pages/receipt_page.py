@@ -187,7 +187,6 @@ def receipt_page():
                         order_list = {item: index for index, item in enumerate(all_services)}
                         excluded_content_list = sorted(manual_excluded_selection, key=lambda x: order_list.get(x, len(all_services)))
                         if excluded_content_list:
-                            print(excluded_content_list)
                             for i, service in enumerate(excluded_content_list, 1):
                                 excluded_content_list_new.append(f"{i}.{service}")
                         for item in excluded_content_list_new:
