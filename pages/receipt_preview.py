@@ -8,6 +8,7 @@ Description:
 @Contact  ：king.songtao@gmail.com
 """
 import io
+import subprocess
 import time
 import mammoth
 import pypandoc
@@ -97,17 +98,15 @@ def receipt_preview():
             st.session_state['receipt_data']['ready_doc'].save(output_buffer)
             output_buffer.seek(0)
 
-            # 将内存中的 Word 文件转换为 PDF
-            input_word_path = '/tmp/receipt.docx'  # 临时保存文件
+            # 将内存中的 Word 文件保存为临时文件
+            input_word_path = '/tmp/receipt.docx'
             output_pdf_path = '/tmp/receipt.pdf'
 
             with open(input_word_path, 'wb') as f:
                 f.write(output_buffer.getvalue())
 
-            # 使用 pypandoc 将 Word 转为 PDF
-            pypandoc.convert_file(input_word_path, 'pdf', outputfile=output_pdf_path)
+            subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', input_word_path])
 
-            # 打开生成的 PDF 文件
             with open(output_pdf_path, 'rb') as f:
                 pdf_data = f.read()
 
@@ -121,6 +120,7 @@ def receipt_preview():
                 use_container_width=True,
                 type="primary"  # 添加主要按钮样式
             )
+
 
             st.download_button(
                 label="下载Word格式收据",
