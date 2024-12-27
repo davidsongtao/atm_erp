@@ -92,9 +92,9 @@ def receipt_page():
 
                     }
                     if st.session_state['receipt_data']['selected_template'] == "完整版（带exclude模块）":
-                        st.session_state['receipt_data']['output_doc'] = Document(r"D:\atm_erp\templates\Recipte单项.docx")
+                        st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项.docx")
                     elif st.session_state['receipt_data']['selected_template'] == "精简版（不带exclude模块）":
-                        st.session_state['receipt_data']['output_doc'] = Document(r"D:\atm_erp\templates\Recipte单项2.docx")
+                        st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项2.docx")
                     st.switch_page("pages/receipt_preview.py")
                 else:
                     st.error("发票信息有缺失！请填写完整信息！", icon="⚠️")
