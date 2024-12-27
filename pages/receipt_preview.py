@@ -98,29 +98,7 @@ def receipt_preview():
             st.session_state['receipt_data']['ready_doc'].save(output_buffer)
             output_buffer.seek(0)
 
-            # 将内存中的 Word 文件保存为临时文件
-            input_word_path = '/tmp/receipt.docx'
-            output_pdf_path = '/tmp/receipt.pdf'
-
-            with open(input_word_path, 'wb') as f:
-                f.write(output_buffer.getvalue())
-
-            subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', input_word_path])
-
-            with open(output_pdf_path, 'rb') as f:
-                pdf_data = f.read()
-
             st.info("该模块仅用于收据快速生成，数据并不会保存至服务器，请及时下载留存，以防数据丢失！", icon="ℹ️")
-
-            st.download_button(
-                label="下载PDF格式收据",
-                data=pdf_data,
-                file_name=st.session_state['receipt_data']['receipt_file_name'].replace('.docx', '.pdf'),
-                mime="application/pdf",
-                use_container_width=True,
-                type="primary"  # 添加主要按钮样式
-            )
-
 
             st.download_button(
                 label="下载Word格式收据",
