@@ -2,3 +2,4 @@ python3-dev
 default-libmysqlclient-dev
 build-essential
 pkg-config
+pandoc
