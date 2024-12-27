@@ -23,3 +23,7 @@ def staff_acc():
         st.error("您没有权限访问该页面！5秒后跳转至登录页...", icon="⚠️")
         st.session_state["login_state"] = False
         st.switch_page("pages/login_page.py")
+
+
+if __name__ == "__main__":
+    staff_acc()
