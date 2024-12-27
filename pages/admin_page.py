@@ -51,8 +51,8 @@ def admin_page():
             st.warning("该功能正在开发中，敬请期待！", icon="⚠️")
         # 用户管理模块
         if st.button("👥员工账户管理", key="user_management_button", use_container_width=True, type="primary"):
-            # st.switch_page("pages/user_management_page.py")
-            st.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+            st.switch_page("pages/staff_acc.py")
+            # st.warning("该功能正在开发中，敬请期待！", icon="⚠️")
 
         # 退出登录模块
         st.session_state["logout_button_disabled"] = False
