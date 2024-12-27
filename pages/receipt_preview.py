@@ -56,7 +56,7 @@ def receipt_preview():
                     }
                     /* 控制图片大小并右对齐 */
                     .other-content img {
-                        max-width: 200px;
+                        max-width: 25%;
                         height: auto;
                         display: inline-block;  /* 改为inline-block以支持右对齐 */
                         margin: 0;  /* 移除自动边距 */
