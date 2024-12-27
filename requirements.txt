@@ -11,4 +11,3 @@ mysqlclient
 mysql-connector-python
 streamlit-cookies-manager
 loguru
-pypandoc
