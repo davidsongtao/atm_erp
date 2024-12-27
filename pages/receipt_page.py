@@ -96,7 +96,7 @@ def receipt_page():
                         st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项2.docx")
 
                     # 准备要替换的数据
-                    # TODO 准备included模块的内容(处理排序问题，不管用户怎么选择，最终都要按照规定的顺序排序)
+                    # 准备included模块的内容(处理排序问题，不管用户怎么选择，最终都要按照规定的顺序排序)
                     order_map = {}
                     current_index = 0
                     for item in basic_service:
@@ -141,6 +141,33 @@ def receipt_page():
 
                     # TODO 准备excluded模块的内容
                     excluded_content = ""
+                    all_unselected = []
+
+                    for item in basic_service:
+                        if item not in basic_service_selection:
+                            all_unselected.append((order_map[item], f"{item}"))
+
+                    for item in rooms:
+                        if item not in rooms_selection:
+                            all_unselected.append((order_map[item], f"{item}"))
+
+                    for item in electrical:
+                        if item not in electrical_selections:
+                            all_unselected.append((order_map[item], f"{item}"))
+
+                    for item in others:
+                        if item not in other_selection:
+                            all_unselected.append((order_map[item], f"{item}"))
+
+                    all_unselected.sort(key=lambda x: x[0])
+
+                    new_unselected_list = []
+                    if all_unselected:
+                        for i, (_, service) in enumerate(all_unselected, 1):
+                            new_unselected_list.append(f"{i}.{service}")
+
+                    for item in new_unselected_list:
+                        excluded_content += f"{item}\n"
 
                     replace_dic = {
                         "$receipt_date$": formate_date(selected_date),
