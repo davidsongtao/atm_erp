@@ -8,12 +8,10 @@ Description:
 @Contact  ：king.songtao@gmail.com
 """
 import io
-import subprocess
 import time
 import mammoth
-import pypandoc
 import streamlit as st
-from utils.utils import check_login_state, extract_date_from_html
+from utils.utils import check_login_state, extract_date_from_html, confirm_back, navigation
 
 
 def receipt_preview():
@@ -25,6 +23,9 @@ def receipt_preview():
     login_state, role = check_login_state()
 
     if login_state and role == "admin" or role == "customer_service":
+
+        navigation()
+
         if "receipt_data" in st.session_state:
             # 收据生成逻辑
             safe_filename = st.session_state['receipt_data']['address'].replace('/', '.')
@@ -112,7 +113,7 @@ def receipt_preview():
             )
 
             if st.button("返回", key="back_button", use_container_width=True):
-                st.switch_page("pages/receipt_page.py")
+                confirm_back()
 
         else:
             st.error("您还没有生成收据！请先生成收据后再预览！", icon="⚠️")

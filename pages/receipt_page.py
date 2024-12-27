@@ -11,7 +11,7 @@ import time
 from datetime import date
 import streamlit as st
 from docx import Document
-from utils.utils import check_login_state, log_out, validate_address, generate_receipt, formate_date
+from utils.utils import check_login_state, confirm_back, validate_address, generate_receipt, formate_date, navigation
 
 
 def receipt_page():
@@ -22,6 +22,9 @@ def receipt_page():
     login_state, role = check_login_state()
 
     if login_state:
+
+        navigation()
+
         st.title("🧾收据自动化生成")
         st.divider()
         if role == "admin":
@@ -214,22 +217,12 @@ def receipt_page():
                     st.switch_page("pages/receipt_preview.py")
                 else:
                     st.error("发票信息有缺失！请填写完整信息！", icon="⚠️")
-            if st.button("⬅️返回控制台", use_container_width=True):
-                st.switch_page("pages/admin_page.py")
+
         elif role == "customer_service":
             if st.button("⬅️返回控制台", use_container_width=True):
                 st.switch_page("pages/customer_service_page.py")
-
-        # 退出登录模块
-        st.session_state["logout_button_disabled"] = False
-        logout_check = st.checkbox("我希望退出登录！")
-        if logout_check:
-            if st.button("🛏️退出登录", key="logout_button", use_container_width=True, disabled=st.session_state["logout_button_disabled"]):
-                log_out()
-        else:
-            st.session_state["logout_button_disabled"] = True
-            st.button("🛏️退出登录", key="logout_button", use_container_width=True, disabled=st.session_state["logout_button_disabled"])
-
+        if st.button("返回", key="back_button", use_container_width=True):
+            confirm_back()
     else:
         st.title("ATM员工管理控制台")
         st.divider()

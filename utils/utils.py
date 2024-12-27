@@ -93,15 +93,6 @@ def log_out():
 
     st.session_state["login_state"] = False
     st.session_state["role"] = None
-
-    success = st.success("您已成功退出登录！3秒后跳转...", icon="✅")
-    time.sleep(1)
-    success.empty()
-    success = st.success("您已成功退出登录！2秒后跳转...", icon="✅")
-    time.sleep(1)
-    success.empty()
-    st.success("您已成功退出登录！1秒后跳转...", icon="✅")
-    time.sleep(1)
     st.switch_page("app.py")
 
 
@@ -188,6 +179,72 @@ def formate_date(input_date):
 def formate_acc_info(data):
     formatted_orders = []
     for i in range(len(data['账户编号'])):
-        formatted_order = f"{data['账户编号'][i]} | {data['登录账号'][i]} | {data['用户名'][i]}"
+        formatted_order = f"{data['登录账号'][i]} | {data['用户名'][i]}"
         formatted_orders.append(formatted_order)
     return formatted_orders
+
+
+@st.dialog("退出登录！")
+def confirm_logout():
+    st.write("您正在退出登录，确认要继续吗?")
+    col1, col2 = st.columns([0.5, 0.5])
+    with col1:
+        if st.button("确认", key="confirm_logout", type="primary", use_container_width=True):
+            log_out()
+    with col2:
+        if st.button("取消", key="cancel_logout", type="secondary", use_container_width=True):
+            st.rerun()
+
+
+def navigation():
+    # 导航模块
+    st.sidebar.title("🏠ATM Cleaning Service")
+    st.sidebar.divider()
+    if st.sidebar.button("➕创建收据", key="open_receipt_button", use_container_width=True, type="primary"):
+        st.switch_page("pages/receipt_page.py")
+    # 工单管理
+    if st.sidebar.button("🔍工单管理", key="order_management", use_container_width=True, type="primary"):
+        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    # 保洁阿姨管理
+    if st.sidebar.button("👩‍👩‍👧‍👦阿姨管理", key="staff_management_button", use_container_width=True, type="primary"):
+        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    # 自动化报价
+    if st.sidebar.button("💰生成报价", key="auto_quote_button", use_container_width=True, type="primary"):
+        # st.switch_page("pages/auto_quote_page.py")
+        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    # 自动化报价
+    if st.sidebar.button("🤖智能助理", key="ai_assistant", use_container_width=True, type="primary"):
+        # st.switch_page("pages/auto_quote_page.py")
+        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    # 用户管理模块
+    if st.sidebar.button("👥账户管理", key="user_management_button", use_container_width=True, type="primary"):
+        st.switch_page("pages/staff_acc.py")
+        # st.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+
+    st.sidebar.divider()
+
+    # 控制台
+    if st.sidebar.button("📊回控制台", key="admin_page_button", use_container_width=True):
+        st.switch_page("pages/admin_page.py")
+
+    # 个人设置
+    if st.sidebar.button("⚙️系统设置", key="system_setting_button", use_container_width=True):
+        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    # 退出登录模块
+    if st.sidebar.button("🛏️退出登录", key="logout_button", use_container_width=True):
+        confirm_logout()
+
+    st.sidebar.write("Copyright 2025 © ATM Cleaning Inc.")
+    st.sidebar.write("Version：V2024.12.27.00.01")
+
+
+@st.dialog("退出确认")
+def confirm_back():
+    st.write("离开该页面后收据信息将丢失且不可恢复，确认要返回吗?")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("确认", use_container_width=True, type="primary"):
+            st.switch_page("pages/admin_page.py")
+    with col2:
+        if st.button("取消", use_container_width=True, type="secondary"):
+            st.rerun()
