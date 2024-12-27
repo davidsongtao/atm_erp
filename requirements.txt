@@ -1,8 +1,11 @@
-mysql-connector-python
-loguru~=0.7.2
+python_docx==1.1.2
+streamlit==1.41.0
+openai==1.57.2
+clipboard==0.0.4
+st-copy-to-clipboard==0.1.6
+cobble==0.1.4
 mammoth==1.8.0
-python-docx==1.1.2
-SQLAlchemy==2.0.36
-streamlit-cookies-manager==0.2.0
+pandas==2.2.3
+SQLAlchemy == 2.0.36
 mysqlclient
-
+mysql-connector-python
