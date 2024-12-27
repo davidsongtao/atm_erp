@@ -13,7 +13,7 @@ from utils.utils import check_login_state, log_out
 
 def main():
     # 配置页面信息
-    st.set_page_config(page_title='ATM Cleaning Service', page_icon='🤖', layout="wide")
+    # st.set_page_config(page_title='ATM Cleaning Service', page_icon='🤖', layout="wide")
     st.title("ATM员工管理控制中心")
     st.divider()
     message = st.chat_message("assistant")
