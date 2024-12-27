@@ -54,7 +54,7 @@ def receipt_preview():
 
             # 使用 mammoth 转换 Word 文档内容为 HTML
             with io.BytesIO() as buffer:
-                st.session_state['receipt_data']['output_doc'].save(buffer)
+                st.session_state['receipt_data']['ready_doc'].save(buffer)
                 buffer.seek(0)
                 result = mammoth.convert_to_html(buffer)
                 html_content = result.value
@@ -83,7 +83,7 @@ def receipt_preview():
 
             # 将文档保存到内存
             output_buffer = io.BytesIO()
-            st.session_state['receipt_data']['output_doc'].save(output_buffer)
+            st.session_state['receipt_data']['ready_doc'].save(output_buffer)
             output_buffer.seek(0)
 
             st.info("该模块仅用于收据快速生成，数据并不会保存至服务器，请及时下载留存，以防数据丢失！", icon="ℹ️")

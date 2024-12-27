@@ -11,7 +11,7 @@ import time
 from datetime import date
 import streamlit as st
 from docx import Document
-from utils.utils import check_login_state, log_out, validate_address
+from utils.utils import check_login_state, log_out, validate_address, generate_receipt, formate_date
 
 
 def receipt_page():
@@ -37,7 +37,8 @@ def receipt_page():
                 "other": [],
                 "custom_notes": "",
                 "output_doc": None,
-                "receipt_file_name": ""
+                "receipt_file_name": "",
+                "ready_doc": None
             }
 
             selected_template = st.selectbox('选择收据模板', ["完整版（带exclude模块）", "精简版（不带exclude模块）"], placeholder="请选择收据模板", index=None)
@@ -93,6 +94,22 @@ def receipt_page():
                         st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项.docx")
                     elif st.session_state['receipt_data']['selected_template'] == "精简版（不带exclude模块）":
                         st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项2.docx")
+
+                    # 准备要替换的数据
+                    included_content = ""
+                    excluded_content = ""
+
+                    replace_dic = {
+                        "$receipt_date$": formate_date(selected_date),
+                        "$receipt_address$": address,
+                        "$total_amount$": f"{amount:.2f}",
+                        "$included_content$": included_content,
+                        "$exculded_content$": excluded_content
+                    }
+                    # 替换模板文件，生成收据
+                    template_doc = st.session_state['receipt_data']['output_doc']
+                    ready_doc = generate_receipt(template_doc, replace_dic)
+                    st.session_state['receipt_data']['ready_doc'] = ready_doc
                     st.switch_page("pages/receipt_preview.py")
                 else:
                     st.error("发票信息有缺失！请填写完整信息！", icon="⚠️")

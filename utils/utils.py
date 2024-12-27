@@ -11,6 +11,7 @@ import streamlit as st
 import time
 from streamlit_cookies_manager import EncryptedCookieManager
 import re
+from docx.shared import Pt
 
 # 创建一个加密的Cookie 管理器
 cookies = EncryptedCookieManager(prefix="atm_erp", password="123456")
@@ -102,3 +103,53 @@ def extract_date_from_html(html_content):
     if match:
         return match.group(0)  # 返回匹配到的日期
     return None
+
+
+def generate_receipt(doc, data_dict):
+    """
+        替换文档中的占位符并统一字体
+        """
+    # 替换段落中的文本
+    for paragraph in doc.paragraphs:
+        for key, value in data_dict.items():
+            if key in paragraph.text:
+                paragraph.text = paragraph.text.replace(key, str(value))
+
+        # 统一段落字体和大小
+        for run in paragraph.runs:
+            run.font.name = 'Arial'
+            run.font.size = Pt(10)
+
+    # 替换表格中的文本
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for key, value in data_dict.items():
+                    if key in cell.text:
+                        cell.text = cell.text.replace(key, str(value))
+
+                # 统一单元格内段落的字体和大小
+                for paragraph in cell.paragraphs:
+                    for run in paragraph.runs:
+                        run.font.name = 'Arial'
+                        run.font.size = Pt(10)
+
+    return doc
+
+
+def formate_date(input_date):
+    """
+    自定义日期格式化
+    将 2024-12-11 格式化为 11th Dec. 2024
+    """
+    day = input_date.day
+    month_abbr = input_date.strftime('%b')
+    year = input_date.year
+
+    # 添加日期后缀
+    if 10 <= day % 100 <= 20:
+        suffix = 'th'
+    else:
+        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
+
+    return f"{day}{suffix} {month_abbr}. {year}"
