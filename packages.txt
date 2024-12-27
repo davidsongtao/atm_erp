@@ -6,4 +6,3 @@ pandoc
 texlive-xetex
 texlive-fonts-recommended
 texlive-fonts-extra
-texlive-scheme-full
