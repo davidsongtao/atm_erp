@@ -3,3 +3,7 @@ default-libmysqlclient-dev
 build-essential
 pkg-config
 pandoc
+texlive-xetex
+texlive-fonts-recommended
+texlive-fonts-extra
+texlive-scheme-full
