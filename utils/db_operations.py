@@ -51,3 +51,15 @@ def login_auth(username, password):
         logger.error(f"数据库验证失败，错误信息：{e}")
         error_message = "用户名不存在"
         return False, None, error_message, None
+
+
+def get_all_staff_acc():
+    try:
+        conn = connect_db()
+        query_result = conn.query("SELECT * FROM users WHERE ").to_dict()
+
+        return query_result, None
+    except Exception as e:
+        logger.error(f"获取所有员工信息失败！错误信息：{e}")
+        error_message = "获取所有员工信息失败!"
+        return None, error_message
