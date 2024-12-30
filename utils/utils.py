@@ -14,6 +14,7 @@ from docx.shared import Pt
 from configs.log_config import *
 
 
+
 # # 创建一个加密的Cookie 管理器
 # cookies = EncryptedCookieManager(prefix="atm_erp", password="dst881009...")
 # if not cookies.ready():
@@ -204,18 +205,17 @@ def navigation():
         st.switch_page("pages/receipt_page.py")
     # 工单管理
     if st.sidebar.button("🔍工单管理", key="order_management", use_container_width=True, type="primary"):
-        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
-    # 保洁阿姨管理
+        st.switch_page("pages/order_page.py")    # 保洁阿姨管理
     if st.sidebar.button("👩‍👩‍👧‍👦阿姨管理", key="staff_management_button", use_container_width=True, type="primary"):
         st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
     # 自动化报价
-    if st.sidebar.button("💰生成报价", key="auto_quote_button", use_container_width=True, type="primary"):
-        # st.switch_page("pages/auto_quote_page.py")
-        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    if st.sidebar.button("🤖智能报价", key="auto_quote_button", use_container_width=True, type="primary"):
+        st.switch_page("pages/pricing_page.py")
+        # st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
     # 自动化报价
-    if st.sidebar.button("🤖智能助理", key="ai_assistant", use_container_width=True, type="primary"):
-        # st.switch_page("pages/auto_quote_page.py")
-        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+    # if st.sidebar.button("🤖智能助理", key="ai_assistant", use_container_width=True, type="primary"):
+    #     # st.switch_page("pages/auto_quote_page.py")
+    #     st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
     # 用户管理模块
     if st.sidebar.button("👥账户管理", key="user_management_button", use_container_width=True, type="primary"):
         st.switch_page("pages/staff_acc.py")
@@ -248,3 +248,4 @@ def confirm_back():
     with col2:
         if st.button("取消", use_container_width=True, type="secondary"):
             st.rerun()
+
