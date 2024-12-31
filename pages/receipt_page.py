@@ -87,7 +87,7 @@ def receipt_page():
             else:
                 custom_notes_content = ""
             # st.info("请仔细核对以上信息，确认无误后点击生成收据即可查看发票预览。", icon="ℹ️")
-            submit = st.button("✅生成收据", use_container_width=True, type="primary")
+            submit = st.button("生成收据", use_container_width=True, type="primary")
 
             if submit:
                 if address_valid and address and selected_date and amount and basic_service_selection:
