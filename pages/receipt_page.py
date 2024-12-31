@@ -76,12 +76,12 @@ def receipt_page():
             all_services = basic_service + rooms + electrical + others
             selected = basic_service_selection + electrical_selections + rooms_selection + other_selection
             manual_excluded = [service for service in all_services if service not in selected]
-            add_excluded_manually = st.checkbox("我希望手动添加Excluded模块中的内容", value=False)
+            add_excluded_manually = st.checkbox("添加Excluded模块中的内容", value=False)
             if add_excluded_manually:
                 manual_excluded_selection = st.multiselect("手动添加Excluded中包含的内容：", manual_excluded, placeholder="请输入其他服务...")
             else:
                 manual_excluded_selection = []
-            custom_notes = st.checkbox("我希望添加自定义项目", value=False)
+            custom_notes = st.checkbox("添加自定义项目", value=False)
             if custom_notes:
                 custom_notes_content = st.text_input("自定义项目", placeholder="请填写自定义项目内容...")
             else:
