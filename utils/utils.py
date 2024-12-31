@@ -199,8 +199,9 @@ def confirm_logout():
 
 def navigation():
     # 导航模块
-    st.sidebar.title("🏠ATM Cleaning Service")
-    st.sidebar.divider()
+    # st.sidebar.title("🏠ATM Cleaning Service")
+    st.sidebar.image("images/logo.png")
+    # st.sidebar.divider()
     if st.sidebar.button("➕创建收据", key="open_receipt_button", use_container_width=True, type="primary"):
         st.switch_page("pages/receipt_page.py")
     # 工单管理
