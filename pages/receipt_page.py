@@ -44,7 +44,8 @@ def receipt_page():
                 "ready_doc": None
             }
 
-            selected_template = st.selectbox('选择收据版本', ["手动版（手动选择excluded中的内容）", "精简版（不带excluded模块）", "完整版（带excluded模块）"], placeholder="请选择收据模板", index=None)
+            # selected_template = st.selectbox('选择收据版本', ["手动版（手动选择excluded中的内容）", "精简版（不带excluded模块）", "完整版（带excluded模块）"], placeholder="请选择收据模板", index=None)
+            selected_template = "手动版（手动选择excluded中的内容）"
             # 构建选项
             basic_service = ["Steam clean of the carpet", "Steam clean of the mattress", "Steam clean of the sofa", "Vacuum clean of carpet", "Floor boards/Floor tiles mopping"]
             rooms = ["Bedroom", "Bathroom", "Kitchen"]
@@ -75,8 +76,11 @@ def receipt_page():
             all_services = basic_service + rooms + electrical + others
             selected = basic_service_selection + electrical_selections + rooms_selection + other_selection
             manual_excluded = [service for service in all_services if service not in selected]
-            if selected_template == "手动版（手动选择excluded中的内容）":
+            add_excluded_manually = st.checkbox("我希望手动添加Excluded模块中的内容", value=False)
+            if add_excluded_manually:
                 manual_excluded_selection = st.multiselect("手动添加Excluded中包含的内容：", manual_excluded, placeholder="请输入其他服务...")
+            else:
+                manual_excluded_selection = []
             custom_notes = st.checkbox("我希望添加自定义项目", value=False)
             if custom_notes:
                 custom_notes_content = st.text_input("自定义项目", placeholder="请填写自定义项目内容...")
@@ -86,7 +90,7 @@ def receipt_page():
             submit = st.button("✅生成收据", use_container_width=True, type="primary")
 
             if submit:
-                if selected_template and address_valid and address and selected_date and amount and basic_service_selection:
+                if address_valid and address and selected_date and amount and basic_service_selection:
                     st.session_state['receipt_data'] = {
                         "selected_template": selected_template,
                         "address": address,
@@ -100,12 +104,12 @@ def receipt_page():
                         "receipt_file_name": f"Receipt.{address}.docx",
 
                     }
-                    if st.session_state['receipt_data']['selected_template'] == "完整版（带excluded模块）":
-                        st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项.docx")
-                    elif st.session_state['receipt_data']['selected_template'] == "精简版（不带excluded模块）":
-                        st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项2.docx")
-                        print(st.session_state['receipt_data']['output_doc'])
-                    elif st.session_state['receipt_data']['selected_template'] == "手动版（手动选择excluded中的内容）":
+                    # if st.session_state['receipt_data']['selected_template'] == "完整版（带excluded模块）":
+                    #     st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项.docx")
+                    # elif st.session_state['receipt_data']['selected_template'] == "精简版（不带excluded模块）":
+                    #     st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项2.docx")
+                    #     print(st.session_state['receipt_data']['output_doc'])
+                    if st.session_state['receipt_data']['selected_template'] == "手动版（手动选择excluded中的内容）":
                         st.session_state['receipt_data']['output_doc'] = Document("templates/Recipte单项.docx")
                     # 准备要替换的数据
                     # 准备included模块的内容(处理排序问题，不管用户怎么选择，最终都要按照规定的顺序排序)
@@ -183,10 +187,10 @@ def receipt_page():
                         for item in new_unselected_list:
                             excluded_content += f"{item}\n"
 
-                    if st.session_state['receipt_data']['selected_template'] == "手动版（手动选择excluded中的内容）":
+                    if st.session_state['receipt_data']['selected_template'] == "手动版（手动选择excluded中的内容）" and manual_excluded_selection:
 
                         # 将手动选择的excluded中的内容按照总表的顺序排序
-                        excluded_content = ""
+                        excluded_content = "It has excluded\n\n"
                         excluded_content_list_new = []
                         order_list = {item: index for index, item in enumerate(all_services)}
                         excluded_content_list = sorted(manual_excluded_selection, key=lambda x: order_list.get(x, len(all_services)))
