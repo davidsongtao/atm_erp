@@ -50,7 +50,7 @@ def receipt_page():
             basic_service = ["Steam clean of the carpet", "Steam clean of the mattress", "Steam clean of the sofa", "Vacuum clean of carpet", "Floor boards/Floor tiles mopping"]
             rooms = ["Bedroom", "Bathroom", "Kitchen"]
             electrical = ["Microwave", "Oven", "Dishwasher", "Refrigerator", "Washing machine", "Dryer", "Air conditioner"]
-            others = ["Skirting board/Window frame/Wardrobe", "Blinds", "Window glasses", "Balcony with sliding door windows", "Wall marks removal", "Pet hair removal", "Rubbish removal", "Mould removal"]
+            others = ["Skirting board/Window frame/Wardrobe", "Blinds", "Window glasses", "Balcony with sliding door windows", "Wall marks removal", "Furniture wipe off", "Pet hair removal", "Rubbish removal", "Mould removal"]
             # 输入区域
             address = st.text_input('客户地址', placeholder="例如：1202/157 A'Beckett St, Melbourne VIC 3000")  # 输入地址
             address_valid = True  # 地址验证标志
