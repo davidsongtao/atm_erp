@@ -206,7 +206,7 @@ def navigation():
     # 工单管理
     if st.sidebar.button("🔍工单管理", key="order_management", use_container_width=True, type="primary"):
         st.switch_page("pages/order_page.py")    # 保洁阿姨管理
-    if st.sidebar.button("👩‍👩‍👧‍👦阿姨管理", key="staff_management_button", use_container_width=True, type="primary"):
+    if st.sidebar.button("👩‍👩‍👧‍👦月度结算", key="staff_management_button", use_container_width=True, type="primary"):
         st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
     # 自动化报价
     if st.sidebar.button("🤖智能报价", key="auto_quote_button", use_container_width=True, type="primary"):
