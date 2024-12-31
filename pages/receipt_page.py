@@ -78,12 +78,12 @@ def receipt_page():
             manual_excluded = [service for service in all_services if service not in selected]
             add_excluded_manually = st.checkbox("添加Excluded模块中的内容", value=False)
             if add_excluded_manually:
-                manual_excluded_selection = st.multiselect("手动添加Excluded中包含的内容：", manual_excluded, placeholder="请输入其他服务...")
+                manual_excluded_selection = st.multiselect("请选择您要添加的内容：", manual_excluded, placeholder="请输入其他服务...")
             else:
                 manual_excluded_selection = []
             custom_notes = st.checkbox("添加自定义项目", value=False)
             if custom_notes:
-                custom_notes_content = st.text_input("自定义项目", placeholder="请填写自定义项目内容...")
+                custom_notes_content = st.text_input("请输入您要添加的自定义项目", placeholder="请填写自定义项目内容...")
             else:
                 custom_notes_content = ""
             st.info("请仔细核对以上信息，确认无误后点击生成收据即可查看发票预览。", icon="ℹ️")
