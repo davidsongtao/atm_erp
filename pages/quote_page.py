@@ -87,13 +87,13 @@ def format_initial_prompt():
     # 构建详细的服务列表字符串
     services_list = ""
     for service, price in service_details:
-        services_list += f"- {service} | {price} 元\n"
+        services_list += f"- $ {service} | {price}\n"
 
     return (
         "请根据以下标准价格生成一份正式的清洁服务报价单：\n\n"
         "1. 服务项目明细和单价：\n"
         f"{services_list}\n"
-        f"2. 总价格：{total_price} 元\n\n"
+        f"2. 总价格：$ {total_price}\n\n"
         "请使用以下格式生成报价单：\n"
         "• 使用专业的语气\n"
         "• 价格必须严格按照提供的标准价格，不要添加任何备注和其他信息及类似此致敬礼之类的乱七八糟的其他内容\n"
