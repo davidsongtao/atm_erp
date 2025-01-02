@@ -17,7 +17,8 @@ def pricing_page():
     st.divider()
     st.info("请选择服务详情", icon="ℹ️")
 
-    basic_service = ["1B1B(steam)", "1B1B(None-steam)", "2B1B(steam)", "Steam clean of the carpet", "Steam clean of the mattress", "Steam clean of the sofa", "Vacuum clean of carpet", "Floor boards/Floor tiles mopping"]
+    basic_service = ["1B1B(steam)", "1B1B(None-steam)", "2B1B(steam)", "2B1B(None-steam)", "2B2B(steam)", "2B2B(None-steam)", "3B1B(steam)", "3B1B(None-steam)", "3B2B(steam)", "3B2B(None-steam)", "Steam clean of the mattress",
+                     "Steam clean of the sofa", "Vacuum clean of carpet", "Floor boards/Floor tiles mopping"]
     rooms = ["Bedroom", "Bathroom", "Kitchen"]
     electrical = ["Microwave", "Oven", "Dishwasher", "Refrigerator", "Washing machine", "Dryer", "Air conditioner"]
     others = ["Skirting board/Window frame/Wardrobe", "Blinds", "Window glasses", "Balcony with sliding door windows", "Wall marks removal", "Pet hair removal", "Rubbish removal", "Mould removal"]

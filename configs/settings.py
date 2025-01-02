@@ -55,5 +55,17 @@ class BaseConfig(object):
             "Air conditioner": 25,
             "Window glasses": 8,
             "Blinds": 80,
-
+            "Steam clean of the mattress": 80,
+            "Steam clean of the sofa": 40,
+            "Vacuum clean of carpet": 20,
+            "Floor boards/Floor tiles mopping": 20,
+            "Bathroom": 70,
+            "Kitchen": 130,
+            "Bedroom": 130,
+            "Skirting board/Window frame/Wardrobe": 1,
+            "Balcony with sliding door windows": 1,
+            "Wall marks removal": 1,
+            "Pet hair removal": 1,
+            "Rubbish removal": 1,
+            "Mould removal": 1,
         }

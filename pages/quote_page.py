@@ -17,9 +17,6 @@ def get_price_mapping():
     """获取服务项目与价格的映射关系"""
     standard_prices = BaseConfig().STANDARD_PRICE
     return {
-        # 基础服务映射
-        "Steam clean of the sofa": ("沙发-蒸汽清洁", standard_prices.get("1B1B(steam)", 275)),
-        "Vacuum clean of carpet": ("地毯-吸尘清洁", standard_prices.get("1B1B(None-steam)", 220)),
 
         # 电器映射
         "Microwave": ("微波炉", standard_prices.get("Microwave", 50)),
@@ -29,13 +26,40 @@ def get_price_mapping():
         "Washing machine": ("洗衣机", standard_prices.get("Washing machine", 25)),
         "Dryer": ("烘干机", standard_prices.get("Dryer", 25)),
         "Air conditioner": ("空调", standard_prices.get("Air conditioner", 25)),
+        "Window glasses": ("窗户玻璃", standard_prices.get("Window glasses", 8)),
+        "Blinds": ("窗帘", standard_prices.get("Blinds", 80)),
 
         # 其他服务映射
-        "Window glasses": ("窗户玻璃", standard_prices.get("Window glasses", 8)),
-        "Blinds": ("百叶窗", standard_prices.get("Blinds", 80)),
         "1B1B(steam)": ("1B1B房型-蒸汽清洁", standard_prices.get("1B1B(steam)", 275)),
         "1B1B(None-steam)": ("1B1B房型- 无蒸汽清洁", standard_prices.get("1B1B(None-steam)", 220)),
-        "2B1B(steam)": ("2B1B房型-蒸汽清洁", standard_prices.get("2B1B(steam)", 320))
+        "2B1B(steam)": ("2B1B房型-蒸汽清洁", standard_prices.get("2B1B(steam)", 320)),
+        "2B1B(None-steam)": ("2B1B房型-无蒸汽清洁", standard_prices.get("2B1B(None-steam)", 280)),
+        "2B2B(steam)": ("2B2B房型-蒸汽清洁", standard_prices.get("2B2B(steam)", 350)),
+        "2B2B(None-steam)": ("2B2B房型-无蒸汽清洁", standard_prices.get("2B2B(None-steam)", 300)),
+        "3B1B(steam)": ("3B1B房型-蒸汽清洁", standard_prices.get("3B1B(steam)", 405)),
+        "3B1B(None-steam)": ("3B1B房型-无蒸汽清洁", standard_prices.get("3B1B(None-steam)", 350)),
+        "3B2B(steam)": ("3B2B房型-蒸汽清洁", standard_prices.get("3B2B(steam)", 445)),
+        "3B2B(None-steam)": ("3B2B房型-无蒸汽清洁", standard_prices.get("3B2B(None-steam)", 300)),
+
+        # 基础服务
+        "Steam clean of the mattress": ("蒸汽洗床垫", standard_prices.get("Steam clean of the mattress", 80)),
+        "Steam clean of the sofa": ("蒸汽洗沙发", standard_prices.get("Steam clean of the sofa", 40)),
+        "Vacuum clean of carpet": ("地毯吸尘", standard_prices.get("Vacuum clean of carpet", 20)),
+        "Floor boards/Floor tiles mopping": ("地板拖地", standard_prices.get("Floor boards/Floor tiles mopping", 20)),
+
+        # 房间
+        "Bathroom": ("卫生间", standard_prices.get("Bathroom", 70)),
+        "Kitchen": ("厨房", standard_prices.get("Kitchen", 130)),
+        "Bedroom": ("卧室", standard_prices.get("Bedroom", 130)),
+
+        # 其他服务
+        "Skirting board/Window frame/Wardrobe": ("踢脚线/窗框/衣柜", standard_prices.get("Skirting board/Window frame/Wardrobe", 1)),
+        "Balcony with sliding door windows": ("阳台（推拉门）", standard_prices.get("Balcony with sliding door windows", 1)),
+        "Wall marks removal": ("墙面污渍清除", standard_prices.get("Wall marks removal", 1)),
+        "Pet hair removal": ("宠物毛发清除", standard_prices.get("Pet hair removal", 1)),
+        "Rubbish removal": ("垃圾清运", standard_prices.get("Rubbish removal", 1)),
+        "Mould removal": ("除霉", standard_prices.get("Mould removal", 1)),
+
     }
 
 
