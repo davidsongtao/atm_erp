@@ -11,8 +11,9 @@ import streamlit as st
 import time
 import re
 from docx.shared import Pt
-from configs.log_config import *
+from langchain.memory import ConversationBufferMemory
 
+from configs.log_config import *
 
 
 # # 创建一个加密的Cookie 管理器
@@ -206,7 +207,7 @@ def navigation():
         st.switch_page("pages/receipt_page.py")
     # 工单管理
     if st.sidebar.button("🔍工单管理", key="order_management", use_container_width=True, type="primary"):
-        st.switch_page("pages/order_page.py")    # 保洁阿姨管理
+        st.switch_page("pages/order_page.py")  # 保洁阿姨管理
     if st.sidebar.button("👩‍👩‍👧‍👦月度结算", key="staff_management_button", use_container_width=True, type="primary"):
         st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
     # 自动化报价
@@ -250,3 +251,46 @@ def confirm_back():
         if st.button("取消", use_container_width=True, type="secondary"):
             st.rerun()
 
+
+def get_response(prompt, memory):
+    """
+    获取AI响应的函数
+
+    Args:
+        prompt (str): 用户输入的提示词
+        memory (ConversationBufferMemory): 对话记忆对象
+
+    Returns:
+        str: AI的响应文本
+    """
+    from langchain.chat_models import ChatOpenAI
+    from langchain.chains import ConversationChain
+
+    # 使用 ChatOpenAI 而不是 OpenAI
+    chat_model = ChatOpenAI(
+        model="deepseek-chat",
+        openai_api_key="sk-cabc0773085a4122b473aeb954300db4",
+        openai_api_base="https://api.deepseek.com/v1",
+        temperature=0.7
+    )
+
+    # 构建对话链
+    chain = ConversationChain(
+        llm=chat_model,
+        memory=memory,
+        verbose=True  # 设置为True可以看到更多调试信息
+    )
+
+    try:
+        # 确保prompt是字符串
+        if not isinstance(prompt, str):
+            prompt = str(prompt)
+
+        # 调用对话链
+        response = chain.run(prompt)
+        return response
+
+    except Exception as e:
+        print(f"Error in get_response: {str(e)}")
+        # 返回一个友好的错误信息
+        return f"抱歉，生成回复时出现错误：{str(e)}"

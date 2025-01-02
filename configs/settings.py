@@ -34,3 +34,26 @@ class BaseConfig(object):
             "role": "角色权限",
             "name": "用户名",
         }
+
+        self.STANDARD_PRICE = {
+            "1B1B(steam)": 275,
+            "1B1B(None-steam)": 220,
+            "2B1B(steam)": 320,
+            "2B1B(None-steam)": 280,
+            "2B2B(steam)": 350,
+            "2B2B(None-steam)": 300,
+            "3B1B(steam)": 405,
+            "3B1B(None-steam)": 350,
+            "3B2B(steam)": 445,
+            "3B2B(None-steam)": 400,
+            "Refrigerator": 50,
+            "Microwave": 50,
+            "Oven": 50,
+            "Dishwasher": 25,
+            "Washing machine": 25,
+            "Dryer": 25,
+            "Air conditioner": 25,
+            "Window glasses": 8,
+            "Blinds": 80,
+
+        }

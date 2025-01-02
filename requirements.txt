@@ -6,8 +6,9 @@ st-copy-to-clipboard==0.1.6
 cobble==0.1.4
 mammoth==1.8.0
 pandas==2.2.3
-SQLAlchemy == 2.0.36
+SQLAlchemy==2.0.36
 mysqlclient
 mysql-connector-python
-streamlit-cookies-manager
 loguru
+langchain==0.2.14
+langchain_community==0.2.12
