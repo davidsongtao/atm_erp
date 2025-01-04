@@ -198,7 +198,6 @@ def receipt_page():
     if custom_notes:
         custom_notes_content = st.text_input("请输入您要添加的自定义项目",
                                              placeholder="请填写自定义项目内容...")
-
     # 处理excluded内容
     all_services = (service_options["basic_service"] + service_options["rooms"] +
                     service_options["electrical"] + service_options["others"])

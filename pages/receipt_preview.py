@@ -113,6 +113,7 @@ def receipt_preview():
             )
 
             if st.button("返回", key="back_button", use_container_width=True):
+
                 confirm_back()
 
         else:
