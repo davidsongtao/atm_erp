@@ -308,9 +308,6 @@ def receipt_page():
         else:
             st.error("模板文档未正确加载，请重试！")
 
-    # if st.button("清空内容，重新填写", key="back_button", use_container_width=True):
-    #     clear_form()
-
 
 if __name__ == '__main__':
     receipt_page()
