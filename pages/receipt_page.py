@@ -16,8 +16,14 @@ from utils.utils import check_login_state, validate_address, generate_receipt, f
 
 def initialize_receipt_data():
     """初始化收据数据"""
-    # Check if we have previous form data in session state
     if 'previous_form_data' in st.session_state:
+        # 如果存在之前的表单数据，恢复自定义项目的session state
+        if 'included_items' not in st.session_state and 'custom_notes' in st.session_state['previous_form_data']:
+            st.session_state['included_items'] = st.session_state['previous_form_data']['custom_notes']
+
+        if 'excluded_items' not in st.session_state and 'custom_excluded_items' in st.session_state['previous_form_data']:
+            st.session_state['excluded_items'] = st.session_state['previous_form_data']['custom_excluded_items']
+
         return st.session_state['previous_form_data']
 
     return {
@@ -29,11 +35,12 @@ def initialize_receipt_data():
         "electrical": [],
         "rooms": [],
         "other": [],
-        "custom_notes": "",
+        "custom_notes": [],
         "custom_notes_enabled": False,
         "excluded_enabled": False,
+        "custom_excluded_enabled": False,  # 新增字段
         "manual_excluded_selection": [],
-        "custom_excluded_content": "",
+        "custom_excluded_items": [],
         "output_doc": None,
         "receipt_file_name": "",
         "ready_doc": None
@@ -109,33 +116,91 @@ def render_input_form(service_options, receipt_data):
             rooms_selection, other_selection)
 
 
+def handle_custom_items(item_type, receipt_data):
+    """处理自定义项目的添加和删除
+
+    Args:
+        item_type: "included" or "excluded"
+        receipt_data: 当前的收据数据
+    """
+    items_key = "custom_notes" if item_type == "included" else "custom_excluded_items"
+    session_key = f'{item_type}_items'
+
+    # 初始化或更新 session state
+    if session_key not in st.session_state:
+        # 从 receipt_data 中获取已保存的项目
+        saved_items = receipt_data[items_key]
+        # 如果没有保存的项目，则初始化为一个空项
+        st.session_state[session_key] = saved_items if saved_items else [""]
+
+    # 添加新项目的按钮
+    if st.button(f"新增{item_type}自定义项", key=f"add_{item_type}"):
+        st.session_state[session_key].append("")
+        st.rerun()
+
+    # 创建输入字段
+    updated_items = []
+    for idx, item in enumerate(st.session_state[session_key]):
+        col1, col2 = st.columns([5, 1])
+        with col1:
+            # 使用保存的值作为默认值
+            new_value = st.text_input(
+                f"自定义项目 {idx + 1}",
+                value=item,  # 这里使用保存的item值
+                key=f"{item_type}_item_{idx}",
+                placeholder=f"请输入第{idx + 1}个自定义项目内容..."
+            )
+            updated_items.append(new_value)
+
+        with col2:
+            if st.button("删除", key=f"delete_{item_type}_{idx}"):
+                st.session_state[session_key].pop(idx)
+                st.rerun()
+
+    # 更新 session state 中的值
+    st.session_state[session_key] = updated_items
+
+    return updated_items
+
+
 def handle_excluded_content(all_services, selected_services, receipt_data):
-    """处理excluded内容"""
+    """处理excluded内容
+
+    Args:
+        all_services: 所有可用服务的列表
+        selected_services: 已选择的服务列表
+        receipt_data: 收据数据字典
+
+    Returns:
+        tuple: (manual_excluded_selection, custom_excluded_items, excluded_enabled, custom_excluded_enabled)
+    """
     manual_excluded = [service for service in all_services if service not in selected_services]
-    add_excluded_manually = st.checkbox("添加Excluded模块",
-                                        value=receipt_data["excluded_enabled"])
+    excluded_enabled = st.checkbox("添加Excluded模块",
+                                   value=receipt_data["excluded_enabled"])
 
     manual_excluded_selection = []
-    custom_excluded_content = ""
+    custom_excluded_items = []
 
-    if add_excluded_manually:
-        manual_excluded_selection = st.multiselect("请选择您要添加的内容：",
-                                                   manual_excluded,
-                                                   default=receipt_data["manual_excluded_selection"],
-                                                   placeholder="请输入其他服务...")
-        add_custom_excluded = st.checkbox("为Excluded添加自定义项",
-                                          value=bool(receipt_data["custom_excluded_content"]),
-                                          disabled=not add_excluded_manually)
+    if excluded_enabled:
+        manual_excluded_selection = st.multiselect(
+            "请选择您要添加的内容：",
+            manual_excluded,
+            default=receipt_data["manual_excluded_selection"],
+            placeholder="请选择要添加的服务..."
+        )
 
-        if add_custom_excluded:
-            custom_excluded_content = st.text_input("请输入要添加到Excluded模块的自定义项目",
-                                                    value=receipt_data["custom_excluded_content"],
-                                                    placeholder="请填写自定义项目内容...")
+        # Add checkbox for custom excluded items
+        custom_excluded_enabled = st.checkbox(
+            "为Excluded模块添加自定义项目",
+            value=receipt_data.get("custom_excluded_enabled", False)
+        )
 
-    return manual_excluded_selection, custom_excluded_content, add_excluded_manually
+        return manual_excluded_selection, custom_excluded_items, excluded_enabled, custom_excluded_enabled
+
+    return manual_excluded_selection, custom_excluded_items, excluded_enabled, False
 
 
-def generate_included_content(selections, order_map, custom_notes_content=None):
+def generate_included_content(selections, order_map, custom_items=None):
     """生成included内容"""
     all_selections = []
     for service_list in selections:
@@ -147,19 +212,19 @@ def generate_included_content(selections, order_map, custom_notes_content=None):
     # 生成基本内容
     content = "\n".join(f"{i}.{service}" for i, (_, service) in enumerate(all_selections, 1))
 
-    # 如果有自定义内容，添加到末尾
-    if custom_notes_content:
-        # 获取当前最后一个编号
+    # 添加多个自定义内容
+    if custom_items:
         last_number = len(all_selections)
-        # 添加自定义内容（序号续接）
-        content += f"\n{last_number + 1}.{custom_notes_content}"
+        for idx, item in enumerate(custom_items, 1):
+            if item.strip():  # 只添加非空的项目
+                content += f"\n{last_number + idx}.{item}"
 
     return content
 
 
-def generate_excluded_content(manual_excluded_selection, all_services, custom_excluded_content=None):
+def generate_excluded_content(manual_excluded_selection, all_services, custom_items=None):
     """生成excluded内容"""
-    if not manual_excluded_selection and not custom_excluded_content:
+    if not manual_excluded_selection and not (custom_items and any(item.strip() for item in custom_items)):
         return ""
 
     excluded_content = "It has excluded\n\n"
@@ -171,15 +236,14 @@ def generate_excluded_content(manual_excluded_selection, all_services, custom_ex
     content = "\n".join(f"{i}.{service}"
                         for i, service in enumerate(excluded_content_list, 1))
 
-    # 如果有自定义excluded内容，添加到末尾
-    if custom_excluded_content:
-        # 如果已经有其他excluded内容，需要添加换行
-        if content:
-            content += "\n"
-        # 获取当前最后一个编号
+    # 添加多个自定义excluded内容
+    if custom_items:
         last_number = len(excluded_content_list)
-        # 添加自定义内容（序号续接）
-        content += f"{last_number + 1}.{custom_excluded_content}"
+        for idx, item in enumerate(custom_items, 1):
+            if item.strip():  # 只添加非空的项目
+                if content:
+                    content += "\n"
+                content += f"{last_number + idx}.{item}"
 
     return excluded_content + content
 
@@ -219,25 +283,27 @@ def receipt_page():
      basic_service_selection, electrical_selections,
      rooms_selection, other_selection) = form_data
 
-    # 处理自定义注释
+    # 处理自定义included项目
     custom_notes = st.checkbox("为Included添加自定义项目",
                                value=receipt_data["custom_notes_enabled"])
-    custom_notes_content = ""
+    custom_notes_items = []
     if custom_notes:
-        custom_notes_content = st.text_input("请输入您要添加的自定义项目",
-                                             value=receipt_data["custom_notes"],
-                                             placeholder="请填写自定义项目内容...")
+        custom_notes_items = handle_custom_items("included", receipt_data)
 
     # 处理excluded内容
     all_services = (service_options["basic_service"] + service_options["rooms"] +
                     service_options["electrical"] + service_options["others"])
     selected_services = (basic_service_selection + electrical_selections +
                          rooms_selection + other_selection)
-    manual_excluded_selection, custom_excluded_content, excluded_enabled = handle_excluded_content(
+    manual_excluded_selection, custom_excluded_items, excluded_enabled, custom_excluded_enabled = handle_excluded_content(
         all_services,
         selected_services,
         receipt_data
     )
+
+    # Only show custom excluded items input if both checkboxes are enabled
+    if excluded_enabled and custom_excluded_enabled:
+        custom_excluded_items = handle_custom_items("excluded", receipt_data)
 
     # 提交按钮
     submit = st.button("生成收据", use_container_width=True, type="primary")
@@ -258,11 +324,12 @@ def receipt_page():
             "electrical": electrical_selections,
             "rooms": rooms_selection,
             "other": other_selection,
-            "custom_notes": custom_notes_content,
+            "custom_notes": custom_notes_items,
             "custom_notes_enabled": custom_notes,
             "excluded_enabled": excluded_enabled,
+            "custom_excluded_enabled": custom_excluded_enabled,
             "manual_excluded_selection": manual_excluded_selection,
-            "custom_excluded_content": custom_excluded_content,
+            "custom_excluded_content": custom_excluded_items,
             "output_doc": Document("templates/Recipte单项.docx"),
             "receipt_file_name": f"Receipt.{address}.docx",
         }
@@ -281,14 +348,14 @@ def receipt_page():
             [basic_service_selection, rooms_selection,
              electrical_selections, other_selection],
             order_map,
-            custom_notes_content if custom_notes and custom_notes_content else None
+            custom_notes_items if custom_notes and custom_notes_items else None
         )
 
         # 生成excluded内容
         excluded_content = generate_excluded_content(
             manual_excluded_selection,
             all_services,
-            custom_excluded_content if custom_excluded_content else None
+            custom_excluded_items if custom_excluded_items else None
         )
 
         # 准备替换字典
