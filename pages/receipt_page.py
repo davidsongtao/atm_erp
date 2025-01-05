@@ -73,7 +73,8 @@ def render_input_form(service_options, receipt_data):
     # 地址输入和验证
     address = st.text_input('客户地址',
                             value=receipt_data["address"],
-                            placeholder="例如：1202/157 A'Beckett St, Melbourne VIC 3000")
+                            key="address",
+                            placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000")
     address_valid = True
     if address:
         is_valid, error_message = validate_address(address)
@@ -117,24 +118,34 @@ def render_input_form(service_options, receipt_data):
 
 
 def handle_custom_items(item_type, receipt_data):
-    """处理自定义项目的添加和删除
-
-    Args:
-        item_type: "included" or "excluded"
-        receipt_data: 当前的收据数据
-    """
+    """处理自定义项目的添加和删除"""
     items_key = "custom_notes" if item_type == "included" else "custom_excluded_items"
     session_key = f'{item_type}_items'
 
+    # 添加自定义 CSS 来隐藏特定文本输入框的标签
+    st.markdown("""
+        <style>
+            /* 隐藏所有自定义项目的label */
+            div[data-testid="stTextInput"] > label {
+                display: none !important;
+                height: 0px !important;
+                margin: 0px !important;
+                padding: 0px !important;
+            }
+            /* 移除label占用的空间 */
+            div[data-testid="stTextInput"] > .st-emotion-cache-1umgz6j {
+                margin-top: 0px !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
     # 初始化或更新 session state
     if session_key not in st.session_state:
-        # 从 receipt_data 中获取已保存的项目
         saved_items = receipt_data[items_key]
-        # 如果没有保存的项目，则初始化为一个空项
         st.session_state[session_key] = saved_items if saved_items else [""]
 
     # 添加新项目的按钮
-    if st.button(f"新增{item_type}自定义项", key=f"add_{item_type}"):
+    if st.button(f"新增一个自定义项", key=f"add_{item_type}", use_container_width=True):
         st.session_state[session_key].append("")
         st.rerun()
 
@@ -142,24 +153,22 @@ def handle_custom_items(item_type, receipt_data):
     updated_items = []
     for idx, item in enumerate(st.session_state[session_key]):
         col1, col2 = st.columns([5, 1])
+
         with col1:
-            # 使用保存的值作为默认值
             new_value = st.text_input(
-                f"自定义项目 {idx + 1}",
-                value=item,  # 这里使用保存的item值
+                " ",  # 使用空格作为label而不是空字符串
+                value=item,
                 key=f"{item_type}_item_{idx}",
                 placeholder=f"请输入第{idx + 1}个自定义项目内容..."
             )
             updated_items.append(new_value)
 
         with col2:
-            if st.button("删除", key=f"delete_{item_type}_{idx}"):
+            if st.button("删除", key=f"delete_{item_type}_{idx}", use_container_width=True):
                 st.session_state[session_key].pop(idx)
                 st.rerun()
 
-    # 更新 session state 中的值
     st.session_state[session_key] = updated_items
-
     return updated_items
 
 
@@ -304,6 +313,9 @@ def receipt_page():
     # Only show custom excluded items input if both checkboxes are enabled
     if excluded_enabled and custom_excluded_enabled:
         custom_excluded_items = handle_custom_items("excluded", receipt_data)
+
+    st.divider()
+    st.info("确保收据信息录入正确后，点击生成收据按钮即可预览或下载您的收据！", icon="ℹ️")
 
     # 提交按钮
     submit = st.button("生成收据", use_container_width=True, type="primary")

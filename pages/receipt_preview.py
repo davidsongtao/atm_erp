@@ -99,7 +99,7 @@ def receipt_preview():
             st.session_state['receipt_data']['ready_doc'].save(output_buffer)
             output_buffer.seek(0)
 
-            st.info("该模块仅用于收据快速生成，数据并不会保存至服务器，请及时下载留存，以防数据丢失！", icon="ℹ️")
+            st.info("如需对收据内容进行修改，请点击返回并选择修改收据即可！", icon="ℹ️")
 
             print(st.session_state['receipt_data']['ready_doc'])
 
