@@ -11,25 +11,38 @@ import time
 from datetime import date
 import streamlit as st
 from docx import Document
-from utils.utils import check_login_state, confirm_back, validate_address, generate_receipt, formate_date, navigation
+from utils.utils import check_login_state, validate_address, generate_receipt, formate_date, navigation, clear_form_state
 
 
 def initialize_receipt_data():
     """初始化收据数据"""
+    # Check if we have previous form data in session state
+    if 'previous_form_data' in st.session_state:
+        return st.session_state['previous_form_data']
+
     return {
         "selected_template": "手动版（手动选择excluded中的内容）",
         "address": "",
-        "selected_date": "",
-        "amount": "",
+        "selected_date": date.today(),
+        "amount": 0.0,
         "basic_service": [],
         "electrical": [],
         "rooms": [],
         "other": [],
         "custom_notes": "",
+        "custom_notes_enabled": False,
+        "excluded_enabled": False,
+        "manual_excluded_selection": [],
+        "custom_excluded_content": "",
         "output_doc": None,
         "receipt_file_name": "",
         "ready_doc": None
     }
+
+
+def save_form_state(form_data):
+    """保存表单状态到session"""
+    st.session_state['previous_form_data'] = form_data
 
 
 def get_service_options():
@@ -48,10 +61,12 @@ def get_service_options():
     }
 
 
-def render_input_form(service_options):
+def render_input_form(service_options, receipt_data):
     """渲染输入表单"""
     # 地址输入和验证
-    address = st.text_input('客户地址', placeholder="例如：1202/157 A'Beckett St, Melbourne VIC 3000")
+    address = st.text_input('客户地址',
+                            value=receipt_data["address"],
+                            placeholder="例如：1202/157 A'Beckett St, Melbourne VIC 3000")
     address_valid = True
     if address:
         is_valid, error_message = validate_address(address)
@@ -63,21 +78,30 @@ def render_input_form(service_options):
     col1, col2 = st.columns(2)
 
     with col1:
-        selected_date = st.date_input('收据日期', date.today())
+        selected_date = st.date_input('收据日期',
+                                      value=receipt_data["selected_date"])
         basic_service_selection = st.multiselect('基础服务（多选）',
                                                  service_options["basic_service"],
+                                                 default=receipt_data["basic_service"],
                                                  placeholder="请选择基础服务...")
         electrical_selections = st.multiselect('电器服务（多选）',
                                                service_options["electrical"],
+                                               default=receipt_data["electrical"],
                                                placeholder="请选择电器服务...")
 
     with col2:
-        amount = st.number_input('收据金额', min_value=0.0, step=1.0, format='%f')
+        amount = st.number_input('收据金额',
+                                 value=float(receipt_data["amount"]),
+                                 min_value=0.0,
+                                 step=1.0,
+                                 format='%f')
         rooms_selection = st.multiselect('房间（多选）',
                                          service_options["rooms"],
+                                         default=receipt_data["rooms"],
                                          placeholder="请选择房间...")
         other_selection = st.multiselect('其他服务（多选）',
                                          service_options["others"],
+                                         default=receipt_data["other"],
                                          placeholder="请输入其他服务...")
 
     return (address_valid, address, selected_date, amount,
@@ -85,10 +109,11 @@ def render_input_form(service_options):
             rooms_selection, other_selection)
 
 
-def handle_excluded_content(all_services, selected_services):
+def handle_excluded_content(all_services, selected_services, receipt_data):
     """处理excluded内容"""
     manual_excluded = [service for service in all_services if service not in selected_services]
-    add_excluded_manually = st.checkbox("添加Excluded模块", value=False)
+    add_excluded_manually = st.checkbox("添加Excluded模块",
+                                        value=receipt_data["excluded_enabled"])
 
     manual_excluded_selection = []
     custom_excluded_content = ""
@@ -96,16 +121,18 @@ def handle_excluded_content(all_services, selected_services):
     if add_excluded_manually:
         manual_excluded_selection = st.multiselect("请选择您要添加的内容：",
                                                    manual_excluded,
+                                                   default=receipt_data["manual_excluded_selection"],
                                                    placeholder="请输入其他服务...")
-        # 只有在勾选了添加Excluded模块时，才显示自定义excluded项选项
-        add_custom_excluded = st.checkbox("为Excluded添加自定义项", value=False,
+        add_custom_excluded = st.checkbox("为Excluded添加自定义项",
+                                          value=bool(receipt_data["custom_excluded_content"]),
                                           disabled=not add_excluded_manually)
 
         if add_custom_excluded:
             custom_excluded_content = st.text_input("请输入要添加到Excluded模块的自定义项目",
+                                                    value=receipt_data["custom_excluded_content"],
                                                     placeholder="请填写自定义项目内容...")
 
-    return manual_excluded_selection, custom_excluded_content
+    return manual_excluded_selection, custom_excluded_content, add_excluded_manually
 
 
 def generate_included_content(selections, order_map, custom_notes_content=None):
@@ -181,31 +208,35 @@ def receipt_page():
         return
 
     # 初始化收据数据
-    st.session_state['receipt_data'] = initialize_receipt_data()
+    receipt_data = initialize_receipt_data()
 
     # 获取服务选项
     service_options = get_service_options()
 
     # 渲染输入表单
-    form_data = render_input_form(service_options)
+    form_data = render_input_form(service_options, receipt_data)
     (address_valid, address, selected_date, amount,
      basic_service_selection, electrical_selections,
      rooms_selection, other_selection) = form_data
 
     # 处理自定义注释
-    custom_notes = st.checkbox("为Included添加自定义项目", value=False)
+    custom_notes = st.checkbox("为Included添加自定义项目",
+                               value=receipt_data["custom_notes_enabled"])
     custom_notes_content = ""
     if custom_notes:
         custom_notes_content = st.text_input("请输入您要添加的自定义项目",
+                                             value=receipt_data["custom_notes"],
                                              placeholder="请填写自定义项目内容...")
+
     # 处理excluded内容
     all_services = (service_options["basic_service"] + service_options["rooms"] +
                     service_options["electrical"] + service_options["others"])
     selected_services = (basic_service_selection + electrical_selections +
                          rooms_selection + other_selection)
-    manual_excluded_selection, custom_excluded_content = handle_excluded_content(
+    manual_excluded_selection, custom_excluded_content, excluded_enabled = handle_excluded_content(
         all_services,
-        selected_services
+        selected_services,
+        receipt_data
     )
 
     # 提交按钮
@@ -217,9 +248,9 @@ def receipt_page():
             st.error("发票信息有缺失！请填写完整信息！", icon="⚠️")
             return
 
-        # 更新收据数据
-        receipt_data = st.session_state['receipt_data']
-        receipt_data.update({
+        # 保存表单状态
+        current_form_data = {
+            "selected_template": "手动版（手动选择excluded中的内容）",
             "address": address,
             "selected_date": selected_date,
             "amount": amount,
@@ -228,9 +259,16 @@ def receipt_page():
             "rooms": rooms_selection,
             "other": other_selection,
             "custom_notes": custom_notes_content,
+            "custom_notes_enabled": custom_notes,
+            "excluded_enabled": excluded_enabled,
+            "manual_excluded_selection": manual_excluded_selection,
+            "custom_excluded_content": custom_excluded_content,
+            "output_doc": Document("templates/Recipte单项.docx"),
             "receipt_file_name": f"Receipt.{address}.docx",
-            "output_doc": Document("templates/Recipte单项.docx")
-        })
+        }
+
+        save_form_state(current_form_data)
+        st.session_state['receipt_data'] = current_form_data
 
         # 创建order_map用于排序
         order_map = {}
@@ -263,15 +301,15 @@ def receipt_page():
         }
 
         # 生成收据
-        if receipt_data['output_doc']:
-            receipt_data['ready_doc'] = generate_receipt(receipt_data['output_doc'],
-                                                         replace_dic)
+        if current_form_data['output_doc']:
+            current_form_data['ready_doc'] = generate_receipt(current_form_data['output_doc'],
+                                                              replace_dic)
             st.switch_page("pages/receipt_preview.py")
         else:
             st.error("模板文档未正确加载，请重试！")
 
-    if st.button("返回", key="back_button", use_container_width=True):
-        confirm_back()
+    # if st.button("清空内容，重新填写", key="back_button", use_container_width=True):
+    #     clear_form()
 
 
 if __name__ == '__main__':

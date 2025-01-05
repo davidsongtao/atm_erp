@@ -7,6 +7,8 @@ Description: 项目中用到的工具函数
 @Time     ：2024/12/26 下午8:27
 @Contact  ：king.songtao@gmail.com
 """
+from datetime import date
+
 import streamlit as st
 import time
 import re
@@ -204,6 +206,29 @@ def navigation():
     st.sidebar.image("images/logo.png")
     # st.sidebar.divider()
     if st.sidebar.button("➕创建收据", key="open_receipt_button", use_container_width=True, type="primary"):
+        """清空表单状态"""
+        if 'previous_form_data' in st.session_state:
+            del st.session_state['previous_form_data']
+
+        empty_state = {
+            "selected_template": "手动版（手动选择excluded中的内容）",
+            "address": "",
+            "selected_date": date.today(),
+            "amount": 0.0,
+            "basic_service": [],
+            "electrical": [],
+            "rooms": [],
+            "other": [],
+            "custom_notes": "",
+            "custom_notes_enabled": False,
+            "excluded_enabled": False,
+            "manual_excluded_selection": [],
+            "custom_excluded_content": "",
+            "output_doc": None,
+            "receipt_file_name": "",
+            "ready_doc": None
+        }
+        st.session_state['previous_form_data'] = empty_state
         st.switch_page("pages/receipt_page.py")
     # 自动化报价
     if st.sidebar.button("🤖智能报价", key="auto_quote_button", use_container_width=True, type="primary"):
@@ -243,16 +268,66 @@ def navigation():
     st.sidebar.write("Version：V - 2024.12.27.00.01")
 
 
-@st.dialog("退出确认")
+def clear_form_state():
+    """清空表单状态"""
+    if 'previous_form_data' in st.session_state:
+        del st.session_state['previous_form_data']
+
+    empty_state = {
+        "selected_template": "手动版（手动选择excluded中的内容）",
+        "address": "",
+        "selected_date": date.today(),
+        "amount": 0.0,
+        "basic_service": [],
+        "electrical": [],
+        "rooms": [],
+        "other": [],
+        "custom_notes": "",
+        "custom_notes_enabled": False,
+        "excluded_enabled": False,
+        "manual_excluded_selection": [],
+        "custom_excluded_content": "",
+        "output_doc": None,
+        "receipt_file_name": "",
+        "ready_doc": None
+    }
+    st.session_state['previous_form_data'] = empty_state
+    st.switch_page("pages/receipt_page.py")  # 重新运行页面以更新表单
+
+
+@st.dialog("请选择操作")
 def confirm_back():
-    st.write("离开该页面后收据信息将丢失且不可恢复，确认要返回吗?")
+    st.write("您要修改该收据还是重开新收据？选择重开新收据，已经录入的内容将被清空！")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("确认", use_container_width=True, type="primary"):
-            st.switch_page("pages/admin_page.py")
+        if st.button("修改收据", use_container_width=True, type="primary"):
+            st.switch_page("pages/receipt_page.py")
     with col2:
-        if st.button("取消", use_container_width=True, type="secondary"):
-            st.rerun()
+        if st.button("重开收据", use_container_width=True, type="secondary"):
+            """清空表单状态"""
+            if 'previous_form_data' in st.session_state:
+                del st.session_state['previous_form_data']
+
+            empty_state = {
+                "selected_template": "手动版（手动选择excluded中的内容）",
+                "address": "",
+                "selected_date": date.today(),
+                "amount": 0.0,
+                "basic_service": [],
+                "electrical": [],
+                "rooms": [],
+                "other": [],
+                "custom_notes": "",
+                "custom_notes_enabled": False,
+                "excluded_enabled": False,
+                "manual_excluded_selection": [],
+                "custom_excluded_content": "",
+                "output_doc": None,
+                "receipt_file_name": "",
+                "ready_doc": None
+            }
+            st.session_state['previous_form_data'] = empty_state
+            st.switch_page("pages/receipt_page.py")
 
 
 def get_response(prompt, memory):
