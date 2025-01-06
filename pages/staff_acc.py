@@ -17,33 +17,31 @@ def staff_acc():
     st.title("📊员工管理")
     st.divider()
     login_state, role = check_login_state()
+    staff_acc_data, error_message = get_all_staff_acc()
 
     if login_state is True and role == "admin":
-
         navigation()
-
-        # 员工管理逻辑代码
         # 列出所有员工账户信息
         st.info("以下为所有员工账户信息！", icon="ℹ️")
-        staff_acc_data, error_message = get_all_staff_acc()
         if error_message is None:
             st.dataframe(staff_acc_data, use_container_width=True, on_select="ignore", selection_mode="single-row", hide_index=True)
         else:
             st.error(error_message, icon="⚠️")
 
-        # 修改员工信息
-        with st.expander("✏️修改员工信息", expanded=False):
-            # st.warning("暂未开放修改员工信息功能！请联系系统管理员！", icon="⚠️")
-            acc_data = staff_acc_data.to_dict()
-            acc_edit = st.selectbox("选择要修改的员工账户:", options=formate_acc_info(acc_data), index=0)
+        st.info("请选择您要进行的操作！", icon="ℹ️")
 
-        # 添加新账户
-        with st.expander("➕添加新账户", expanded=False):
-            st.warning("暂未开放添加新账户功能！请联系系统管理员！", icon="⚠️")
+        # 创建新账户
+        create_acc = st.button("➕创建新账户", use_container_width=True)
+        if create_acc:
+            st.warning("暂未开放创建新账户功能！请联系系统管理员！", icon="⚠️")
 
-        # 添加新账户
-        with st.expander("❌删除员工账户", expanded=False):
-            st.warning("暂未开放添加新账户功能！请联系系统管理员！", icon="⚠️")
+        create_acc = st.button("✏️修改账户信息", use_container_width=True)
+        if create_acc:
+            st.warning("暂未开放创建新账户功能！请联系系统管理员！", icon="⚠️")
+
+        create_acc = st.button("❌删除账户信息", use_container_width=True)
+        if create_acc:
+            st.warning("暂未开放创建新账户功能！请联系系统管理员！", icon="⚠️")
     else:
         st.error("您没有权限访问该页面！5秒后跳转至登录页...", icon="⚠️")
         st.session_state["login_state"] = False

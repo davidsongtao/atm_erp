@@ -50,6 +50,8 @@ def login_page():
                 st.error("请输入您的密码！", icon="⚠️")
             else:
                 login_state, role, error_message, name = login_auth(username, password)
+                if "current_user" not in st.session_state:
+                    st.session_state["current_user"] = name
                 if login_state and role == "admin":
                     set_login_state(True, role, name)
                     st.switch_page("pages/admin_page.py")
