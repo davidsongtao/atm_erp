@@ -112,6 +112,7 @@ def preprocess_response(response):
 
 
 def quote_page():
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     navigation()
     st.title("⌨️自动化智能报价")
     st.divider()

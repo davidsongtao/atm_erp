@@ -15,6 +15,8 @@ from utils.utils import navigation
 
 
 def order_page():
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+
     navigation()
 
     st.title("🤖工单管理")

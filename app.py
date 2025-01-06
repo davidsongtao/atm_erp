@@ -14,12 +14,9 @@ from pages.login_page import login_page
 
 def main():
     # 配置页面信息
-    # st.set_page_config(page_title='ATM Cleaning Service', page_icon='🤖', layout="wide")
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     st.title("ATM员工管理控制中心")
     st.divider()
-    message = st.chat_message("assistant")
-    message.write("欢迎来到ATM员工管理控制台,我是您的人工智能助手小江!")
-    message.write("请告诉我您想干什么~")
     login_state, role = check_login_state()
     if login_state:
         col1, col2 = st.columns([1, 1])
@@ -39,4 +36,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    login_page()

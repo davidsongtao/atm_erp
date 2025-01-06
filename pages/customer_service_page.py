@@ -11,6 +11,7 @@ import streamlit as st
 
 
 def customer_service_page():
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     st.title("客户服务")
 
 

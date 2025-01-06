@@ -16,6 +16,7 @@ import os
 
 
 def admin_page():
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     login_state, role = check_login_state()
     # login_state = True
 

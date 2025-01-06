@@ -2,3 +2,6 @@
 showSidebarNavigation = false
 [server]
 port = 8501
+[browser]
+pageTitle = "ATM-Cleaning"
+favicon = "images/favicon.png"

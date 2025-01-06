@@ -15,6 +15,8 @@ from utils.db_operations import login_auth
 
 
 def login_page():
+
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     login_state, role = check_login_state()
     print(login_state)
     print(role)

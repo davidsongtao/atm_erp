@@ -259,6 +259,8 @@ def generate_excluded_content(manual_excluded_selection, all_services, custom_it
 
 def receipt_page():
     """收据生成页面主函数"""
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+
     login_state, role = check_login_state()
 
     if not login_state:

@@ -19,6 +19,7 @@ def receipt_preview():
     收据预览界面
     :return:
     """
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     # 验证登录状态
     login_state, role = check_login_state()
 

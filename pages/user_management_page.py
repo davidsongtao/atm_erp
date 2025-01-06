@@ -15,6 +15,8 @@ def user_management_page():
     用户管理界面
     :return:
     """
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+
     st.title("员工账户管理")
 
 

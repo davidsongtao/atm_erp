@@ -13,6 +13,7 @@ import streamlit as st
 
 
 def staff_acc():
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     st.title("📊员工管理")
     st.divider()
     login_state, role = check_login_state()

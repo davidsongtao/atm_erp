@@ -12,6 +12,7 @@ import streamlit as st
 
 
 def pricing_page():
+    st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     navigation()
     st.title("⌨️自动化报价生成")
     st.divider()
