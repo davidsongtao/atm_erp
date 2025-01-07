@@ -211,12 +211,15 @@ def get_validator(here_api_key: str, deepseek_api_key: str) -> AddressValidator:
 async def main():
     st.title("AI-Enhanced Australian Address Validator")
 
-    # 初始化session state，但只在完全不存在时初始化
+    # 初始化session state
     if "input_address" not in st.session_state:
         st.session_state.input_address = ""
 
     if "selected_address" not in st.session_state:
         st.session_state.selected_address = None
+
+    if "should_validate" not in st.session_state:
+        st.session_state.should_validate = False
 
     for key in ["here_api_key", "deepseek_api_key"]:
         if key not in st.session_state:
@@ -230,18 +233,27 @@ async def main():
     def select_address(match):
         st.session_state.input_address = match.formatted_address
         st.session_state.selected_address = match
+        st.session_state.should_validate = False
 
-    # 修改输入框：移除 value 参数，只使用 key
+    # 添加输入变化的回调函数
+    def on_input_change():
+        st.session_state.should_validate = True
+
+    # 修改输入框：添加 on_change 回调
     input_address = st.text_input(
         "Enter Australian address",
         placeholder="Example: 160 Victoria Street, Carlton VIC",
-        key="input_address"
+        key="input_address",
+        on_change=on_input_change
     )
 
-    if st.button("Validate") and input_address:
+    # 如果需要验证并且输入不为空，执行验证
+    if st.session_state.should_validate and input_address.strip():
         try:
             with st.spinner("Analyzing address..."):
                 matches = await validator.validate_address(input_address)
+                # 验证完成后重置标志
+                st.session_state.should_validate = False
 
                 if matches:
                     st.success("Found potential matches:")
@@ -252,8 +264,8 @@ async def main():
 
                             with col1:
                                 st.write(f"🏠 {match.formatted_address}")
-                            with col2:
-                                st.write(f"Confidence: {match.confidence_score:.2f}")
+                            # with col2:
+                            #     st.write(f"Confidence: {match.confidence_score:.2f}")
                             with col3:
                                 if st.button("Select", key=f"select_{i}", on_click=select_address, args=(match,)):
                                     st.rerun()
@@ -262,11 +274,6 @@ async def main():
                     st.warning("No matches found. Please check the address and try again.")
         finally:
             await validator.close_session()
-
-        if st.button("Clear"):
-            st.session_state.input_address = ""
-            st.session_state.selected_address = None
-            st.rerun()
 
 
 if __name__ == "__main__":
