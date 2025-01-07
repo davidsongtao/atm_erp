@@ -7,11 +7,13 @@ Description:
 @Time     ：2024/12/27 上午12:55
 @Contact  ：king.songtao@gmail.com
 """
+import asyncio
 import time
 from datetime import date
 import streamlit as st
 from docx import Document
-from utils.utils import check_login_state, validate_address, generate_receipt, formate_date, navigation, clear_form_state
+from utils.utils import check_login_state, generate_receipt, formate_date, navigation, clear_form_state
+from utils.validator import get_validator
 
 
 def initialize_receipt_data():
@@ -68,19 +70,61 @@ def get_service_options():
     }
 
 
-def render_input_form(service_options, receipt_data):
+async def render_input_form(service_options, receipt_data):
     """渲染输入表单"""
-    # 地址输入和验证
+    # 初始化验证器相关的session state
+    if 'validator' not in st.session_state:
+        st.session_state.validator = get_validator(
+            st.secrets.get("HERE_API_KEY"),
+            st.secrets.get("DEEPSEEK_API_KEY")
+        )
+
+    if "should_validate" not in st.session_state:
+        st.session_state.should_validate = False
+
+    if "address" not in st.session_state:
+        st.session_state.address = receipt_data["address"]
+
+    def on_address_change():
+        st.session_state.should_validate = True
+
+    def select_address(match):
+        st.session_state.address = match.formatted_address
+        st.session_state.should_validate = False
+
+    # 地址输入和验证，移除 value 参数
     address = st.text_input('客户地址',
-                            value=receipt_data["address"],
                             key="address",
+                            on_change=on_address_change,
                             placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000")
+
+    # 处理地址验证
     address_valid = True
-    if address:
-        is_valid, error_message = validate_address(address)
-        if not is_valid:
-            st.error(error_message)
-            address_valid = False
+    if st.session_state.should_validate and address.strip():
+        try:
+            with st.spinner("地址校验中，请从结果中选择正确的地址..."):
+                matches = await st.session_state.validator.validate_address(address)
+                st.session_state.should_validate = False
+
+                if matches:
+                    st.success("找到以下可能的地址匹配，请核实后选择正确的地址：", icon="✅")
+                    for i, match in enumerate(matches):
+                        with st.container():
+                            col1, col3 = st.columns([6, 1])
+
+                            with col1:
+                                st.write(f"🏠 {match.formatted_address}")
+                            # with col2:
+                            #     st.write(f"匹配度: {match.confidence_score:.2f}")
+                            with col3:
+                                if st.button("选择", key=f"select_{i}", on_click=select_address, args=(match,)):
+                                    st.rerun()
+                    st.divider()
+                else:
+                    st.warning("未找到匹配的地址，请检查输入后重试。")
+                    address_valid = False
+        finally:
+            await st.session_state.validator.close_session()
 
     # 创建两列布局
     col1, col2 = st.columns(2)
@@ -257,7 +301,7 @@ def generate_excluded_content(manual_excluded_selection, all_services, custom_it
     return excluded_content + content
 
 
-def receipt_page():
+async def receipt_page():
     """收据生成页面主函数"""
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
 
@@ -289,7 +333,7 @@ def receipt_page():
     service_options = get_service_options()
 
     # 渲染输入表单
-    form_data = render_input_form(service_options, receipt_data)
+    form_data = await render_input_form(service_options, receipt_data)
     (address_valid, address, selected_date, amount,
      basic_service_selection, electrical_selections,
      rooms_selection, other_selection) = form_data
@@ -391,4 +435,4 @@ def receipt_page():
 
 
 if __name__ == '__main__':
-    receipt_page()
+    asyncio.run(receipt_page())
