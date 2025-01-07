@@ -38,7 +38,6 @@ def check_login_state():
         else:
             st.session_state["login_state"] = False
             st.session_state["role"] = None
-            print("用户未登录")
             return False, st.session_state["role"]
             # 用户未登录
     except Exception as e:

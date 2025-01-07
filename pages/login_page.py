@@ -18,8 +18,6 @@ def login_page():
 
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     login_state, role = check_login_state()
-    print(login_state)
-    print(role)
     if login_state:
         st.success("您已登录，无需重新登录！", icon="👋")
         if role == "admin":
@@ -32,10 +30,7 @@ def login_page():
                 log_out()
 
     else:
-        st.markdown("<h1 style='text-align: center'>ATM-CLEANING 办公管理系统</h1>", unsafe_allow_html=True)
-        # st.title("ATM-Cleaning 办公管理系统")
-        # st.markdown("<h1 style='text-align: center'></h1>", unsafe_allow_html=True)
-
+        st.title("👋ATM-Cleaning 办公管理系统")
         st.divider()
         username = st.text_input("电子邮箱", key="username", placeholder="请输入用户名:your_name@email.com")
         password = st.text_input("登录密码", key="password", type="password")

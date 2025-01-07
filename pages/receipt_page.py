@@ -316,7 +316,7 @@ def receipt_page():
     if excluded_enabled and custom_excluded_enabled:
         custom_excluded_items = handle_custom_items("excluded", receipt_data)
 
-    st.divider()
+    # st.divider()
     st.info("确保收据信息录入正确后，点击生成收据按钮即可预览或下载您的收据！", icon="ℹ️")
 
     # 提交按钮
