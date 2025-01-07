@@ -7,13 +7,15 @@ Description:
 @Time     ：2024/12/27 上午12:55
 @Contact  ：king.songtao@gmail.com
 """
-import asyncio
 import time
+import asyncio
 from datetime import date
 import streamlit as st
 from docx import Document
-from utils.utils import check_login_state, generate_receipt, formate_date, navigation, clear_form_state
-from utils.validator import get_validator
+from utils.utils import check_login_state, validate_address, generate_receipt, formate_date, navigation, clear_form_state
+from utils.validator import AddressValidator, get_validator
+
+
 
 
 def initialize_receipt_data():
@@ -92,7 +94,6 @@ async def render_input_form(service_options, receipt_data):
         st.session_state.address = match.formatted_address
         st.session_state.should_validate = False
 
-    # 地址输入和验证，移除 value 参数
     address = st.text_input('客户地址',
                             key="address",
                             on_change=on_address_change,
@@ -102,23 +103,50 @@ async def render_input_form(service_options, receipt_data):
     address_valid = True
     if st.session_state.should_validate and address.strip():
         try:
-            with st.spinner("地址校验中，请从结果中选择正确的地址..."):
+            with st.spinner("验证地址中..."):
                 matches = await st.session_state.validator.validate_address(address)
                 st.session_state.should_validate = False
 
                 if matches:
-                    st.success("找到以下可能的地址匹配，请核实后选择正确的地址：", icon="✅")
-                    for i, match in enumerate(matches):
+                    # 使用字典去重，以格式化地址作为键
+                    unique_matches = {}
+                    for match in matches:
+                        # 如果遇到相同地址，保留置信度更高的那个
+                        if match.formatted_address not in unique_matches or \
+                                match.confidence_score > unique_matches[match.formatted_address].confidence_score:
+                            unique_matches[match.formatted_address] = match
+
+                    # 转换回列表并按置信度排序
+                    unique_matches = sorted(
+                        unique_matches.values(),
+                        key=lambda x: x.confidence_score,
+                        reverse=True
+                    )
+                    st.success("找到以下可能的地址匹配：", icon="✅")
+
+                    for i, match in enumerate(unique_matches):
                         with st.container():
-                            col1, col3 = st.columns([6, 1])
+                            col1, col2, col3 = st.columns([3, 1, 1])
 
                             with col1:
                                 st.write(f"🏠 {match.formatted_address}")
-                            # with col2:
-                            #     st.write(f"匹配度: {match.confidence_score:.2f}")
+                            with col2:
+                                st.write(f"匹配度: {match.confidence_score:.2f}")
                             with col3:
                                 if st.button("选择", key=f"select_{i}", on_click=select_address, args=(match,)):
                                     st.rerun()
+                    st.info("如果您不确定以上哪个是正确地址，请在google中搜索查看！", icon="ℹ️")
+                    # 创建Google搜索URL
+                    search_query = address.replace(' ', '+')
+                    search_url = f"https://www.google.com/search?q={search_query}+Australia"
+
+                    # 使用st.link_button替代JavaScript方式
+                    st.link_button(
+                        "🔍 在地图中搜索",
+                        search_url,
+                        use_container_width=True
+                    )
+
                     st.divider()
                 else:
                     st.warning("未找到匹配的地址，请检查输入后重试。")
@@ -217,16 +245,7 @@ def handle_custom_items(item_type, receipt_data):
 
 
 def handle_excluded_content(all_services, selected_services, receipt_data):
-    """处理excluded内容
-
-    Args:
-        all_services: 所有可用服务的列表
-        selected_services: 已选择的服务列表
-        receipt_data: 收据数据字典
-
-    Returns:
-        tuple: (manual_excluded_selection, custom_excluded_items, excluded_enabled, custom_excluded_enabled)
-    """
+    """处理excluded内容"""
     manual_excluded = [service for service in all_services if service not in selected_services]
     excluded_enabled = st.checkbox("添加Excluded模块",
                                    value=receipt_data["excluded_enabled"])
@@ -251,54 +270,6 @@ def handle_excluded_content(all_services, selected_services, receipt_data):
         return manual_excluded_selection, custom_excluded_items, excluded_enabled, custom_excluded_enabled
 
     return manual_excluded_selection, custom_excluded_items, excluded_enabled, False
-
-
-def generate_included_content(selections, order_map, custom_items=None):
-    """生成included内容"""
-    all_selections = []
-    for service_list in selections:
-        for item in service_list:
-            all_selections.append((order_map[item], f"{item}"))
-
-    all_selections.sort(key=lambda x: x[0])
-
-    # 生成基本内容
-    content = "\n".join(f"{i}.{service}" for i, (_, service) in enumerate(all_selections, 1))
-
-    # 添加多个自定义内容
-    if custom_items:
-        last_number = len(all_selections)
-        for idx, item in enumerate(custom_items, 1):
-            if item.strip():  # 只添加非空的项目
-                content += f"\n{last_number + idx}.{item}"
-
-    return content
-
-
-def generate_excluded_content(manual_excluded_selection, all_services, custom_items=None):
-    """生成excluded内容"""
-    if not manual_excluded_selection and not (custom_items and any(item.strip() for item in custom_items)):
-        return ""
-
-    excluded_content = "It has excluded\n\n"
-    order_list = {item: index for index, item in enumerate(all_services)}
-    excluded_content_list = sorted(manual_excluded_selection,
-                                   key=lambda x: order_list.get(x, len(all_services)))
-
-    # 生成基本excluded内容
-    content = "\n".join(f"{i}.{service}"
-                        for i, service in enumerate(excluded_content_list, 1))
-
-    # 添加多个自定义excluded内容
-    if custom_items:
-        last_number = len(excluded_content_list)
-        for idx, item in enumerate(custom_items, 1):
-            if item.strip():  # 只添加非空的项目
-                if content:
-                    content += "\n"
-                content += f"{last_number + idx}.{item}"
-
-    return excluded_content + content
 
 
 async def receipt_page():
