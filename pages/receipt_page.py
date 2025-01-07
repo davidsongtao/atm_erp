@@ -16,8 +16,6 @@ from utils.utils import check_login_state, validate_address, generate_receipt, f
 from utils.validator import AddressValidator, get_validator
 
 
-
-
 def initialize_receipt_data():
     """初始化收据数据"""
     if 'previous_form_data' in st.session_state:
@@ -271,6 +269,53 @@ def handle_excluded_content(all_services, selected_services, receipt_data):
 
     return manual_excluded_selection, custom_excluded_items, excluded_enabled, False
 
+
+def generate_included_content(selections, order_map, custom_items=None):
+    """生成included内容"""
+    all_selections = []
+    for service_list in selections:
+        for item in service_list:
+            all_selections.append((order_map[item], f"{item}"))
+
+    all_selections.sort(key=lambda x: x[0])
+
+    # 生成基本内容
+    content = "\n".join(f"{i}.{service}" for i, (_, service) in enumerate(all_selections, 1))
+
+    # 添加多个自定义内容
+    if custom_items:
+        last_number = len(all_selections)
+        for idx, item in enumerate(custom_items, 1):
+            if item.strip():  # 只添加非空的项目
+                content += f"\n{last_number + idx}.{item}"
+
+    return content
+
+
+def generate_excluded_content(manual_excluded_selection, all_services, custom_items=None):
+    """生成excluded内容"""
+    if not manual_excluded_selection and not (custom_items and any(item.strip() for item in custom_items)):
+        return ""
+
+    excluded_content = "It has excluded\n\n"
+    order_list = {item: index for index, item in enumerate(all_services)}
+    excluded_content_list = sorted(manual_excluded_selection,
+                                   key=lambda x: order_list.get(x, len(all_services)))
+
+    # 生成基本excluded内容
+    content = "\n".join(f"{i}.{service}"
+                        for i, service in enumerate(excluded_content_list, 1))
+
+    # 添加多个自定义excluded内容
+    if custom_items:
+        last_number = len(excluded_content_list)
+        for idx, item in enumerate(custom_items, 1):
+            if item.strip():  # 只添加非空的项目
+                if content:
+                    content += "\n"
+                content += f"{last_number + idx}.{item}"
+
+    return excluded_content + content
 
 async def receipt_page():
     """收据生成页面主函数"""
