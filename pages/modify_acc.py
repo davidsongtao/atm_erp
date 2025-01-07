@@ -36,19 +36,22 @@ def modify_acc():
         # 过滤掉当前用户，因为不能修改自己的账户
         other_users = staff_acc_data[staff_acc_data['登录账号'] != current_user]
 
+        st.info("请选择要修改的用户！登陆账号无法进行修改！", icon="ℹ️")
         # 选择要修改的用户
         selected_user = st.selectbox(
-            "选择要修改的用户",
-            options=other_users['登录账号'].tolist(),
-            format_func=lambda x: f"{x} ({other_users[other_users['登录账号'] == x]['用户名'].iloc[0]})"
+            "请在下来菜单中选择您要修改的账户",
+            options=["请选择要修改的用户..."] + other_users['登录账号'].tolist(),
+            format_func=lambda x: x if x == "请选择要修改的用户..." else f"{x} ({other_users[other_users['登录账号'] == x]['用户名'].iloc[0]})"
         )
 
-        if selected_user:
+        # 只有当用户选择了一个实际的账户时才显示修改表单
+        if selected_user and selected_user != "请选择要修改的用户...":
+
             # 获取选中用户的当前信息
             user_info = other_users[other_users['登录账号'] == selected_user].iloc[0]
 
             # 修改信息表单
-            st.subheader("修改用户信息")
+            st.info("请填写要修改的信息！若您不希望修改密码，留空即可！", icon="ℹ️")
 
             # 用户名（不可修改，只显示）
             st.text_input("登录账号", value=user_info['登录账号'], disabled=True)
@@ -77,8 +80,12 @@ def modify_acc():
                                     options=["staff", "admin"],
                                     index=0 if user_info['角色权限'] == "staff" else 1)
 
+            st.info("请确保所有信息填写正确，否则无法修改账户！", icon="ℹ️")
+
+            confirm_data = st.checkbox("我确认所有信息填写正确。修改操作不可逆。", value=False)
             # 提交按钮
-            if st.button("保存修改", use_container_width=True):
+            submit_change = st.button("保存修改", use_container_width=True, type="primary")
+            if submit_change and confirm_data:
                 if not new_name:
                     st.error("姓名不能为空！", icon="⚠️")
                 elif not passwords_match:
@@ -92,13 +99,16 @@ def modify_acc():
                     )
 
                     if success:
-                        st.session_state.need_refresh = True
+                        st.session_state.need_refresh = True  # 设置刷新标志
                         st.success("账户修改成功！3秒后返回员工管理页面...", icon="✅")
                         time.sleep(3)
                         st.switch_page("pages/staff_acc.py")
                     else:
                         st.error(f"账户修改失败：{error_message}", icon="⚠️")
-
+            elif submit_change and not confirm_data:
+                st.error("请勾选确认信息后进行提交！", icon="⚠️")
+            if st.button("取消", use_container_width=True, type="secondary"):
+                st.switch_page("pages/staff_acc.py")
     else:
         st.error("您没有权限访问该页面！5秒后跳转至登录页...", icon="⚠️")
         st.session_state["login_state"] = False
