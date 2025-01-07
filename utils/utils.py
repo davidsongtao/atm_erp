@@ -32,14 +32,19 @@ def check_login_state():
             st.session_state["role"] = None
             return False, st.session_state["role"]
         elif st.session_state["login_state"]:
-            # 用户已登陆
-            st.session_state["login_state"] = True
-            return True, st.session_state["role"]
+            # 检查用户是否在活跃会话中
+            username = st.session_state.get("logged_in_username")
+            if username and username in get_active_sessions():
+                return True, st.session_state["role"]
+            else:
+                # 如果不在活跃会话中，清除登录状态
+                st.session_state["login_state"] = False
+                st.session_state["role"] = None
+                return False, None
         else:
             st.session_state["login_state"] = False
             st.session_state["role"] = None
             return False, st.session_state["role"]
-            # 用户未登录
     except Exception as e:
         logger.error(f"检测登录状态时发生错误！错误信息：{e}")
         st.error("发生未知错误！即将跳转到首页...")
@@ -68,10 +73,9 @@ def set_login_state(is_logged_in, role, name):
 
 def log_out():
     """注销登录"""
-    # 清除与登录状态相关的 Cookie
-    # cookies["is_logged_in"] = "0"  # 或直接删除整个 key
-    # cookies["role"] = ""
-    # cookies.save()  # 必须调用 save() 才能生效
+    username = st.session_state.get("logged_in_username")
+    if username:
+        remove_active_session(username)
 
     st.session_state["login_state"] = False
     st.session_state["role"] = None
@@ -319,3 +323,23 @@ def get_response(prompt, memory):
         print(f"Error in get_response: {str(e)}")
         # 返回一个友好的错误信息
         return f"抱歉，生成回复时出现错误：{str(e)}"
+
+
+def get_active_sessions():
+    """获取所有活跃的会话"""
+    if 'active_sessions' not in st.session_state:
+        st.session_state.active_sessions = {}
+    return st.session_state.active_sessions
+
+
+def add_active_session(username):
+    """添加活跃会话"""
+    sessions = get_active_sessions()
+    sessions[username] = True
+
+
+def remove_active_session(username):
+    """移除活跃会话"""
+    sessions = get_active_sessions()
+    if username in sessions:
+        del sessions[username]

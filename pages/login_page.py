@@ -10,7 +10,7 @@ Description:
 import time
 
 import streamlit as st
-from utils.utils import set_login_state, check_login_state, log_out
+from utils.utils import set_login_state, check_login_state, log_out, add_active_session
 from utils.db_operations import login_auth
 
 
@@ -62,6 +62,7 @@ def login_page():
                 if login_state:
                     # 存储完整的用户信息
                     st.session_state.logged_in_username = username
+                    add_active_session(username)  # 添加活跃会话
                     set_login_state(True, role, name)
 
                     if role == "admin":

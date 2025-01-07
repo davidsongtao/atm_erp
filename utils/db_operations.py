@@ -10,6 +10,7 @@ Description: 数据库操作
 import streamlit as st
 from configs.settings import *
 from sqlalchemy import text
+from utils.utils import remove_active_session
 
 
 # 连接数据库
@@ -206,8 +207,8 @@ def delete_account(username):
             )
             session.commit()
 
-        # 强制所有用户重新登录
-        st.session_state.clear()  # 清除所有session状态
+        # 只清除被删除用户的会话
+        remove_active_session(username)
 
         logger.success(f"成功删除用户账户：{username}")
         return True, None
