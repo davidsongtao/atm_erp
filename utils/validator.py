@@ -104,14 +104,18 @@ class AddressValidator:
             self.session = None
 
     def _normalize_street_name(self, street: str) -> str:
-        """标准化街道名称"""
+        """标准化街道名称，保留适当的大小写"""
         if not street:
             return street
-        street = street.lower().strip()
+
+        # 只在查找修正时转换为小写
+        lookup_street = street.lower().strip()
         for incorrect, correct in self.known_corrections.items():
-            if incorrect in street:
-                street = street.replace(incorrect, correct)
-        return street
+            if incorrect in lookup_street:
+                return street.replace(incorrect, correct)
+
+        # 如果没有修正，返回原始街道名（只去除空格）
+        return street.strip()
 
     def _extract_unit_number(self, address: str) -> str:
         """从地址中提取单元号"""
@@ -175,7 +179,7 @@ class AddressValidator:
             return []
 
     def _format_here_address(self, suggestion: Dict, input_address: str = None) -> str:
-        """格式化HERE API返回的地址"""
+        """格式化HERE API返回的地址，保持正确的大小写"""
         address = suggestion.get("address", {})
         components = []
 
@@ -187,7 +191,7 @@ class AddressValidator:
         if address.get("houseNumber"):
             components.append(address["houseNumber"])
 
-        # 确保使用正确的街道名格式
+        # 确保街道名称格式正确
         if address.get("street"):
             street_name = self._normalize_street_name(address["street"])
             components.append(street_name)
@@ -195,16 +199,21 @@ class AddressValidator:
         if address.get("district"):
             # 只在不是Melbourne CBD时添加区域
             if address.get("postalCode") != "3000":
-                components.append(address["district"])
+                components.append(address["district"])  # 保持原始大小写
 
         if address.get("state"):
             state_mapping = {
-                "Victoria": "VIC", "New South Wales": "NSW",
-                "Queensland": "QLD", "Western Australia": "WA",
-                "South Australia": "SA", "Tasmania": "TAS",
-                "Australian Capital Territory": "ACT", "Northern Territory": "NT"
+                "Victoria": "VIC",
+                "New South Wales": "NSW",
+                "Queensland": "QLD",
+                "Western Australia": "WA",
+                "South Australia": "SA",
+                "Tasmania": "TAS",
+                "Australian Capital Territory": "ACT",
+                "Northern Territory": "NT"
             }
-            state = state_mapping.get(address["state"], address["state"])
+            # 始终使用大写缩写
+            state = state_mapping.get(address["state"], address["state"].upper())
             components.append(state)
 
         if address.get("postalCode"):

@@ -101,9 +101,6 @@ def receipt_preview():
             output_buffer.seek(0)
 
             st.info("如需对收据内容进行修改，请点击返回并选择修改收据即可！", icon="ℹ️")
-
-            print(st.session_state['receipt_data']['ready_doc'])
-
             st.download_button(
                 label="下载Word格式收据",
                 data=output_buffer,
@@ -114,7 +111,6 @@ def receipt_preview():
             )
 
             if st.button("返回", key="back_button", use_container_width=True):
-
                 confirm_back()
 
         else:

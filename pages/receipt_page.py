@@ -317,6 +317,7 @@ def generate_excluded_content(manual_excluded_selection, all_services, custom_it
 
     return excluded_content + content
 
+
 async def receipt_page():
     """收据生成页面主函数"""
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
