@@ -57,7 +57,8 @@ def login_auth(username, password):
 def get_all_staff_acc():
     try:
         conn = connect_db()
-        query_result = conn.query("SELECT *  FROM users", ttl=600)
+        # 将 ttl 设置为 0 以禁用缓存
+        query_result = conn.query("SELECT *  FROM users", ttl=0)
         df = query_result[['id', 'username', 'password', 'role', 'name']]
         df['password'] = "********"
         df = df.rename(columns=BaseConfig().CUSTOM_HEADER)
@@ -110,4 +111,49 @@ def create_new_account(username, password, name, role):
 
     except Exception as e:
         logger.error(f"创建新用户失败，错误信息：{e}")
+        return False, str(e)
+
+
+def update_account(username, new_name, new_password=None, new_role=None):
+    """
+    更新用户账户信息
+    :param username: 要修改的用户名
+    :param new_name: 新姓名
+    :param new_password: 新密码（可选）
+    :param new_role: 新角色（可选）
+    :return: 更新状态，错误信息
+    """
+    try:
+        conn = connect_db()
+
+        # 构建UPDATE语句
+        update_fields = []
+        params = {'username': username, 'new_name': new_name}
+
+        update_fields.append("name = :new_name")
+
+        if new_password:
+            update_fields.append("password = :new_password")
+            params['new_password'] = new_password
+
+        if new_role:
+            update_fields.append("role = :new_role")
+            params['new_role'] = new_role
+
+        update_sql = f"""
+            UPDATE users 
+            SET {', '.join(update_fields)}
+            WHERE username = :username
+        """
+
+        # 使用session执行更新
+        with conn.session as session:
+            session.execute(text(update_sql), params)
+            session.commit()
+
+        logger.success(f"成功更新用户信息：{username}")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"更新用户信息失败，错误信息：{e}")
         return False, str(e)

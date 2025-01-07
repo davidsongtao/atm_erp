@@ -37,9 +37,9 @@ def staff_acc():
             if create_acc:
                 st.switch_page("pages/add_acc.py")
         with col2:
-            create_acc = st.button("✏️修改账户", use_container_width=True)
-            if create_acc:
-                st.warning("暂未开放创建新账户功能！请联系系统管理员！", icon="⚠️")
+            modify_acc = st.button("✏️修改账户信息", use_container_width=True)
+            if modify_acc:
+                st.switch_page("pages/modify_acc.py")
         with col3:
             create_acc = st.button("❌删除账户", use_container_width=True)
             if create_acc:

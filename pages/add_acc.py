@@ -62,6 +62,7 @@ def add_acc():
                 # 调用创建账户的数据库操作
                 success, error_message = create_new_account(username, password, name, role)
                 if success:
+                    st.session_state.need_refresh = True
                     st.success("账户创建成功！3秒后返回员工管理页面...", icon="✅")
                     time.sleep(3)
                     st.switch_page("pages/staff_acc.py")
