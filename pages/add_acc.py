@@ -15,53 +15,58 @@ from utils.db_operations import create_new_account
 
 def add_acc():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
-    st.title("📊员工管理")
-    st.divider()
+
     login_state, role = check_login_state()
-    # 添加自定义 CSS 来移除表单边框
-    st.markdown("""
-        <style>
-            .stForm {
-                border: none;
-                padding: 0;
-            }
-            .stForm > div {
-                border: none;
-                padding: 0;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-
 
     # 检查登录状态
     if login_state is True and role == "admin":
         navigation()
+        st.title("➕新建账户")
+        st.divider()
 
-        # 创建表单
-        with st.form("add_account_form"):
-            username = st.text_input("用户名", placeholder="请输入用户名")
-            password = st.text_input("密码", placeholder="请输入密码", type="password")
-            confirm_password = st.text_input("确认密码", placeholder="请再次输入密码", type="password")
-            name = st.text_input("姓名", placeholder="请输入姓名")
-            role = st.selectbox("角色", options=["admin", "customer_service"], index=None, placeholder="请选择角色")
-            st.info("请确保所有信息填写正确，否则无法创建账户。", icon="ℹ️")
-            submitted = st.form_submit_button("创建账户", use_container_width=True, type="primary")
+        # 基本信息输入
+        username = st.text_input("用户名", placeholder="请输入用户名")
 
-            if submitted:
-                if not username or not password or not name:
-                    st.error("请填写所有必填项！", icon="⚠️")
-                elif password != confirm_password:
-                    st.error("两次输入的密码不一致！", icon="⚠️")
+        # 密码输入
+        col1, col2 = st.columns(2)
+        with col1:
+            if "password" not in st.session_state:
+                st.session_state.password = ""
+            password = st.text_input("密码", placeholder="请输入密码", type="password", key="password")
+
+        with col2:
+            if "confirm_password" not in st.session_state:
+                st.session_state.confirm_password = ""
+            confirm_password = st.text_input("确认密码", placeholder="请再次输入密码", type="password", key="confirm_password")
+
+        # 即时密码验证
+        passwords_match = True
+        if confirm_password:
+            if password != confirm_password:
+                st.error("两次输入的密码不一致！请检查", icon="⚠️")
+                passwords_match = False
+
+        name = st.text_input("姓名", placeholder="请输入姓名")
+
+        # 角色选择
+        role = st.selectbox("角色", options=["admin", "customer_service"], index=None, placeholder="请选择角色")
+
+        st.info("请确保所有信息填写正确，否则无法创建账户！", icon="ℹ️")
+        # 提交按钮
+        if st.button("创建账户", use_container_width=True, type="primary"):
+            if not username or not password or not name:
+                st.error("请填写所有必填项！", icon="⚠️")
+            elif not passwords_match:
+                st.error("两次输入的密码不一致！", icon="⚠️")
+            else:
+                # 调用创建账户的数据库操作
+                success, error_message = create_new_account(username, password, name, role)
+                if success:
+                    st.success("账户创建成功！3秒后返回员工管理页面...", icon="✅")
+                    time.sleep(3)
+                    st.switch_page("pages/staff_acc.py")
                 else:
-                    # 调用创建账户的数据库操作
-                    success, error_message = create_new_account(username, password, name, role)
-                    if success:
-                        st.success("账户创建成功！3秒后返回员工管理页面...", icon="✅")
-                        time.sleep(3)
-                        st.switch_page("pages/staff_acc.py")
-                    else:
-                        st.error(f"账户创建失败：{error_message}", icon="⚠️")
+                    st.error(f"账户创建失败：{error_message}", icon="⚠️")
 
         if st.button("取消", use_container_width=True, type="secondary"):
             st.switch_page("pages/staff_acc.py")
