@@ -124,7 +124,7 @@ async def render_input_form(service_options, receipt_data):
 
                     for i, match in enumerate(unique_matches):
                         with st.container():
-                            col1, col2, col3 = st.columns([3, 1, 1])
+                            col1, col2, col3 = st.columns([6,2, 1])
 
                             with col1:
                                 st.write(f"🏠 {match.formatted_address}")
