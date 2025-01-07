@@ -63,8 +63,14 @@ def add_acc():
                 success, error_message = create_new_account(username, password, name, role)
                 if success:
                     st.session_state.need_refresh = True
-                    st.success("账户创建成功！3秒后返回员工管理页面...", icon="✅")
-                    time.sleep(3)
+                    success = st.success("账户创建成功！3秒后返回员工管理页面...", icon="✅")
+                    time.sleep(1)
+                    success.empty()
+                    success = st.success("账户创建成功！2秒后返回员工管理页面...", icon="✅")
+                    time.sleep(1)
+                    success.empty()
+                    st.success("账户创建成功！1秒后返回员工管理页面...", icon="✅")
+                    time.sleep(1)
                     st.switch_page("pages/staff_acc.py")
                 else:
                     st.error(f"账户创建失败：{error_message}", icon="⚠️")

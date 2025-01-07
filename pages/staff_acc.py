@@ -7,6 +7,8 @@ Description:
 @Time     ：2024/12/27 下午3:26
 @Contact  ：king.songtao@gmail.com
 """
+import time
+
 from utils.db_operations import get_all_staff_acc
 from utils.utils import check_login_state, confirm_logout, formate_acc_info, navigation
 import streamlit as st
@@ -45,7 +47,14 @@ def staff_acc():
             if delete_acc:
                 st.switch_page("pages/delete_acc.py")
     else:
-        st.error("您没有权限访问该页面！5秒后跳转至登录页...", icon="⚠️")
+        error = st.error("您没有权限访问该页面！3秒后跳转至登录页...", icon="⚠️")
+        time.sleep(1)
+        error.empty()
+        error = st.error("您没有权限访问该页面！2秒后跳转至登录页...", icon="⚠️")
+        time.sleep(1)
+        error.empty()
+        st.error("您没有权限访问该页面！1秒后跳转至登录页...", icon="⚠️")
+        time.sleep(1)
         st.session_state["login_state"] = False
         st.switch_page("pages/login_page.py")
 

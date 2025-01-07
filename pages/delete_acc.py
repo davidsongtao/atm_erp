@@ -76,8 +76,14 @@ def delete_acc():
                     success, error_message = delete_account(selected_user)
                     if success:
                         st.session_state.need_refresh = True
-                        st.success("账户删除成功！3秒后返回员工管理页面...", icon="✅")
-                        time.sleep(3)
+                        success = st.success("账户删除成功！3秒后返回员工管理页面...", icon="✅")
+                        time.sleep(1)
+                        success.empty()
+                        success = st.success("账户删除成功！2秒后返回员工管理页面...", icon="✅")
+                        time.sleep(1)
+                        success.empty()
+                        st.success("账户删除成功！1秒后返回员工管理页面...", icon="✅")
+                        time.sleep(1)
                         st.switch_page("pages/staff_acc.py")
                     else:
                         st.error(f"账户删除失败：{error_message}", icon="⚠️")
@@ -85,7 +91,14 @@ def delete_acc():
         if st.button("取消", use_container_width=True, type="secondary"):
             st.switch_page("pages/staff_acc.py")
     else:
-        st.error("您没有权限访问该页面！5秒后跳转至登录页...", icon="⚠️")
+        error = st.error("您没有权限访问该页面！3秒后跳转至登录页...", icon="⚠️")
+        time.sleep(1)
+        error.empty()
+        error = st.error("您没有权限访问该页面！2秒后跳转至登录页...", icon="⚠️")
+        time.sleep(1)
+        error.empty()
+        st.error("您没有权限访问该页面！1秒后跳转至登录页...", icon="⚠️")
+        time.sleep(1)
         st.session_state["login_state"] = False
         st.switch_page("pages/login_page.py")
 
