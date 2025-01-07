@@ -219,7 +219,7 @@ def navigation():
 
     # 个人设置
     if st.sidebar.button("⚙️系统设置", key="system_setting_button", use_container_width=True):
-        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+        st.switch_page("pages/system_setting.py")
     # 退出登录模块
     if st.sidebar.button("🛏️退出登录", key="logout_button", use_container_width=True):
         confirm_logout()
