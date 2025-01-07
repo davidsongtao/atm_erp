@@ -9,6 +9,7 @@ Description: 数据库操作
 """
 import streamlit as st
 from configs.settings import *
+from sqlalchemy import text
 
 
 # 连接数据库
@@ -65,3 +66,48 @@ def get_all_staff_acc():
         logger.error(f"获取所有员工信息失败！错误信息：{e}")
         error_message = "获取所有员工信息失败!"
         return None, error_message
+
+
+def create_new_account(username, password, name, role):
+    """
+    创建新的用户账户
+    :param username: 用户名
+    :param password: 密码
+    :param name: 姓名
+    :param role: 角色
+    :return: 创建状态，错误信息
+    """
+    try:
+        conn = connect_db()
+
+        # 首先检查用户名是否已存在
+        check_query = conn.query(
+            "SELECT COUNT(*) as count FROM users WHERE username = :username",
+            params={'username': username}
+        ).to_dict()
+
+        if check_query['count'][0] > 0:
+            return False, "用户名已存在"
+
+        # 使用 text() 函数包装 SQL 语句
+        with conn.session as session:
+            session.execute(
+                text("""
+                INSERT INTO users (username, password, name, role) 
+                VALUES (:username, :password, :name, :role)
+                """),
+                params={
+                    'username': username,
+                    'password': password,
+                    'name': name,
+                    'role': role
+                }
+            )
+            session.commit()
+
+        logger.success(f"成功创建新用户：{username}")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"创建新用户失败，错误信息：{e}")
+        return False, str(e)
