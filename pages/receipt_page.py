@@ -120,7 +120,7 @@ async def render_input_form(service_options, receipt_data):
                         key=lambda x: x.confidence_score,
                         reverse=True
                     )
-                    st.success("找到以下可能的地址匹配：", icon="✅")
+                    st.success("找到以下可能的地址匹配,请从列表中选择准确的地址：", icon="✅")
 
                     for i, match in enumerate(unique_matches):
                         with st.container():
