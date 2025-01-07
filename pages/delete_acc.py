@@ -38,6 +38,8 @@ def delete_acc():
 
         if other_users.empty:
             st.warning("没有可以删除的账户！", icon="⚠️")
+            if st.button("返回", use_container_width=True, type="secondary"):
+                st.switch_page("pages/staff_acc.py")
             return
 
         # 选择要删除的用户
@@ -57,13 +59,13 @@ def delete_acc():
                 return
 
             st.warning(
-                f"⚠️ 您正在删除账户：{selected_user}\n\n"
+                f"您正在删除账户：{selected_user}\n\n"
                 f"请输入 'delete{selected_user}' 确认删除操作。\n\n"
                 "**注意：此操作不可撤销！**",
                 icon="⚠️"
             )
 
-            confirm_text = st.text_input("确认删除", placeholder=f"请输入 'delete{selected_user}' 确认删除")
+            confirm_text = st.text_input("请输入指定内容以确认删除", placeholder=f"请输入 'delete{selected_user}' 确认删除")
 
             if st.button("删除账户", type="primary", use_container_width=True):
                 if confirm_text != f"delete{selected_user}":
@@ -80,6 +82,8 @@ def delete_acc():
                     else:
                         st.error(f"账户删除失败：{error_message}", icon="⚠️")
 
+        if st.button("取消", use_container_width=True, type="secondary"):
+            st.switch_page("pages/staff_acc.py")
     else:
         st.error("您没有权限访问该页面！5秒后跳转至登录页...", icon="⚠️")
         st.session_state["login_state"] = False

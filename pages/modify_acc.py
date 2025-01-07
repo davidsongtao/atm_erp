@@ -11,7 +11,7 @@ import time
 import streamlit as st
 from utils.utils import navigation, check_login_state, formate_acc_info
 from utils.db_operations import get_all_staff_acc, update_account, login_auth
-
+from utils.utils import logger
 
 def modify_acc():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
@@ -55,13 +55,16 @@ def modify_acc():
             # 用户名（不可修改，只显示）
             st.text_input("登录账号", value=user_info['登录账号'], disabled=True)
 
-            # 姓名
-            new_name = st.text_input("用户名", value=user_info['用户名'])
+            col1, col2 = st.columns(2)
 
+            with col1:
+                # 姓名
+                new_name = st.text_input("用户名", value=user_info['用户名'])
+            with col2:
             # 角色选择
-            new_role = st.selectbox("账户权限",
-                                    options=["staff", "admin"],
-                                    index=0 if user_info['角色权限'] == "staff" else 1)
+                new_role = st.selectbox("账户权限",
+                                        options=["staff", "admin"],
+                                        index=0 if user_info['角色权限'] == "staff" else 1)
 
             # 添加是否修改密码的复选框
             change_password = st.checkbox("修改密码", value=False)
@@ -122,7 +125,6 @@ def modify_acc():
                         final_new_password = super_new_password
                         using_super_password = True
 
-
             st.info("请确保所有信息填写正确，否则无法修改账户！", icon="ℹ️")
 
             confirm_data = st.checkbox("我确认所有信息填写正确。修改操作不可逆。", value=False)
@@ -142,8 +144,15 @@ def modify_acc():
                         if not current_password:  # 没有输入当前密码
                             st.error("请输入当前密码！", icon="⚠️")
                             return
+                        # 添加日志
+                        logger.info(f"验证密码 - 用户: {selected_user}, 输入的当前密码: {current_password}")
+
                         # 验证当前密码
                         login_state, _, error_message, _ = login_auth(selected_user, current_password)
+
+                        # 添加验证结果日志
+                        logger.info(f"密码验证结果 - 状态: {login_state}, 错误: {error_message}")
+
                         if not login_state:
                             st.error("当前密码错误！", icon="⚠️")
                             return
@@ -165,9 +174,17 @@ def modify_acc():
 
                 if success:
                     st.session_state.need_refresh = True
-                    st.success("账户修改成功！3秒后返回员工管理页面...", icon="✅")
-                    time.sleep(3)
-                    st.switch_page("pages/staff_acc.py")
+
+                    # 如果修改了密码，强制用户重新登录
+                    if final_new_password:
+                        st.session_state.clear()  # 清除所有会话状态
+                        st.success("密码修改成功！请使用新密码重新登录...", icon="✅")
+                        time.sleep(3)
+                        st.switch_page("pages/login_page.py")
+                    else:
+                        st.success("账户修改成功！3秒后返回员工管理页面...", icon="✅")
+                        time.sleep(3)
+                        st.switch_page("pages/staff_acc.py")
                 else:
                     if error_message:
                         st.error(f"账户修改失败：{error_message}", icon="⚠️")
@@ -177,8 +194,8 @@ def modify_acc():
             elif submit_change and not confirm_data:
                 st.error("请勾选确认信息后进行提交！", icon="⚠️")
 
-            if st.button("取消", use_container_width=True, type="secondary"):
-                st.switch_page("pages/staff_acc.py")
+        if st.button("取消", use_container_width=True, type="secondary"):
+            st.switch_page("pages/staff_acc.py")
 
 
 if __name__ == '__main__':
