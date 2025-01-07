@@ -15,8 +15,19 @@ from utils.db_operations import login_auth
 
 
 def login_page():
-
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+
+    # 清除可能存在的过期session
+    if "logged_in_username" in st.session_state and st.session_state.login_state:
+        # 重新验证用户是否存在
+        username = st.session_state.get("logged_in_username")
+        if username:
+            check_state, _, error_message, _ = login_auth(username, None)
+            if not check_state or error_message == "用户名不存在":
+                # 如果用户不存在，清除登录状态
+                st.session_state.clear()
+                st.rerun()
+
     login_state, role = check_login_state()
     if login_state:
         st.success("您已登录，无需重新登录！", icon="👋")
@@ -32,7 +43,7 @@ def login_page():
     else:
         st.title("👋ATM-Cleaning 办公管理系统")
         st.divider()
-        username = st.text_input("电子邮箱", key="username", placeholder="请输入用户名:your_name@email.com")
+        username = st.text_input("电子邮箱", key="username_input", placeholder="请输入用户名:your_name@email.com")
         password = st.text_input("登录密码", key="password", type="password")
 
         col1, col2 = st.columns(2)
@@ -48,22 +59,21 @@ def login_page():
                 st.error("请输入您的密码！", icon="⚠️")
             else:
                 login_state, role, error_message, name = login_auth(username, password)
-                if "current_user" not in st.session_state:
-                    st.session_state["current_user"] = name
-                if login_state and role == "admin":
+                if login_state:
+                    # 存储完整的用户信息
+                    st.session_state.logged_in_username = username
                     set_login_state(True, role, name)
-                    st.switch_page("pages/admin_page.py")
-                if login_state and role == "customer_service":
-                    set_login_state(True, role, name)
-                    st.switch_page("pages/customer_service_page.py")
+
+                    if role == "admin":
+                        st.switch_page("pages/admin_page.py")
+                    elif role == "customer_service":
+                        st.switch_page("pages/customer_service_page.py")
                 elif error_message == "用户名不存在":
                     st.error("用户名不存在！", icon="⚠️")
                 elif error_message == "密码错误":
                     st.error("密码错误！", icon="⚠️")
                 else:
                     st.error("未知错误！", icon="⚠️")
-        if register_button:
-            st.warning("暂未开放注册功能！请联系系统管理员获取您的账户信息！", icon="⚠️")
 
 
 if __name__ == '__main__':

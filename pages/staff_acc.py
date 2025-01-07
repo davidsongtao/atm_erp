@@ -41,9 +41,9 @@ def staff_acc():
             if modify_acc:
                 st.switch_page("pages/modify_acc.py")
         with col3:
-            create_acc = st.button("❌删除账户", use_container_width=True)
-            if create_acc:
-                st.warning("暂未开放创建新账户功能！请联系系统管理员！", icon="⚠️")
+            delete_acc = st.button("❌删除账户", use_container_width=True)
+            if delete_acc:
+                st.switch_page("pages/delete_acc.py")
     else:
         st.error("您没有权限访问该页面！5秒后跳转至登录页...", icon="⚠️")
         st.session_state["login_state"] = False

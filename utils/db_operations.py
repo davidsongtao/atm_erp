@@ -33,7 +33,30 @@ def login_auth(username, password):
     """
     try:
         conn = connect_db()
-        query_result = conn.query("SELECT password, role, name FROM users WHERE username = :username", params={'username': username}).to_dict()
+        logger.info(f"开始验证用户: {username}")  # 添加日志
+
+        # 如果是仅检查用户存在性（password为None）
+        if password is None:
+            check_query = conn.query(
+                "SELECT COUNT(*) as count FROM users WHERE username = :username",
+                params={'username': username}
+            ).to_dict()
+            exists = check_query['count'][0] > 0
+            logger.info(f"检查用户存在性: {exists}")  # 添加日志
+            return exists, None, None if exists else "用户名不存在", None
+
+        # 验证用户名和密码
+        query_result = conn.query(
+            "SELECT password, role, name FROM users WHERE username = :username",
+            params={'username': username}
+        ).to_dict()
+
+        logger.info(f"查询结果: {query_result}")  # 添加日志
+
+        if not query_result or len(query_result['password']) == 0:
+            logger.error(f"用户 {username} 不存在")  # 添加日志
+            return False, None, "用户名不存在", None
+
         db_password = query_result['password'][0]
         if db_password == password:
             role = query_result['role'][0]
@@ -47,10 +70,12 @@ def login_auth(username, password):
             name = None
             error_message = "密码错误"
             logger.error(f"用户 {username} 登录失败！")
+
         return logging_status, role, error_message, name
+
     except Exception as e:
         logger.error(f"数据库验证失败，错误信息：{e}")
-        error_message = "用户名不存在"
+        error_message = "数据库验证失败"  # 修改错误信息，使其更具体
         return False, None, error_message, None
 
 
@@ -156,4 +181,37 @@ def update_account(username, new_name, new_password=None, new_role=None):
 
     except Exception as e:
         logger.error(f"更新用户信息失败，错误信息：{e}")
+        return False, str(e)
+
+
+def delete_account(username):
+    """
+    删除用户账户
+    :param username: 要删除的用户名
+    :return: 删除状态，错误信息
+    """
+    try:
+        # 检查是否是当前登录用户
+        current_user = st.session_state.get("logged_in_username")
+        if username == current_user:
+            return False, "不能删除自己的账户"
+
+        conn = connect_db()
+
+        # 使用session执行删除
+        with conn.session as session:
+            session.execute(
+                text("DELETE FROM users WHERE username = :username"),
+                params={'username': username}
+            )
+            session.commit()
+
+        # 强制所有用户重新登录
+        st.session_state.clear()  # 清除所有session状态
+
+        logger.success(f"成功删除用户账户：{username}")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"删除用户账户失败，错误信息：{e}")
         return False, str(e)
