@@ -140,7 +140,7 @@ async def render_input_form(service_options, receipt_data):
 
                     # 使用st.link_button替代JavaScript方式
                     st.link_button(
-                        "🔍 在地图中搜索",
+                        "🔍 在Google Search中搜索",
                         search_url,
                         use_container_width=True
                     )

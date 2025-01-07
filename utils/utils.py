@@ -221,7 +221,7 @@ def navigation():
         confirm_logout()
 
     st.sidebar.write("Copyright 2025 © ATM Cleaning Inc.")
-    st.sidebar.write("Version：V1.250105.001.02")
+    st.sidebar.write("Version：V1.250107.001.03")
 
 
 def clear_form_state():
