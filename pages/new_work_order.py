@@ -62,8 +62,9 @@ async def create_work_order_page():
             )
 
         with col2:
-            # 分配人（自动获取当前登录用户）
-            current_user = st.session_state.get("logged_in_username")
+            # 分配人（自动获取当前登录用户的name）
+            current_username = st.session_state.get("logged_in_username")
+            current_user = st.session_state.get("name")  # 使用session中存储的name
             st.text_input("工单所有人", value=current_user, disabled=True)
             source = st.text_input("工单来源", placeholder="请输入客户来源")
 
@@ -253,7 +254,7 @@ async def create_work_order_page():
                 success, error = create_work_order(
                     order_date=order_date,
                     work_date=work_date,
-                    created_by=current_user,
+                    created_by=current_user,  # 这里使用 name 而不是 username
                     source=source,
                     work_time=work_time,
                     work_address=work_address,
