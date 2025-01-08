@@ -110,7 +110,7 @@ def work_orders():
                         # st.write(f"📅 登记日期： {order['order_date'].strftime('%Y-%m-%d')}")
                         st.write(f"📆 保洁日期： {order['work_date'].strftime('%Y-%m-%d')}")
                         st.write(f"🕒 保洁时间： {order['work_time']}")
-                        st.write(f"👷 保洁阿姨：{order['assigned_cleaner']}")
+                        st.write(f"👷 保洁小组：{order['assigned_cleaner']}")
                     with col2:
                         st.write(f"💰 工单总额： ${order['total_amount']:.2f}")
                         st.write(f"💳 付款方式：{'转账(含GST)' if order['payment_method'] == 'transfer' else '现金'}")
