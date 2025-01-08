@@ -110,7 +110,10 @@ def work_orders():
                         # st.write(f"📅 登记日期： {order['order_date'].strftime('%Y-%m-%d')}")
                         st.write(f"📆 保洁日期： {order['work_date'].strftime('%Y-%m-%d')}")
                         st.write(f"🕒 保洁时间： {order['work_time']}")
-                        st.write(f"👷 保洁小组：{order['assigned_cleaner']}")
+                        if order['assigned_cleaner'] == '暂未派单':
+                            st.markdown(f"👷 保洁小组：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未派单</span>", unsafe_allow_html=True)
+                        else:
+                            st.write(f"👷 保洁小组：{order['assigned_cleaner']}")
                     with col2:
                         st.write(f"💰 工单总额： ${order['total_amount']:.2f}")
                         st.write(f"💳 付款方式：{'转账(含GST)' if order['payment_method'] == 'transfer' else '现金'}")
@@ -142,25 +145,57 @@ def work_orders():
                         st.write(service_text)
 
                     col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+                    with col1:
+                        # 派单按钮状态
+                        is_assigned = order['assigned_cleaner'] != '暂未派单'
+                        if st.button(
+                            "阿姨派单",
+                            key=f"confirm_worker_{order['id']}",
+                            use_container_width=True,
+                            disabled=is_assigned,
+                            help="此工单已完成派单" if is_assigned else "点击进行派单",
+                            type="primary"
+
+                        ):
+                            st.warning("该功能正在开发中，敬请期待！")
                     with col2:
-                        if st.button("确认收款", key=f"confirm_payment_{order['id']}", use_container_width=True):
-                            st.session_state.selected_order = order['id']
-                            # st.switch_page("pages/order_detail.py")
+                        # 确认收款按钮状态
+                        is_paid = order['payment_received']
+                        if st.button(
+                            "确认收款",
+                            key=f"confirm_payment_{order['id']}",
+                            use_container_width=True,
+                            disabled=is_paid,
+                            help="此工单已确认收款" if is_paid else "点击确认收款",
+                            type="primary"
+
+                        ):
                             st.warning("该功能正在开发中，敬请期待！")
                     with col3:
-                        if st.button("签发发票", key=f"confirm_invoice_{order['id']}",use_container_width=True):
-                            st.session_state.selected_order = order['id']
-                            st.session_state.edit_mode = True
-                            # st.switch_page("pages/new_work_order.py")
+                        # 签发发票按钮状态
+                        is_invoice_sent = order['invoice_sent']
+                        if st.button(
+                            "签发发票",
+                            key=f"confirm_invoice_{order['id']}",
+                            use_container_width=True,
+                            disabled=is_invoice_sent,
+                            help="此工单已签发发票" if is_invoice_sent else "点击签发发票",
+                            type="primary"
+
+                        ):
                             st.warning("该功能正在开发中，敬请期待！")
                     with col4:
-                        if st.button("签发收据", key=f"confirm_receipt_{order['id']}",use_container_width=True):
-                            st.session_state.selected_order = order['id']
-                            st.session_state.edit_mode = False
-                            # st.switch_page("pages/new_work_order.py")
-                            st.warning("该功能正在开发中，敬请期待！")
-                    with col1:
-                        if st.button("阿姨派单", key=f"confirm_worker_{order['id']}",use_container_width=True):
+                        # 签发收据按钮状态
+                        is_receipt_sent = order['receipt_sent']
+                        if st.button(
+                            "签发收据",
+                            key=f"confirm_receipt_{order['id']}",
+                            use_container_width=True,
+                            disabled=is_receipt_sent,
+                            help="此工单已签发收据" if is_receipt_sent else "点击签发收据",
+                            type="primary"
+
+                        ):
                             st.warning("该功能正在开发中，敬请期待！")
                 st.divider()
         else:
