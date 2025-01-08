@@ -212,3 +212,109 @@ def delete_account(username):
     except Exception as e:
         logger.error(f"删除用户账户失败，错误信息：{e}")
         return False, str(e)
+
+
+def create_work_order(order_date, work_date, created_by, source, work_time, work_address,
+                      payment_method, order_amount, basic_service, rooms, electricals,
+                      other_services, custom_item):
+    """创建工单"""
+    try:
+        conn = connect_db()
+
+        # 计算总金额
+        total_amount = order_amount * 1.1 if payment_method == 'transfer' else order_amount
+
+        # 将列表转换为字符串存储
+        basic_service_str = "|".join(basic_service) if basic_service else ""
+        rooms_str = "|".join(rooms) if rooms else ""
+        electricals_str = "|".join(electricals) if electricals else ""
+        other_services_str = "|".join(other_services) if other_services else ""
+        custom_item_str = "|".join(custom_item) if custom_item else ""
+
+        with conn.session as session:
+            session.execute(
+                text("""
+                INSERT INTO work_orders 
+                (order_date, work_date, created_by, source, work_time, work_address, 
+                payment_method, order_amount, total_amount, basic_service, rooms,
+                electricals, other_services, custom_item)
+                VALUES 
+                (:order_date, :work_date, :created_by, :source, :work_time, :work_address, 
+                :payment_method, :order_amount, :total_amount, :basic_service, :rooms,
+                :electricals, :other_services, :custom_item)
+                """),
+                params={
+                    'order_date': order_date,
+                    'work_date': work_date,
+                    'created_by': created_by,  # 修正这里
+                    'source': source,
+                    'work_time': work_time,
+                    'work_address': work_address,
+                    'payment_method': payment_method,
+                    'order_amount': order_amount,
+                    'total_amount': total_amount,
+                    'basic_service': basic_service_str,
+                    'rooms': rooms_str,
+                    'electricals': electricals_str,
+                    'other_services': other_services_str,
+                    'custom_item': custom_item_str
+                }
+            )
+            session.commit()
+
+        logger.success("工单创建成功")
+        return True, None
+    except Exception as e:
+        logger.error(f"创建工单失败：{e}")
+        return False, str(e)
+
+
+def get_work_orders(time_range='week'):
+    """获取工单列表"""
+    try:
+        conn = connect_db()
+
+        # 根据时间范围构建查询条件
+        time_filters = {
+            'day': 'DATE(work_date) = CURDATE()',
+            'week': 'YEARWEEK(work_date) = YEARWEEK(CURDATE())',
+            'month': 'YEAR(work_date) = YEAR(CURDATE()) AND MONTH(work_date) = MONTH(CURDATE())',
+            'quarter': 'YEAR(work_date) = YEAR(CURDATE()) AND QUARTER(work_date) = QUARTER(CURDATE())',
+            'year': 'YEAR(work_date) = YEAR(CURDATE())'
+        }
+
+        time_filter = time_filters.get(time_range, time_filters['week'])
+
+        query = f"""
+            SELECT * FROM work_orders 
+            WHERE {time_filter}
+            ORDER BY work_date DESC, work_time ASC
+        """
+
+        result = conn.query(query, ttl=0)
+        return result, None
+    except Exception as e:
+        logger.error(f"获取工单列表失败：{e}")
+        return None, str(e)
+
+
+def get_work_orders_by_date_range(start_date, end_date):
+    """根据日期范围获取工单列表"""
+    try:
+        conn = connect_db()
+
+        query = """
+            SELECT * FROM work_orders 
+            WHERE order_date BETWEEN :start_date AND :end_date
+            ORDER BY order_date DESC, work_time ASC
+        """
+
+        result = conn.query(
+            query,
+            params={'start_date': start_date, 'end_date': end_date},
+            ttl=0
+        )
+        return result, None
+    except Exception as e:
+        logger.error(f"获取工单列表失败：{e}")
+        return None, str(e)
