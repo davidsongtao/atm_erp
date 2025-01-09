@@ -54,45 +54,45 @@ async def create_work_order_page():
                 help="创建工单的日期",
                 disabled=True
             )
-            work_date = st.date_input(
-                "工作日期",
-                value=date.today(),
-                help="实际上门服务的日期",
-                min_value=date.today()
-            )
+            # work_date = st.date_input(
+            #     "工作日期",
+            #     value=date.today(),
+            #     help="实际上门服务的日期",
+            #     min_value=date.today()
+            # )
 
         with col2:
             # 分配人（自动获取当前登录用户的name）
             current_username = st.session_state.get("logged_in_username")
             current_user = st.session_state.get("name")  # 使用session中存储的name
             st.text_input("工单所有人", value=current_user, disabled=True)
-            source = st.text_input("工单来源", placeholder="请输入客户来源")
+        source = st.text_input("工单来源", placeholder="请输入客户来源")
 
         # 工作时间选择放在新的一行
         time_col1, time_col2 = st.columns(2)
-        with time_col1:
-            am_pm = st.selectbox(
-                "时间段",
-                options=["AM", "PM"],
-                key="am_pm",
-                index=None,
-                placeholder="选择时间段...",
-            )
-        with time_col2:
-            if am_pm == "AM":
-                hour_options = [f"{i:02d}:00" for i in range(7, 13)]  # AM 7:00-12:00
-            else:
-                hour_options = [f"{i:02d}:00" for i in range(12, 19)]  # PM 12:00-18:00
-
-            hour = st.selectbox(
-                "具体时间",
-                options=hour_options,
-                key="hour",
-                index=None,
-                placeholder="请选择具体时间...",
-            )
-
-        work_time = f"{am_pm} {hour}"
+        # with time_col1:
+            # am_pm = st.selectbox(
+            #     "时间段",
+            #     options=["AM", "PM"],
+            #     key="am_pm",
+            #     index=None,
+            #     placeholder="选择时间段...",
+            # )
+        # with time_col2:
+        #     if am_pm == "AM":
+        #         hour_options = [f"{i:02d}:00" for i in range(7, 13)]  # AM 7:00-12:00
+        #     else:
+        #         hour_options = [f"{i:02d}:00" for i in range(12, 19)]  # PM 12:00-18:00
+        #
+        #     hour = st.selectbox(
+        #         "具体时间",
+        #         options=hour_options,
+        #         key="hour",
+        #         index=None,
+        #         placeholder="请选择具体时间...",
+        #     )
+        #
+        # work_time = f"{am_pm} {hour}"
 
         # 地址信息部分
         st.info("请输入客户地址，系统会自动验证地址是否正确。", icon="📍")
@@ -164,7 +164,7 @@ async def create_work_order_page():
             finally:
                 await st.session_state.validator.close_session()
 
-        st.divider()
+        # st.divider()
 
         # 服务选择部分
         st.info("请选择需要服务的项目。", icon="🛠️")
@@ -253,10 +253,10 @@ async def create_work_order_page():
             else:
                 success, error = create_work_order(
                     order_date=order_date,
-                    work_date=work_date,
+                    # work_date=work_date,
                     created_by=current_user,  # 这里使用 name 而不是 username
                     source=source,
-                    work_time=work_time,
+                    # work_time=work_time,
                     work_address=work_address,
                     payment_method=payment_method,
                     order_amount=order_amount,

@@ -3,6 +3,7 @@ import streamlit as st
 from datetime import datetime, date, timedelta
 from utils.utils import navigation, check_login_state
 from utils.db_operations import get_work_orders, get_work_orders_by_date_range
+import pandas as pd
 
 
 def work_orders():
@@ -97,7 +98,7 @@ def work_orders():
         else:
             orders, error = get_work_orders(time_range[1])
 
-            # 显示工单列表
+        # 显示工单列表
         if orders is not None and not orders.empty:
             # 显示日期范围
             st.info(f"查询时间范围：{start_date.strftime('%Y-%m-%d')} 至 {end_date.strftime('%Y-%m-%d')}（按保洁时间计算）", icon="📅")
@@ -107,13 +108,14 @@ def work_orders():
                     st.write(f"📍 工单地址： {order['work_address']}")
                     col1, col2, col3 = st.columns([2, 2, 1])
                     with col1:
-                        # st.write(f"📅 登记日期： {order['order_date'].strftime('%Y-%m-%d')}")
-                        st.write(f"📆 保洁日期： {order['work_date'].strftime('%Y-%m-%d')}")
-                        st.write(f"🕒 保洁时间： {order['work_time']}")
                         if order['assigned_cleaner'] == '暂未派单':
-                            st.markdown(f"👷 保洁小组：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未派单</span>", unsafe_allow_html=True)
+                            st.markdown(f"👷 保洁小组：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未确认</span>", unsafe_allow_html=True)
+                            st.markdown(f"📆 保洁日期：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未确认</span>", unsafe_allow_html=True)
+                            st.markdown(f"🕒 保洁时间：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未派单</span>", unsafe_allow_html=True)
                         else:
                             st.write(f"👷 保洁小组：{order['assigned_cleaner']}")
+                            st.write(f"📆 保洁日期： {order['work_date'].strftime('%Y-%m-%d') if pd.notnull(order['work_date']) else '待定'}")
+                            st.write(f"🕒 保洁时间： {order['work_time'] if pd.notnull(order['work_time']) else '待定'}")
                     with col2:
                         st.write(f"💰 工单总额： ${order['total_amount']:.2f}")
                         st.write(f"💳 付款方式：{'转账(含GST)' if order['payment_method'] == 'transfer' else '现金'}")
@@ -149,12 +151,12 @@ def work_orders():
                         # 派单按钮状态
                         is_assigned = order['assigned_cleaner'] != '暂未派单'
                         if st.button(
-                            "阿姨派单",
-                            key=f"confirm_worker_{order['id']}",
-                            use_container_width=True,
-                            disabled=is_assigned,
-                            help="此工单已完成派单" if is_assigned else "点击进行派单",
-                            type="primary"
+                                "阿姨派单",
+                                key=f"confirm_worker_{order['id']}",
+                                use_container_width=True,
+                                disabled=is_assigned,
+                                help="此工单已完成派单" if is_assigned else "点击进行派单",
+                                type="primary"
 
                         ):
                             st.warning("该功能正在开发中，敬请期待！")
@@ -162,12 +164,12 @@ def work_orders():
                         # 确认收款按钮状态
                         is_paid = order['payment_received']
                         if st.button(
-                            "确认收款",
-                            key=f"confirm_payment_{order['id']}",
-                            use_container_width=True,
-                            disabled=is_paid,
-                            help="此工单已确认收款" if is_paid else "点击确认收款",
-                            type="primary"
+                                "确认收款",
+                                key=f"confirm_payment_{order['id']}",
+                                use_container_width=True,
+                                disabled=is_paid,
+                                help="此工单已确认收款" if is_paid else "点击确认收款",
+                                type="primary"
 
                         ):
                             st.warning("该功能正在开发中，敬请期待！")
@@ -175,12 +177,12 @@ def work_orders():
                         # 签发发票按钮状态
                         is_invoice_sent = order['invoice_sent']
                         if st.button(
-                            "签发发票",
-                            key=f"confirm_invoice_{order['id']}",
-                            use_container_width=True,
-                            disabled=is_invoice_sent,
-                            help="此工单已签发发票" if is_invoice_sent else "点击签发发票",
-                            type="primary"
+                                "签发发票",
+                                key=f"confirm_invoice_{order['id']}",
+                                use_container_width=True,
+                                disabled=is_invoice_sent,
+                                help="此工单已签发发票" if is_invoice_sent else "点击签发发票",
+                                type="primary"
 
                         ):
                             st.warning("该功能正在开发中，敬请期待！")
@@ -188,12 +190,12 @@ def work_orders():
                         # 签发收据按钮状态
                         is_receipt_sent = order['receipt_sent']
                         if st.button(
-                            "签发收据",
-                            key=f"confirm_receipt_{order['id']}",
-                            use_container_width=True,
-                            disabled=is_receipt_sent,
-                            help="此工单已签发收据" if is_receipt_sent else "点击签发收据",
-                            type="primary"
+                                "签发收据",
+                                key=f"confirm_receipt_{order['id']}",
+                                use_container_width=True,
+                                disabled=is_receipt_sent,
+                                help="此工单已签发收据" if is_receipt_sent else "点击签发收据",
+                                type="primary"
 
                         ):
                             st.warning("该功能正在开发中，敬请期待！")

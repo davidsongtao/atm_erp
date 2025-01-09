@@ -214,10 +214,8 @@ def delete_account(username):
         return False, str(e)
 
 
-def create_work_order(order_date, work_date, created_by, source, work_time, work_address,
-                      payment_method, order_amount, basic_service, rooms, electricals,
-                      other_services, custom_item):
-    """创建工单"""
+def create_work_order(order_date, created_by, source, work_address, payment_method,
+                      order_amount, basic_service, rooms, electricals, other_services, custom_item):
     try:
         conn = connect_db()
 
@@ -229,26 +227,26 @@ def create_work_order(order_date, work_date, created_by, source, work_time, work
         rooms_str = "|".join(rooms) if rooms else ""
         electricals_str = "|".join(electricals) if electricals else ""
         other_services_str = "|".join(other_services) if other_services else ""
-        custom_item_str = "|".join(custom_item) if custom_item else ""
+        custom_items_str = "|".join(custom_item) if custom_item else ""
 
         with conn.session as session:
             session.execute(
                 text("""
                 INSERT INTO work_orders 
-                (order_date, work_date, created_by, source, work_time, work_address, 
+                (order_date, work_date, work_time, created_by, source, work_address, 
                 payment_method, order_amount, total_amount, basic_service, rooms,
-                electricals, other_services, custom_item)
+                electricals, other_services, custom_item, assigned_cleaner,
+                payment_received, invoice_sent, receipt_sent)
                 VALUES 
-                (:order_date, :work_date, :created_by, :source, :work_time, :work_address, 
+                (:order_date, NULL, NULL, :created_by, :source, :work_address,
                 :payment_method, :order_amount, :total_amount, :basic_service, :rooms,
-                :electricals, :other_services, :custom_item)
+                :electricals, :other_services, :custom_item, '暂未派单',
+                FALSE, FALSE, FALSE)
                 """),
                 params={
                     'order_date': order_date,
-                    'work_date': work_date,
-                    'created_by': created_by,  # 修正这里
+                    'created_by': created_by,
                     'source': source,
-                    'work_time': work_time,
                     'work_address': work_address,
                     'payment_method': payment_method,
                     'order_amount': order_amount,
@@ -257,7 +255,7 @@ def create_work_order(order_date, work_date, created_by, source, work_time, work
                     'rooms': rooms_str,
                     'electricals': electricals_str,
                     'other_services': other_services_str,
-                    'custom_item': custom_item_str
+                    'custom_item': custom_items_str
                 }
             )
             session.commit()
@@ -276,11 +274,11 @@ def get_work_orders(time_range='week'):
 
         # 根据时间范围构建查询条件
         time_filters = {
-            'day': 'DATE(work_date) = CURDATE()',
-            'week': 'YEARWEEK(work_date) = YEARWEEK(CURDATE())',
-            'month': 'YEAR(work_date) = YEAR(CURDATE()) AND MONTH(work_date) = MONTH(CURDATE())',
-            'quarter': 'YEAR(work_date) = YEAR(CURDATE()) AND QUARTER(work_date) = QUARTER(CURDATE())',
-            'year': 'YEAR(work_date) = YEAR(CURDATE())'
+            'day': 'DATE(work_date) = CURDATE() OR work_date IS NULL',
+            'week': 'YEARWEEK(work_date) = YEARWEEK(CURDATE()) OR work_date IS NULL',
+            'month': '(YEAR(work_date) = YEAR(CURDATE()) AND MONTH(work_date) = MONTH(CURDATE())) OR work_date IS NULL',
+            'quarter': '(YEAR(work_date) = YEAR(CURDATE()) AND QUARTER(work_date) = QUARTER(CURDATE())) OR work_date IS NULL',
+            'year': 'YEAR(work_date) = YEAR(CURDATE()) OR work_date IS NULL'
         }
 
         time_filter = time_filters.get(time_range, time_filters['week'])
@@ -288,7 +286,12 @@ def get_work_orders(time_range='week'):
         query = f"""
             SELECT * FROM work_orders 
             WHERE {time_filter}
-            ORDER BY work_date DESC, work_time ASC
+            ORDER BY 
+                CASE WHEN work_date IS NULL THEN 0 ELSE 1 END,  -- NULL值排在前面
+                order_date DESC,  -- 未派单的按创建日期倒序排
+                work_date ASC,
+                CASE WHEN work_time IS NULL THEN 1 ELSE 0 END,
+                work_time ASC
         """
 
         result = conn.query(query, ttl=0)
@@ -305,8 +308,14 @@ def get_work_orders_by_date_range(start_date, end_date):
 
         query = """
             SELECT * FROM work_orders 
-            WHERE order_date BETWEEN :start_date AND :end_date
-            ORDER BY order_date DESC, work_time ASC
+            WHERE work_date BETWEEN :start_date AND :end_date
+               OR work_date IS NULL
+            ORDER BY 
+                CASE WHEN work_date IS NULL THEN 0 ELSE 1 END,  -- NULL值排在前面
+                order_date DESC,  -- 未派单的按创建日期倒序排
+                work_date ASC,
+                CASE WHEN work_time IS NULL THEN 1 ELSE 0 END,
+                work_time ASC
         """
 
         result = conn.query(
