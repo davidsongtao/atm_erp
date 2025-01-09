@@ -113,14 +113,26 @@ def work_orders():
                             st.markdown(f"📆 保洁日期：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未确认</span>", unsafe_allow_html=True)
                             st.markdown(f"🕒 保洁时间：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未派单</span>", unsafe_allow_html=True)
                         else:
-                            st.write(f"👷 保洁小组：{order['assigned_cleaner']}")
-                            st.write(f"📆 保洁日期： {order['work_date'].strftime('%Y-%m-%d') if pd.notnull(order['work_date']) else '待定'}")
-                            st.write(f"🕒 保洁时间： {order['work_time'] if pd.notnull(order['work_time']) else '待定'}")
+                            st.markdown(f"👷 保洁小组：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['assigned_cleaner']}</span>", unsafe_allow_html=True)
+                            st.markdown(f"📆 保洁日期：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['work_date'].strftime('%Y-%m-%d')}</span>", unsafe_allow_html=True)
+                            st.markdown(f"🕒 保洁时间：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['work_time']}</span>", unsafe_allow_html=True)
                     with col2:
-                        st.write(f"💰 工单总额： ${order['total_amount']:.2f}")
-                        st.write(f"💳 付款方式：{'转账(含GST)' if order['payment_method'] == 'transfer' else '现金'}")
+                        # 根据收款状态决定高亮颜色
+                        if order['payment_received']:
+                            # 已收款 - 绿色主题
+                            st.markdown(f"💰 工单总额：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
+                            if order['payment_method'] == 'transfer':
+                                st.markdown(f"💳 付款方式：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>转账(含GST)</span>", unsafe_allow_html=True)
+                            else:
+                                st.markdown(f"💳 付款方式：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>现金</span>", unsafe_allow_html=True)
+                        else:
+                            # 未收款 - 红色主题
+                            st.markdown(f"💰 工单总额：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
+                            if order['payment_method'] == 'transfer':
+                                st.markdown(f"💳 付款方式：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>转账(含GST)</span>", unsafe_allow_html=True)
+                            else:
+                                st.markdown(f"💳 付款方式：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>现金</span>", unsafe_allow_html=True)
                         st.write(f"👤 登记人员： {order['created_by']}")
-                        # st.write(f"📝 来源：{order['source']}")
                     with col3:
                         # st.write("💡 工单状态：")
                         st.write(f"💵收款状态：{'✅' if order['payment_received'] else '❌'}")
