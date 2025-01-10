@@ -1,9 +1,125 @@
+"""
+Description: 工单管理页面
+
+-*- Encoding: UTF-8 -*-
+@File     ：work_orders.py
+@Author   ：King Songtao
+@Time     ：2025/1/8
+@Contact  ：king.songtao@gmail.com
+"""
+
 import time
 import streamlit as st
 from datetime import datetime, date, timedelta
 from utils.utils import navigation, check_login_state
 from utils.db_operations import get_work_orders, get_work_orders_by_date_range
 import pandas as pd
+
+
+def display_orders(orders):
+    """显示工单列表"""
+    for _, order in orders.iterrows():
+        with st.container():
+            st.write(f"📍 工单地址： {order['work_address']}")
+            col1, col2, col3 = st.columns([2, 2, 1])
+            with col1:
+                if order['assigned_cleaner'] == '暂未派单':
+                    st.markdown(f"👷 保洁小组：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未确认</span>", unsafe_allow_html=True)
+                    st.markdown(f"📆 保洁日期：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未确认</span>", unsafe_allow_html=True)
+                    st.markdown(f"🕒 保洁时间：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未派单</span>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"👷 保洁小组：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['assigned_cleaner']}</span>", unsafe_allow_html=True)
+                    st.markdown(f"📆 保洁日期：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['work_date'].strftime('%Y-%m-%d')}</span>", unsafe_allow_html=True)
+                    st.markdown(f"🕒 保洁时间：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['work_time']}</span>", unsafe_allow_html=True)
+            with col2:
+                # 根据收款状态决定高亮颜色
+                if order['payment_received']:
+                    # 已收款 - 绿色主题
+                    st.markdown(f"💰 工单总额：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
+                    if order['payment_method'] == 'transfer':
+                        st.markdown(f"💳 付款方式：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>转账(含GST)</span>", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"💳 付款方式：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>现金</span>", unsafe_allow_html=True)
+                else:
+                    # 未收款 - 红色主题
+                    st.markdown(f"💰 工单总额：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
+                    if order['payment_method'] == 'transfer':
+                        st.markdown(f"💳 付款方式：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>转账(含GST)</span>", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"💳 付款方式：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>现金</span>", unsafe_allow_html=True)
+                st.write(f"👤 登记人员： {order['created_by']}")
+            with col3:
+                st.write(f"💵收款状态：{'✅' if order['payment_received'] else '❌'}")
+                st.write(f"📧发票状态：{'✅' if order['invoice_sent'] else '❌'}")
+                st.write(f"🧾收据状态：{'✅' if order['receipt_sent'] else '❌'}")
+
+            # 服务内容展示
+            services = []
+            if order['basic_service']:
+                services.extend(order['basic_service'].split('|'))
+            if order['rooms']:
+                services.extend(order['rooms'].split('|'))
+            if order['electricals']:
+                services.extend(order['electricals'].split('|'))
+            if order['other_services']:
+                services.extend(order['other_services'].split('|'))
+            if order['custom_item']:
+                services.extend(order['custom_item'].split('|'))
+
+            if services:
+                service_text = "🛠️ 服务内容：" + ", ".join(services)
+                st.write(service_text)
+
+            col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+            with col1:
+                # 派单按钮状态
+                is_assigned = order['assigned_cleaner'] != '暂未派单'
+                if st.button(
+                        "阿姨派单",
+                        key=f"confirm_worker_{order['id']}",
+                        use_container_width=True,
+                        disabled=is_assigned,
+                        help="此工单已完成派单" if is_assigned else "点击进行派单",
+                        type="primary"
+                ):
+                    st.warning("该功能正在开发中，敬请期待！")
+            with col2:
+                # 确认收款按钮状态
+                is_paid = order['payment_received']
+                if st.button(
+                        "确认收款",
+                        key=f"confirm_payment_{order['id']}",
+                        use_container_width=True,
+                        disabled=is_paid,
+                        help="此工单已确认收款" if is_paid else "点击确认收款",
+                        type="primary"
+                ):
+                    st.warning("该功能正在开发中，敬请期待！")
+            with col3:
+                # 签发发票按钮状态
+                is_invoice_sent = order['invoice_sent']
+                if st.button(
+                        "签发发票",
+                        key=f"confirm_invoice_{order['id']}",
+                        use_container_width=True,
+                        disabled=is_invoice_sent,
+                        help="此工单已签发发票" if is_invoice_sent else "点击签发发票",
+                        type="primary"
+                ):
+                    st.warning("该功能正在开发中，敬请期待！")
+            with col4:
+                # 签发收据按钮状态
+                is_receipt_sent = order['receipt_sent']
+                if st.button(
+                        "签发收据",
+                        key=f"confirm_receipt_{order['id']}",
+                        use_container_width=True,
+                        disabled=is_receipt_sent,
+                        help="此工单已签发收据" if is_receipt_sent else "点击签发收据",
+                        type="primary"
+                ):
+                    st.warning("该功能正在开发中，敬请期待！")
+            st.divider()
 
 
 def work_orders():
@@ -84,7 +200,7 @@ def work_orders():
                 selected_end_date = selected_start_date  # 如果出现错误，设置为与开始日期相同
                 st.warning("结束日期不能早于开始日期，已自动调整", icon="⚠️")
 
-                # 使用实际的日期范围获取工单
+        # 使用实际的日期范围获取工单
         if time_range[1] == "custom":
             if selected_end_date < selected_start_date:
                 selected_end_date = selected_start_date
@@ -102,116 +218,76 @@ def work_orders():
         if orders is not None and not orders.empty:
             # 显示日期范围
             st.info(f"查询时间范围：{start_date.strftime('%Y-%m-%d')} 至 {end_date.strftime('%Y-%m-%d')}（按保洁时间计算）", icon="📅")
-            st.divider()
-            for _, order in orders.iterrows():
-                with st.container():
-                    st.write(f"📍 工单地址： {order['work_address']}")
-                    col1, col2, col3 = st.columns([2, 2, 1])
-                    with col1:
-                        if order['assigned_cleaner'] == '暂未派单':
-                            st.markdown(f"👷 保洁小组：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未确认</span>", unsafe_allow_html=True)
-                            st.markdown(f"📆 保洁日期：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未确认</span>", unsafe_allow_html=True)
-                            st.markdown(f"🕒 保洁时间：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未派单</span>", unsafe_allow_html=True)
-                        else:
-                            st.markdown(f"👷 保洁小组：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['assigned_cleaner']}</span>", unsafe_allow_html=True)
-                            st.markdown(f"📆 保洁日期：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['work_date'].strftime('%Y-%m-%d')}</span>", unsafe_allow_html=True)
-                            st.markdown(f"🕒 保洁时间：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['work_time']}</span>", unsafe_allow_html=True)
-                    with col2:
-                        # 根据收款状态决定高亮颜色
-                        if order['payment_received']:
-                            # 已收款 - 绿色主题
-                            st.markdown(f"💰 工单总额：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
-                            if order['payment_method'] == 'transfer':
-                                st.markdown(f"💳 付款方式：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>转账(含GST)</span>", unsafe_allow_html=True)
-                            else:
-                                st.markdown(f"💳 付款方式：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>现金</span>", unsafe_allow_html=True)
-                        else:
-                            # 未收款 - 红色主题
-                            st.markdown(f"💰 工单总额：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
-                            if order['payment_method'] == 'transfer':
-                                st.markdown(f"💳 付款方式：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>转账(含GST)</span>", unsafe_allow_html=True)
-                            else:
-                                st.markdown(f"💳 付款方式：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>现金</span>", unsafe_allow_html=True)
-                        st.write(f"👤 登记人员： {order['created_by']}")
-                    with col3:
-                        # st.write("💡 工单状态：")
-                        st.write(f"💵收款状态：{'✅' if order['payment_received'] else '❌'}")
-                        st.write(f"📧发票状态：{'✅' if order['invoice_sent'] else '❌'}")
-                        st.write(f"🧾收据状态：{'✅' if order['receipt_sent'] else '❌'}")
 
-                    # 服务内容展示
-                    services = []
-                    if order['basic_service']:
-                        services.extend(order['basic_service'].split('|'))
-                    if order['rooms']:
-                        services.extend(order['rooms'].split('|'))
-                    if order['electricals']:
-                        services.extend(order['electricals'].split('|'))
-                    if order['other_services']:
-                        services.extend(order['other_services'].split('|'))
-                    if order['custom_item']:
-                        services.extend(order['custom_item'].split('|'))
+            # 对工单进行分类
+            pending_assign = orders[orders['assigned_cleaner'] == '暂未派单']
+            pending_payment = orders[
+                (orders['assigned_cleaner'] != '暂未派单') &
+                (orders['payment_received'] == False)
+                ]
+            pending_invoice = orders[
+                (orders['payment_received'] == True) &
+                (orders['invoice_sent'] == False)
+                ]
+            pending_receipt = orders[
+                (orders['invoice_sent'] == True) &
+                (orders['receipt_sent'] == False)
+                ]
+            completed = orders[
+                (orders['payment_received'] == True) &
+                (orders['invoice_sent'] == True) &
+                (orders['receipt_sent'] == True)
+                ]
 
-                    if services:
-                        service_text = "🛠️ 服务内容：" + ", ".join(services)
-                        # if len(service_text) > 80:  # 如果文本太长
-                        #     service_text = service_text[:90] + "..."
-                        st.write(service_text)
+            # 获取每个分类的工单总数
+            total_pending_assign = len(pending_assign)
+            total_pending_payment = len(pending_payment)
+            total_pending_invoice = len(pending_invoice)
+            total_pending_receipt = len(pending_receipt)
+            total_completed = len(completed)
 
-                    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
-                    with col1:
-                        # 派单按钮状态
-                        is_assigned = order['assigned_cleaner'] != '暂未派单'
-                        if st.button(
-                                "阿姨派单",
-                                key=f"confirm_worker_{order['id']}",
-                                use_container_width=True,
-                                disabled=is_assigned,
-                                help="此工单已完成派单" if is_assigned else "点击进行派单",
-                                type="primary"
+            # # 显示总工单数
+            # st.caption(
+            #     f"总计 {len(orders)} 条工单：待派单({total_pending_assign})/待收款({total_pending_payment})/待开票({total_pending_invoice})/待开收据({total_pending_receipt})/已完成({total_completed})")
 
-                        ):
-                            st.warning("该功能正在开发中，敬请期待！")
-                    with col2:
-                        # 确认收款按钮状态
-                        is_paid = order['payment_received']
-                        if st.button(
-                                "确认收款",
-                                key=f"confirm_payment_{order['id']}",
-                                use_container_width=True,
-                                disabled=is_paid,
-                                help="此工单已确认收款" if is_paid else "点击确认收款",
-                                type="primary"
+            # 创建标签页
+            tab1, tab2, tab3, tab4, tab5 = st.tabs([
+                f"待派单({total_pending_assign})",
+                f"待收款({total_pending_payment})",
+                f"待开票({total_pending_invoice})",
+                f"待开收据({total_pending_receipt})",
+                f"已完成({total_completed})"
+            ])
 
-                        ):
-                            st.warning("该功能正在开发中，敬请期待！")
-                    with col3:
-                        # 签发发票按钮状态
-                        is_invoice_sent = order['invoice_sent']
-                        if st.button(
-                                "签发发票",
-                                key=f"confirm_invoice_{order['id']}",
-                                use_container_width=True,
-                                disabled=is_invoice_sent,
-                                help="此工单已签发发票" if is_invoice_sent else "点击签发发票",
-                                type="primary"
+            with tab1:
+                if not pending_assign.empty:
+                    display_orders(pending_assign)
+                else:
+                    st.info("暂无待派单工单")
 
-                        ):
-                            st.warning("该功能正在开发中，敬请期待！")
-                    with col4:
-                        # 签发收据按钮状态
-                        is_receipt_sent = order['receipt_sent']
-                        if st.button(
-                                "签发收据",
-                                key=f"confirm_receipt_{order['id']}",
-                                use_container_width=True,
-                                disabled=is_receipt_sent,
-                                help="此工单已签发收据" if is_receipt_sent else "点击签发收据",
-                                type="primary"
+            with tab2:
+                if not pending_payment.empty:
+                    display_orders(pending_payment)
+                else:
+                    st.info("暂无待收款工单")
 
-                        ):
-                            st.warning("该功能正在开发中，敬请期待！")
-                st.divider()
+            with tab3:
+                if not pending_invoice.empty:
+                    display_orders(pending_invoice)
+                else:
+                    st.info("暂无待开票工单")
+
+            with tab4:
+                if not pending_receipt.empty:
+                    display_orders(pending_receipt)
+                else:
+                    st.info("暂无待开收据工单")
+
+            with tab5:
+                if not completed.empty:
+                    display_orders(completed)
+                else:
+                    st.info("暂无已完成工单")
         else:
             st.info("暂无工单数据")
 
