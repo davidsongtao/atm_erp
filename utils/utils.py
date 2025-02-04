@@ -215,7 +215,7 @@ def navigation():
 
     # 控制台
     if st.sidebar.button("📊回控制台", key="admin_page_button", use_container_width=True):
-        st.switch_page("pages/admin_page.py")
+        st.switch_page("pages/work_orders.py")
 
     # 个人设置
     if st.sidebar.button("⚙️系统设置", key="system_setting_button", use_container_width=True):
