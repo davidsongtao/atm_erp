@@ -28,23 +28,16 @@ def connect_db():
 def login_auth(username, password):
     try:
         conn = connect_db()
-        logger.info(f"正在验证用户: {username}")
-
         query_result = conn.query(
             "SELECT password, role, name FROM users WHERE username = :username",
             params={'username': username},
             ttl=0  # 禁用缓存
         ).to_dict()
-
-        logger.info(f"数据库查询结果: {query_result}")
-
         if not query_result or len(query_result['password']) == 0:
             logger.error(f"用户 {username} 不存在")
             return False, None, "用户名不存在", None
 
         db_password = query_result['password'][0]
-        # 添加密码比对日志
-        logger.info(f"密码比对 - 数据库密码: {db_password}, 输入密码: {password}")
 
         if db_password == password:
             role = query_result['role'][0]

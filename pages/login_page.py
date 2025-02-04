@@ -9,6 +9,8 @@ Description:
 """
 import time
 
+import time
+
 import streamlit as st
 from utils.utils import set_login_state, check_login_state, log_out, add_active_session
 from utils.db_operations import login_auth
@@ -16,6 +18,34 @@ from utils.db_operations import login_auth
 
 def login_page():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+
+    # 添加CSS样式
+    st.markdown(
+        """
+        <style>
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f0f2f6;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        .footer a {
+            color: #666;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            color: #333;
+            text-decoration: underline;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
     # 清除可能存在的过期session
     if "logged_in_username" in st.session_state and st.session_state.login_state:
@@ -75,6 +105,19 @@ def login_page():
                     st.error("密码错误！", icon="⚠️")
                 else:
                     st.error("未知错误！", icon="⚠️")
+
+    # 添加ICP备案信息
+    st.markdown(
+        """
+        <div class="footer">
+            <span>Copy Right © 2025 ATM Cleaning Management PTY Ltd. 版权所有 | </span>
+            <a href="https://beian.miit.gov.cn/" target="_blank">豫ICP备2025107955号</a>
+            <span> | </span>
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=41010602000280" rel="noreferrer" target="_blank">豫公网安备41010602000280号</a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 if __name__ == '__main__':
