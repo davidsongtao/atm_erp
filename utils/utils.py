@@ -224,8 +224,9 @@ def navigation():
     if st.sidebar.button("🛏️退出登录", key="logout_button", use_container_width=True):
         confirm_logout()
 
-    st.sidebar.write("Copyright 2025 © ATM Cleaning Inc.")
-    st.sidebar.write("Version：V1.250107.001.03")
+    st.sidebar.write("Copy Right © 2025 ATM Cleaning Management")
+    st.sidebar.write("豫ICP备2025107955号")
+    st.sidebar.write("豫公网安备41010602000280号")
 
 
 def clear_form_state():
