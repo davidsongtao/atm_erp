@@ -17,7 +17,6 @@ from utils.utils import remove_active_session
 def connect_db():
     try:
         conn = st.connection('mysql', type='sql')
-        logger.success(f"连接数据库成功！")
         return conn
     except Exception as e:
         logger.error(f"数据库连接失败，错误信息：{e}")
