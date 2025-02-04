@@ -75,7 +75,7 @@ def display_orders(orders):
                 # 派单按钮状态
                 is_assigned = order['assigned_cleaner'] != '暂未派单'
                 if st.button(
-                        "阿姨派单",
+                        "立即派单",
                         key=f"confirm_worker_{order['id']}",
                         use_container_width=True,
                         disabled=is_assigned,
@@ -131,6 +131,25 @@ def work_orders():
         st.title("🔍工单管理")
         st.divider()
 
+        st.markdown("""
+        <style>
+        	.stTabs [data-baseweb="tab-list"] {
+        		gap: 2px;
+            }
+        	.stTabs [data-baseweb="tab"] {
+        		height: 50px;
+        		background-color: #F0F2F6;
+        		border-radius: 7px 7px 0px 0px;
+        		padding-left: 15px;
+        		padding-right: 15px;
+            }
+        	.stTabs [aria-selected="true"] {
+          		background-color: #FF4B4B;
+          		color: #FFFFFF
+        	}
+        </style>""", unsafe_allow_html=True)
+
+
         # 创建新工单按钮
         if st.button("➕创建新工单", use_container_width=True, type="primary"):
             st.switch_page("pages/new_work_order.py")
@@ -150,7 +169,7 @@ def work_orders():
                     ("自定义", "custom")
                 ],
                 format_func=lambda x: x[0],
-                index=2,
+                index=4,
                 key="time_range"
             )
 
