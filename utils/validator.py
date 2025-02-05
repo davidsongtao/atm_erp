@@ -1,50 +1,12 @@
-"""
-Description: 
-    
--*- Encoding: UTF-8 -*-
-@File     ：validator.py.py
-@Author   ：King Songtao
-@Time     ：2025/1/7 上午10:18
-@Contact  ：king.songtao@gmail.com
-"""
 import asyncio
-from typing import List, Dict
+from typing import List, Dict, Optional
+from dataclasses import dataclass
 import aiohttp
 import hashlib
 from datetime import datetime, timedelta
-from dataclasses import dataclass
 import re
 import streamlit as st
-
-
-def extract_unit_number(address):
-    """
-    从地址中提取单元号
-    例如：从 "607/111 Parkview Rd" 提取 "607/"
-    """
-    if '/' in address:
-        parts = address.split('/')
-        if len(parts) >= 2 and parts[0].strip().isdigit():
-            return f"{parts[0].strip()}/"
-    return None
-
-
-def merge_unit_number(original_address, validated_address):
-    """
-    将原始地址中的单元号合并到验证后的地址中
-    """
-    unit_number = extract_unit_number(original_address)
-    if unit_number:
-        # 检查验证后的地址是否已包含单元号
-        if '/' not in validated_address:
-            # 找到第一个数字开始的位置
-            import re
-            match = re.search(r'\d', validated_address)
-            if match:
-                start_pos = match.start()
-                # 插入单元号
-                return validated_address[:start_pos] + unit_number + validated_address[start_pos:]
-    return validated_address
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 
 @dataclass
@@ -53,288 +15,241 @@ class AddressMatch:
     formatted_address: str
     confidence_score: float
     components: Dict[str, str]
-    unit_number: str = None  # 添加单元号字段
+    unit_number: str = None
+    validation_source: str = "llm"  # 'llm' or 'fallback'
 
 
-class CacheManager:
-    def __init__(self):
-        self.cache = {}
-        self.expiry = {}
-        self.CACHE_DURATION = timedelta(hours=24)
-
-    def get(self, key: str) -> any:
-        if key in self.cache:
-            if datetime.now() < self.expiry[key]:
-                return self.cache[key]
-            else:
-                del self.cache[key]
-                del self.expiry[key]
-        return None
-
-    def set(self, key: str, value: any):
-        self.cache[key] = value
-        self.expiry[key] = datetime.now() + self.CACHE_DURATION
-
-
-class AddressValidator:
-    def __init__(self, here_api_key: str, deepseek_api_key: str):
-        self.here_api_key = here_api_key
+class LLMAddressValidator:
+    def __init__(self, deepseek_api_key: str):
         self.deepseek_api_key = deepseek_api_key
-        self.here_base_url = "https://autosuggest.search.hereapi.com/v1/autosuggest"
-        self.deepseek_url = "https://api.deepseek.com/v1/chat/completions"
-        self.cache = CacheManager()
+        self.cache = {}
+        self.cache_expiry = {}
+        self.CACHE_DURATION = timedelta(hours=24)
         self.session = None
+        self.validation_patterns = self._compile_address_patterns()
 
-        # 添加已知的地址修正映射
-        self.known_corrections = {
-            "abeckett": "A'Beckett",
-            "a beckett": "A'Beckett",
-            "a'beckett": "A'Beckett",
+    def _compile_address_patterns(self) -> Dict[str, re.Pattern]:
+        """编译澳大利亚地址的正则表达式模式"""
+        return {
+            'unit': re.compile(r'^(\d+/)?'),  # 单元号
+            'street_number': re.compile(r'\b\d+(-\d+)?\b'),  # 街道号
+            'street': re.compile(
+                r'[A-Za-z\s]+\s(Street|St|Road|Rd|Avenue|Ave|Lane|Ln|Place|Pl|Drive|Dr|Parade|Pde|Circuit|Cct|Way|Court|Ct)',
+                re.I
+            ),
+            'suburb': re.compile(r'\b[A-Za-z\s]+\b'),  # 区域
+            'postcode': re.compile(r'\b\d{4}\b'),  # 邮编
+            'state': re.compile(r'\b(VIC|NSW|QLD|WA|SA|TAS|ACT|NT)\b', re.I)  # 州
         }
 
-    async def ensure_session(self):
-        """确保aiohttp会话存在"""
-        if self.session is None:
+    def _create_validation_prompt(self, address: str) -> str:
+        """创建地址验证提示词"""
+        return f"""作为澳大利亚地址验证专家，请分析并标准化以下地址。
+输入地址: {address}
+
+请严格按照以下格式回复：
+地址: <标准化后的完整地址>
+单元号: <如果有单元号>
+街道号: <门牌号>
+街道: <街道名称>
+区域: <区域/市郊>
+州: <州缩写>
+邮编: <邮政编码>
+置信度: <0.0-1.0之间的数字，表示地址正确的置信度>
+
+注意:
+1. 所有地址必须包含街道号、街道名、区域、州和邮编
+2. 州必须使用标准缩写(VIC, NSW, QLD, WA, SA, TAS, ACT, NT)
+3. 如果无法解析某个字段，使用 "N/A"
+4. 置信度基于地址完整性和可识别性"""
+
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+    async def _call_deepseek_api(self, prompt: str) -> Optional[Dict]:
+        """调用 Deepseek API 进行地址验证"""
+        if not self.session:
             self.session = aiohttp.ClientSession()
 
-    async def close_session(self):
-        """关闭aiohttp会话"""
-        if self.session:
-            await self.session.close()
-            self.session = None
-
-    def _normalize_street_name(self, street: str) -> str:
-        """标准化街道名称，保留适当的大小写"""
-        if not street:
-            return street
-
-        # 只在查找修正时转换为小写
-        lookup_street = street.lower().strip()
-        for incorrect, correct in self.known_corrections.items():
-            if incorrect in lookup_street:
-                return street.replace(incorrect, correct)
-
-        # 如果没有修正，返回原始街道名（只去除空格）
-        return street.strip()
-
-    def _extract_unit_number(self, address: str) -> str:
-        """从地址中提取单元号"""
-        if address and '/' in address:
-            parts = address.split('/')
-            if len(parts) >= 2 and parts[0].strip().isdigit():
-                return parts[0].strip()
-        return None
-
-    def _score_address_match(self, suggestion: Dict, input_address: str, district: str = "Melbourne") -> float:
-        """为地址匹配结果评分"""
-        address = suggestion.get("address", {})
-        base_score = 0.0
-
-        # 如果区域是Melbourne CBD，给予更高的基础分数
-        if address.get("district", "").lower() == district.lower():
-            base_score += 0.5
-
-        # 邮政编码3000（Melbourne CBD）给予额外分数
-        if address.get("postalCode") == "3000":
-            base_score += 0.3
-
-        # 根据地址完整性评分
-        if address.get("street") and address.get("houseNumber"):
-            base_score += 0.2
-
-        return min(1.0, base_score)
-
-    async def _fetch_here_suggestions(self, input_address: str) -> List[Dict]:
-        """异步获取HERE API建议"""
-        await self.ensure_session()
-
-        # 标准化输入地址中的街道名
-        normalized_address = self._normalize_street_name(input_address)
-
-        params = {
-            "q": normalized_address,
-            "apiKey": self.here_api_key,
-            "limit": 5,
-            "in": "countryCode:AUS",
-            "lang": ["en"],
-            "show": "streetInfo,details",
-            "at": "-37.8136,144.9631"  # Melbourne CBD coordinates
-        }
-
         try:
-            async with self.session.get(self.here_base_url, params=params) as response:
-                response.raise_for_status()
-                data = await response.json()
-
-                # 对结果进行初步过滤和排序
-                items = data.get("items", [])
-                for item in items:
-                    item['score'] = self._score_address_match(item, input_address)
-
-                # 按自定义评分排序
-                items.sort(key=lambda x: x.get('score', 0), reverse=True)
-                return items
-        except Exception as e:
-            st.error(f"HERE API Error: {str(e)}")
-            return []
-
-    def _format_here_address(self, suggestion: Dict, input_address: str = None) -> str:
-        """格式化HERE API返回的地址，保持正确的大小写"""
-        address = suggestion.get("address", {})
-        components = []
-
-        # 处理单元号
-        unit_number = self._extract_unit_number(input_address) if input_address else None
-        if unit_number:
-            components.append(f"{unit_number}/")
-
-        if address.get("houseNumber"):
-            components.append(address["houseNumber"])
-
-        # 确保街道名称格式正确
-        if address.get("street"):
-            street_name = self._normalize_street_name(address["street"])
-            components.append(street_name)
-
-        if address.get("district"):
-            # 只在不是Melbourne CBD时添加区域
-            if address.get("postalCode") != "3000":
-                components.append(address["district"])  # 保持原始大小写
-
-        if address.get("state"):
-            state_mapping = {
-                "Victoria": "VIC",
-                "New South Wales": "NSW",
-                "Queensland": "QLD",
-                "Western Australia": "WA",
-                "South Australia": "SA",
-                "Tasmania": "TAS",
-                "Australian Capital Territory": "ACT",
-                "Northern Territory": "NT"
-            }
-            # 始终使用大写缩写
-            state = state_mapping.get(address["state"], address["state"].upper())
-            components.append(state)
-
-        if address.get("postalCode"):
-            components.append(address["postalCode"])
-
-        return ", ".join(filter(None, components))
-
-    def _get_cache_key(self, input_address: str) -> str:
-        """生成缓存键"""
-        return hashlib.md5(input_address.lower().encode()).hexdigest()
-
-    def _create_analysis_prompt(self, user_input: str, here_suggestion: Dict) -> str:
-        """创建分析提示词"""
-        return f"""简要分析以下地址:
-用户输入: {user_input}
-HERE建议: {self._format_here_address(here_suggestion)}
-仅需返回:
-地址: <标准化地址>
-置信度: <0-1分数>"""
-
-    async def _call_deepseek_batch(self, prompts: List[str]) -> List[Dict]:
-        """批量调用DeepSeek API"""
-        await self.ensure_session()
-
-        async def process_prompt(prompt):
-            headers = {
-                "Authorization": f"Bearer {self.deepseek_api_key}",
-                "Content-Type": "application/json"
-            }
-
-            data = {
-                "model": "deepseek-chat",
-                "messages": [
-                    {"role": "system", "content": "你是一个专门处理澳大利亚地址验证的助手。"},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.1
-            }
-
-            try:
-                async with self.session.post(self.deepseek_url, headers=headers, json=data) as response:
-                    response.raise_for_status()
+            async with self.session.post(
+                    "https://api.deepseek.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.deepseek_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "deepseek-chat",
+                        "messages": [
+                            {"role": "system", "content": "你是一个专门处理澳大利亚地址验证的助手。"},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "temperature": 0.1
+                    },
+                    timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                if response.status == 200:
                     return await response.json()
-            except Exception as e:
-                st.error(f"DeepSeek API Error: {str(e)}")
+                return None
+        except Exception as e:
+            st.warning(f"地址验证服务暂时不可用: {str(e)}，将使用本地验证...")
+            return None
+
+    def _parse_llm_response(self, response: Dict, raw_input: str) -> Optional[AddressMatch]:
+        """解析 LLM 响应并创建 AddressMatch 对象"""
+        try:
+            content = response['choices'][0]['message']['content']
+
+            # 使用正则表达式提取各个字段
+            address = re.search(r'地址: (.+)', content)
+            unit = re.search(r'单元号: (.+)', content)
+            confidence = re.search(r'置信度: (0\.\d+)', content)
+
+            if not (address and confidence):
                 return None
 
-        tasks = [process_prompt(prompt) for prompt in prompts]
-        return await asyncio.gather(*tasks)
+            formatted_address = address.group(1).strip()
+            if formatted_address.lower() == 'n/a':
+                return None
+
+            # 提取单元号（如果存在）
+            unit_number = None
+            if unit and unit.group(1).strip().lower() != 'n/a':
+                unit_number = unit.group(1).strip()
+
+            # 解析其他组件
+            components = {}
+            for field in ['街道号', '街道', '区域', '州', '邮编']:
+                match = re.search(f'{field}: (.+)', content)
+                if match and match.group(1).strip().lower() != 'n/a':
+                    components[field] = match.group(1).strip()
+
+            return AddressMatch(
+                raw_input=raw_input,
+                formatted_address=formatted_address,
+                confidence_score=float(confidence.group(1)),
+                components=components,
+                unit_number=unit_number,
+                validation_source='llm'
+            )
+        except Exception as e:
+            st.error(f"解析验证结果时出错: {str(e)}")
+            return None
+
+    def _fallback_validation(self, address: str) -> Optional[AddressMatch]:
+        """本地地址验证回退机制"""
+        try:
+            # 基本格式验证
+            parts = address.strip().split(',')
+            if not parts:
+                return None
+
+            # 提取并验证各个部分
+            street_part = parts[0].strip()
+            unit_match = self.validation_patterns['unit'].search(street_part)
+            unit_number = unit_match.group(1) if unit_match else None
+
+            # 验证必要元素
+            has_street_number = bool(self.validation_patterns['street_number'].search(street_part))
+            has_street = bool(self.validation_patterns['street'].search(street_part))
+
+            # 验证州和邮编
+            state_found = False
+            postcode_found = False
+            for part in parts[1:]:
+                if self.validation_patterns['state'].search(part):
+                    state_found = True
+                if self.validation_patterns['postcode'].search(part):
+                    postcode_found = True
+
+            # 计算置信度
+            confidence = 0.5  # 基础置信度
+            if has_street_number and has_street:
+                confidence += 0.1
+            if state_found:
+                confidence += 0.1
+            if postcode_found:
+                confidence += 0.1
+            if unit_number:
+                confidence += 0.1
+
+            if confidence > 0.5:  # 只有当基本验证通过时才返回结果
+                return AddressMatch(
+                    raw_input=address,
+                    formatted_address=address,
+                    confidence_score=confidence,
+                    components={},
+                    unit_number=unit_number,
+                    validation_source='fallback'
+                )
+            return None
+
+        except Exception:
+            return None
 
     async def validate_address(self, input_address: str) -> List[AddressMatch]:
-        """验证并标准化地址"""
+        """主验证函数"""
         if not input_address:
             return []
 
         # 检查缓存
-        cache_key = self._get_cache_key(input_address)
-        cached_result = self.cache.get(cache_key)
-        if cached_result:
-            return cached_result
+        cache_key = hashlib.md5(input_address.lower().encode()).hexdigest()
+        if cache_key in self.cache and datetime.now() < self.cache_expiry[cache_key]:
+            return self.cache[cache_key]
 
-        # 获取HERE API建议
-        suggestions = await self._fetch_here_suggestions(input_address)
-        if not suggestions:
-            return []
-
-        # 批量创建提示词
-        prompts = [
-            self._create_analysis_prompt(input_address, suggestion)
-            for suggestion in suggestions
-            if suggestion.get("address", {}).get("countryCode") == "AUS"
-        ]
-
-        # 批量获取LLM分析结果
-        llm_results = await self._call_deepseek_batch(prompts)
-
-        # 处理结果
         matches = []
-        for suggestion, llm_result in zip(suggestions, llm_results):
-            if llm_result and suggestion.get("address", {}).get("countryCode") == "AUS":
-                try:
-                    content = llm_result['choices'][0]['message']['content']
-                    address_match = re.search(r'地址: (.+)', content)
-                    confidence_match = re.search(r'置信度: (0\.\d+)', content)
 
-                    if address_match and confidence_match:
-                        # 提取单元号
-                        unit_number = self._extract_unit_number(input_address)
-                        formatted_address = self._normalize_street_name(address_match.group(1))
+        try:
+            # 1. 尝试使用 Deepseek API
+            prompt = self._create_validation_prompt(input_address)
+            llm_response = await self._call_deepseek_api(prompt)
 
-                        # 如果找到单元号且验证后的地址中没有包含单元号，则添加单元号
-                        if unit_number and '/' not in formatted_address:
-                            # 在第一个数字之前插入单元号
-                            number_match = re.search(r'\d', formatted_address)
-                            if number_match:
-                                start_pos = number_match.start()
-                                formatted_address = (
-                                        formatted_address[:start_pos] +
-                                        f"{unit_number}/" +
-                                        formatted_address[start_pos:]
-                                )
+            if llm_response:
+                match = self._parse_llm_response(llm_response, input_address)
+                if match:
+                    matches.append(match)
 
-                        matches.append(AddressMatch(
-                            raw_input=input_address,
-                            formatted_address=formatted_address,
-                            confidence_score=float(confidence_match.group(1)),
-                            components=suggestion.get("address", {}),
-                            unit_number=unit_number
-                        ))
-                except Exception as e:
-                    st.error(f"Error parsing LLM response: {str(e)}")
+            # 2. 如果 LLM 验证失败，使用本地验证
+            if not matches:
+                fallback_match = self._fallback_validation(input_address)
+                if fallback_match:
+                    matches.append(fallback_match)
+                else:
+                    # 3. 最后的回退：接受用户输入
+                    matches.append(AddressMatch(
+                        raw_input=input_address,
+                        formatted_address=input_address,
+                        confidence_score=0.5,
+                        components={},
+                        validation_source='user_input'
+                    ))
+                    st.warning("无法验证地址格式。请确保地址准确。", icon="⚠️")
 
-        # 按置信度排序
-        matches.sort(key=lambda x: x.confidence_score, reverse=True)
+        except Exception as e:
+            st.error(f"地址验证过程出现错误: {str(e)}")
+            # 出错时接受用户输入
+            matches.append(AddressMatch(
+                raw_input=input_address,
+                formatted_address=input_address,
+                confidence_score=0.5,
+                components={},
+                validation_source='user_input'
+            ))
 
-        # 缓存结果
-        self.cache.set(cache_key, matches)
+        finally:
+            # 更新缓存
+            if matches:
+                self.cache[cache_key] = matches
+                self.cache_expiry[cache_key] = datetime.now() + self.CACHE_DURATION
 
-        return matches
+            return matches
+
+    async def close_session(self):
+        """关闭 aiohttp 会话"""
+        if self.session:
+            await self.session.close()
+            self.session = None
 
 
 @st.cache_resource
-def get_validator(here_api_key: str, deepseek_api_key: str) -> AddressValidator:
-    return AddressValidator(here_api_key, deepseek_api_key)
+def get_validator(deepseek_api_key: str) -> LLMAddressValidator:
+    """获取验证器实例"""
+    return LLMAddressValidator(deepseek_api_key)

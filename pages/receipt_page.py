@@ -2,7 +2,7 @@
 Description: 
     
 -*- Encoding: UTF-8 -*-
-@File     ：receipt_page.py.py
+@File     ：receipt_page.py
 @Author   ：King Songtao
 @Time     ：2024/12/27 上午12:55
 @Contact  ：king.songtao@gmail.com
@@ -12,8 +12,8 @@ import asyncio
 from datetime import date
 import streamlit as st
 from docx import Document
-from utils.utils import check_login_state, validate_address, generate_receipt, formate_date, navigation, clear_form_state
-from utils.validator import AddressValidator, get_validator
+from utils.utils import check_login_state, generate_receipt, formate_date, navigation, clear_form_state
+from utils.validator import LLMAddressValidator, get_validator
 
 
 def initialize_receipt_data():
@@ -40,7 +40,7 @@ def initialize_receipt_data():
         "custom_notes": [],
         "custom_notes_enabled": False,
         "excluded_enabled": False,
-        "custom_excluded_enabled": False,  # 新增字段
+        "custom_excluded_enabled": False,
         "manual_excluded_selection": [],
         "custom_excluded_items": [],
         "output_doc": None,
@@ -75,7 +75,6 @@ async def render_input_form(service_options, receipt_data):
     # 初始化验证器相关的session state
     if 'validator' not in st.session_state:
         st.session_state.validator = get_validator(
-            st.secrets.get("HERE_API_KEY"),
             st.secrets.get("DEEPSEEK_API_KEY")
         )
 
@@ -93,9 +92,9 @@ async def render_input_form(service_options, receipt_data):
         st.session_state.should_validate = False
 
     address = st.text_input('客户地址',
-                            key="address",
-                            on_change=on_address_change,
-                            placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000")
+                           key="address",
+                           on_change=on_address_change,
+                           placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000")
 
     # 处理地址验证
     address_valid = True
@@ -106,26 +105,18 @@ async def render_input_form(service_options, receipt_data):
                 st.session_state.should_validate = False
 
                 if matches:
-                    # 使用字典去重，以格式化地址作为键
-                    unique_matches = {}
-                    for match in matches:
-                        # 如果遇到相同地址，保留置信度更高的那个
-                        if match.formatted_address not in unique_matches or \
-                                match.confidence_score > unique_matches[match.formatted_address].confidence_score:
-                            unique_matches[match.formatted_address] = match
+                    # 根据验证来源显示不同的提示
+                    if matches[0].validation_source == 'llm':
+                        st.success("✅ 找到以下地址匹配：")
+                    elif matches[0].validation_source == 'fallback':
+                        st.warning("ℹ️ DeepSeek API暂时不可用，当前使用本地验证模式，请仔细核对地址：")
+                    else:
+                        st.warning("⚠️ 无法完全验证地址，请确保地址准确：")
 
-                    # 转换回列表并按置信度排序
-                    unique_matches = sorted(
-                        unique_matches.values(),
-                        key=lambda x: x.confidence_score,
-                        reverse=True
-                    )
-                    st.success("找到以下可能的地址匹配,请从列表中选择准确的地址：", icon="✅")
-
-                    for i, match in enumerate(unique_matches):
+                    # 显示匹配结果
+                    for i, match in enumerate(matches):
                         with st.container():
-                            col1, col2, col3 = st.columns([6,2, 1])
-
+                            col1, col2, col3 = st.columns([6, 2, 1])
                             with col1:
                                 st.write(f"🏠 {match.formatted_address}")
                             with col2:
@@ -133,22 +124,26 @@ async def render_input_form(service_options, receipt_data):
                             with col3:
                                 if st.button("选择", key=f"select_{i}", on_click=select_address, args=(match,)):
                                     st.rerun()
-                    st.info("如果您不确定以上哪个是正确地址，请在google中搜索查看！", icon="ℹ️")
-                    # 创建Google搜索URL
-                    search_query = address.replace(' ', '+')
-                    search_url = f"https://www.google.com/search?q={search_query}+Australia"
 
-                    # 使用st.link_button替代JavaScript方式
-                    st.link_button(
-                        "🔍 在Google Search中搜索",
-                        search_url,
-                        use_container_width=True
-                    )
-
-                    st.divider()
+                    # 如果是LLM验证失败或本地验证，显示Google搜索选项
+                    if matches[0].validation_source != 'llm':
+                        st.info("如果不确定地址是否正确，建议在Google中搜索确认：", icon="ℹ️")
+                        search_query = address.replace(' ', '+')
+                        search_url = f"https://www.google.com/search?q={search_query}+Australia"
+                        st.link_button(
+                            "🔍 在Google中搜索此地址",
+                            search_url,
+                            use_container_width=True
+                        )
                 else:
-                    st.warning("未找到匹配的地址，请检查输入后重试。")
+                    st.warning("⚠️ 无法验证此地址，请检查输入是否正确。")
+                    st.info("您可以：\n1. 检查地址拼写\n2. 确保包含门牌号和街道名\n3. 添加州名和邮编")
                     address_valid = False
+
+        except Exception as e:
+            st.error(f"地址验证服务暂时不可用: {str(e)}")
+            st.info("您可以继续填写其他信息，稍后再尝试验证地址。")
+            address_valid = True  # 允许用户继续，但显示警告
         finally:
             await st.session_state.validator.close_session()
 
@@ -157,30 +152,30 @@ async def render_input_form(service_options, receipt_data):
 
     with col1:
         selected_date = st.date_input('收据日期',
-                                      value=receipt_data["selected_date"])
+                                    value=receipt_data["selected_date"])
         basic_service_selection = st.multiselect('基础服务（多选）',
-                                                 service_options["basic_service"],
-                                                 default=receipt_data["basic_service"],
-                                                 placeholder="请选择基础服务...")
+                                               service_options["basic_service"],
+                                               default=receipt_data["basic_service"],
+                                               placeholder="请选择基础服务...")
         electrical_selections = st.multiselect('电器服务（多选）',
-                                               service_options["electrical"],
-                                               default=receipt_data["electrical"],
-                                               placeholder="请选择电器服务...")
+                                             service_options["electrical"],
+                                             default=receipt_data["electrical"],
+                                             placeholder="请选择电器服务...")
 
     with col2:
         amount = st.number_input('收据金额',
-                                 value=float(receipt_data["amount"]),
-                                 min_value=0.0,
-                                 step=1.0,
-                                 format='%f')
+                               value=float(receipt_data["amount"]),
+                               min_value=0.0,
+                               step=1.0,
+                               format='%f')
         rooms_selection = st.multiselect('房间（多选）',
-                                         service_options["rooms"],
-                                         default=receipt_data["rooms"],
-                                         placeholder="请选择房间...")
+                                       service_options["rooms"],
+                                       default=receipt_data["rooms"],
+                                       placeholder="请选择房间...")
         other_selection = st.multiselect('其他服务（多选）',
-                                         service_options["others"],
-                                         default=receipt_data["other"],
-                                         placeholder="请输入其他服务...")
+                                       service_options["others"],
+                                       default=receipt_data["other"],
+                                       placeholder="请输入其他服务...")
 
     return (address_valid, address, selected_date, amount,
             basic_service_selection, electrical_selections,
@@ -259,7 +254,6 @@ def handle_excluded_content(all_services, selected_services, receipt_data):
             placeholder="请选择要添加的服务..."
         )
 
-        # Add checkbox for custom excluded items
         custom_excluded_enabled = st.checkbox(
             "为Excluded模块添加自定义项目",
             value=receipt_data.get("custom_excluded_enabled", False)
@@ -318,7 +312,7 @@ def generate_excluded_content(manual_excluded_selection, all_services, custom_it
     return excluded_content + content
 
 
-async def receipt_page():
+async def receipt_page():  # 继续 receipt_page 函数
     """收据生成页面主函数"""
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
 
@@ -377,7 +371,6 @@ async def receipt_page():
     if excluded_enabled and custom_excluded_enabled:
         custom_excluded_items = handle_custom_items("excluded", receipt_data)
 
-    # st.divider()
     st.info("确保收据信息录入正确后，点击生成收据按钮即可预览或下载您的收据！", icon="ℹ️")
 
     # 提交按钮
@@ -445,7 +438,7 @@ async def receipt_page():
         # 生成收据
         if current_form_data['output_doc']:
             current_form_data['ready_doc'] = generate_receipt(current_form_data['output_doc'],
-                                                              replace_dic)
+                                                             replace_dic)
             st.switch_page("pages/receipt_preview.py")
         else:
             st.error("模板文档未正确加载，请重试！")
