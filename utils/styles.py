@@ -59,17 +59,40 @@ def apply_global_styles():
                 border-radius: 0px !important;
             }
 
-            /* 确保增减按钮本身也没有圆角 */
             .stNumberInput button {
                 border-radius: 0px !important;
             }
 
-            /* 针对 spinbutton 容器 */
             [data-baseweb="spinbutton"] {
                 border-radius: 0px !important;
             }
 
             [data-baseweb="spinbutton"] > div {
+                border-radius: 0px !important;
+            }
+
+            /* DataFrame 相关样式 */
+            .stDataFrame {
+                border-radius: 0px !important;
+            }
+
+            /* DataFrame 容器 */
+            [data-testid="stDataFrame"] > div {
+                border-radius: 0px !important;
+            }
+
+            /* DataFrame 表格本身 */
+            .css-jhkxg0 {
+                border-radius: 0px !important;
+            }
+
+            /* DataFrame 所有子元素 */
+            [data-testid="stDataFrame"] div {
+                border-radius: 0px !important;
+            }
+
+            /* DataFrame 滚动区域 */
+            .element-container > div > div > div {
                 border-radius: 0px !important;
             }
 

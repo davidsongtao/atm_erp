@@ -158,8 +158,8 @@ def work_orders():
             if st.button("新建工单", use_container_width=True, type="primary"):
                 st.switch_page("pages/new_work_order.py")
         with col2:
-            if st.button("工单统计", use_container_width=True, type="primary", disabled=True):
-                st.switch_page("pages/new_work_order.py")
+            if st.button("工单统计", use_container_width=True, type="primary"):
+                st.switch_page("pages/orders_show.py")
         with col3:
             if st.button("修改工单", use_container_width=True, type="primary", disabled=True):
                 st.switch_page("pages/new_work_order.py")
