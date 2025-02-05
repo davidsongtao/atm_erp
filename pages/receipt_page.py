@@ -14,6 +14,7 @@ import streamlit as st
 from docx import Document
 from utils.utils import check_login_state, generate_receipt, formate_date, navigation, clear_form_state
 from utils.validator import LLMAddressValidator, get_validator
+from utils.styles import apply_global_styles
 
 
 def initialize_receipt_data():
@@ -78,31 +79,22 @@ async def render_input_form(service_options, receipt_data):
             st.secrets.get("DEEPSEEK_API_KEY")
         )
 
-    if "should_validate" not in st.session_state:
-        st.session_state.should_validate = False
-
     if "address" not in st.session_state:
         st.session_state.address = receipt_data["address"]
 
-    def on_address_change():
-        st.session_state.should_validate = True
+    # 创建地址输入的列布局
+    addr_col1, addr_col2 = st.columns([4, 1])
 
-    def select_address(match):
-        st.session_state.address = match.formatted_address
-        st.session_state.should_validate = False
+    address = st.text_input('客户地址', key="address", placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000")
 
-    address = st.text_input('客户地址',
-                           key="address",
-                           on_change=on_address_change,
-                           placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000")
+    validate_btn = st.button("验证地址", use_container_width=True, key="validate-address-btn", type="primary")
 
     # 处理地址验证
     address_valid = True
-    if st.session_state.should_validate and address.strip():
+    if validate_btn and address.strip():
         try:
             with st.spinner("验证地址中..."):
                 matches = await st.session_state.validator.validate_address(address)
-                st.session_state.should_validate = False
 
                 if matches:
                     # 根据验证来源显示不同的提示
@@ -122,7 +114,8 @@ async def render_input_form(service_options, receipt_data):
                             with col2:
                                 st.write(f"匹配度: {match.confidence_score:.2f}")
                             with col3:
-                                if st.button("选择", key=f"select_{i}", on_click=select_address, args=(match,)):
+                                if st.button("选择", key=f"select_{i}"):
+                                    st.session_state.address = match.formatted_address
                                     st.rerun()
 
                     # 如果是LLM验证失败或本地验证，显示Google搜索选项
@@ -152,30 +145,30 @@ async def render_input_form(service_options, receipt_data):
 
     with col1:
         selected_date = st.date_input('收据日期',
-                                    value=receipt_data["selected_date"])
+                                      value=receipt_data["selected_date"])
         basic_service_selection = st.multiselect('基础服务（多选）',
-                                               service_options["basic_service"],
-                                               default=receipt_data["basic_service"],
-                                               placeholder="请选择基础服务...")
+                                                 service_options["basic_service"],
+                                                 default=receipt_data["basic_service"],
+                                                 placeholder="请选择基础服务...")
         electrical_selections = st.multiselect('电器服务（多选）',
-                                             service_options["electrical"],
-                                             default=receipt_data["electrical"],
-                                             placeholder="请选择电器服务...")
+                                               service_options["electrical"],
+                                               default=receipt_data["electrical"],
+                                               placeholder="请选择电器服务...")
 
     with col2:
         amount = st.number_input('收据金额',
-                               value=float(receipt_data["amount"]),
-                               min_value=0.0,
-                               step=1.0,
-                               format='%f')
+                                 value=float(receipt_data["amount"]),
+                                 min_value=0.0,
+                                 step=1.0,
+                                 format='%f')
         rooms_selection = st.multiselect('房间（多选）',
-                                       service_options["rooms"],
-                                       default=receipt_data["rooms"],
-                                       placeholder="请选择房间...")
+                                         service_options["rooms"],
+                                         default=receipt_data["rooms"],
+                                         placeholder="请选择房间...")
         other_selection = st.multiselect('其他服务（多选）',
-                                       service_options["others"],
-                                       default=receipt_data["other"],
-                                       placeholder="请输入其他服务...")
+                                         service_options["others"],
+                                         default=receipt_data["other"],
+                                         placeholder="请输入其他服务...")
 
     return (address_valid, address, selected_date, amount,
             basic_service_selection, electrical_selections,
@@ -315,6 +308,8 @@ def generate_excluded_content(manual_excluded_selection, all_services, custom_it
 async def receipt_page():  # 继续 receipt_page 函数
     """收据生成页面主函数"""
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
+
 
     login_state, role = check_login_state()
 
@@ -438,7 +433,7 @@ async def receipt_page():  # 继续 receipt_page 函数
         # 生成收据
         if current_form_data['output_doc']:
             current_form_data['ready_doc'] = generate_receipt(current_form_data['output_doc'],
-                                                             replace_dic)
+                                                              replace_dic)
             st.switch_page("pages/receipt_preview.py")
         else:
             st.error("模板文档未正确加载，请重试！")

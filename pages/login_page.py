@@ -14,10 +14,13 @@ import time
 import streamlit as st
 from utils.utils import set_login_state, check_login_state, log_out, add_active_session
 from utils.db_operations import login_auth
+from utils.styles import apply_global_styles
 
 
 def login_page():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+
+    apply_global_styles()
 
     # 添加CSS样式
     st.markdown(
@@ -71,10 +74,11 @@ def login_page():
                 log_out()
 
     else:
-        st.title("👋ATM-Cleaning 办公管理系统")
+        st.title("ATM-Cleaning 工单管理系统")
         st.divider()
         username = st.text_input("电子邮箱", key="username_input", placeholder="请输入用户名:your_name@email.com")
         password = st.text_input("登录密码", key="password", type="password")
+        st.info("该系统仅供内部使用，暂不开放注册，如需账号，请联系管理员！", icon="ℹ️")
 
         col1, col2 = st.columns(2)
         with col1:

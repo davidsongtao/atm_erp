@@ -12,10 +12,12 @@ import time
 from utils.db_operations import get_all_staff_acc
 from utils.utils import check_login_state, confirm_logout, formate_acc_info, navigation
 import streamlit as st
+from utils.styles import apply_global_styles
 
 
 def staff_acc():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
     st.title("📊员工管理")
     st.divider()
     login_state, role = check_login_state()

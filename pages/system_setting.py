@@ -12,10 +12,12 @@ import time
 import streamlit as st
 from utils.utils import navigation, check_login_state
 from utils.db_operations import update_account, login_auth
+from utils.styles import apply_global_styles
 
 
 def system_settings():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
     login_state, role = check_login_state()
 
     if login_state:

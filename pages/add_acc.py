@@ -11,10 +11,26 @@ import time
 import streamlit as st
 from utils.utils import navigation, check_login_state
 from utils.db_operations import create_new_account
+from utils.styles import apply_global_styles
 
 
 def add_acc():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
+    # 添加全局按钮样式
+    st.markdown("""
+                <style>
+                    /* 将所有 Streamlit 按钮的圆角设为0 */
+                    .stButton button {
+                        border-radius: 0px !important;
+                    }
+
+                    /* 修改链接按钮的圆角 */
+                    .stLinkButton > a {
+                        border-radius: 0px !important;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
 
     login_state, role = check_login_state()
 

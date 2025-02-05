@@ -14,6 +14,7 @@ from datetime import datetime, date, timedelta
 from utils.utils import navigation, check_login_state
 from utils.db_operations import get_work_orders, get_work_orders_by_date_range
 import pandas as pd
+from utils.styles import apply_global_styles
 
 
 def display_orders(orders, tab_name):
@@ -141,6 +142,7 @@ def display_orders(orders, tab_name):
 
 def work_orders():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
     login_state, role = check_login_state()
 
     if login_state:
@@ -170,7 +172,7 @@ def work_orders():
         	.stTabs [data-baseweb="tab"] {
         		height: 50px;
         		background-color: #F0F2F6;
-        		border-radius: 7px 7px 0px 0px;
+        		border-radius: 0px 0px 0px 0px;
         		padding-left: 15px;
         		padding-right: 15px;
             }

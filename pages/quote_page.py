@@ -11,6 +11,7 @@ from utils.utils import navigation, stream_res, get_response
 import streamlit as st
 from configs.settings import BaseConfig
 from langchain.memory import ConversationBufferMemory
+from utils.styles import apply_global_styles
 
 
 def get_price_mapping():
@@ -113,6 +114,7 @@ def preprocess_response(response):
 
 def quote_page():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
     navigation()
     st.title("⌨️自动化智能报价")
     st.divider()

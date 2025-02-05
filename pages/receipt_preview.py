@@ -12,7 +12,7 @@ import time
 import mammoth
 import streamlit as st
 from utils.utils import check_login_state, extract_date_from_html, confirm_back, navigation
-
+from utils.styles import apply_global_styles
 
 def receipt_preview():
     """
@@ -20,6 +20,7 @@ def receipt_preview():
     :return:
     """
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
     # 验证登录状态
     login_state, role = check_login_state()
 

@@ -14,10 +14,12 @@ from datetime import datetime, date
 from utils.utils import navigation, check_login_state
 from utils.validator import get_validator
 from utils.db_operations import create_work_order
+from utils.styles import apply_global_styles
 
 
 async def create_work_order_page():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
     login_state, role = check_login_state()
 
     if login_state:
@@ -28,7 +30,6 @@ async def create_work_order_page():
         # 初始化验证器相关的session state
         if 'validator' not in st.session_state:
             st.session_state.validator = get_validator(
-                st.secrets.get("HERE_API_KEY"),
                 st.secrets.get("DEEPSEEK_API_KEY")
             )
 
@@ -45,7 +46,6 @@ async def create_work_order_page():
             st.session_state.hour = "09:00"
 
         # 基础信息
-        st.info("请完善工单基础信息", icon="📝")
         col1, col2 = st.columns(2)
         with col1:
             order_date = st.date_input(
@@ -68,74 +68,36 @@ async def create_work_order_page():
             st.text_input("工单所有人", value=current_user, disabled=True)
         source = st.text_input("工单来源", placeholder="请输入客户来源")
 
-        # 工作时间选择放在新的一行
-        time_col1, time_col2 = st.columns(2)
-        # with time_col1:
-            # am_pm = st.selectbox(
-            #     "时间段",
-            #     options=["AM", "PM"],
-            #     key="am_pm",
-            #     index=None,
-            #     placeholder="选择时间段...",
-            # )
-        # with time_col2:
-        #     if am_pm == "AM":
-        #         hour_options = [f"{i:02d}:00" for i in range(7, 13)]  # AM 7:00-12:00
-        #     else:
-        #         hour_options = [f"{i:02d}:00" for i in range(12, 19)]  # PM 12:00-18:00
-        #
-        #     hour = st.selectbox(
-        #         "具体时间",
-        #         options=hour_options,
-        #         key="hour",
-        #         index=None,
-        #         placeholder="请选择具体时间...",
-        #     )
-        #
-        # work_time = f"{am_pm} {hour}"
-
-        # 地址信息部分
-        st.info("请输入客户地址，系统会自动验证地址是否正确。", icon="📍")
-
-        def on_address_change():
-            st.session_state.should_validate = True
-
         def select_address(match):
             st.session_state.work_address = match.formatted_address
-            st.session_state.should_validate = False
 
+        # 创建地址输入和验证按钮
         work_address = st.text_input(
             "工作地址",
             key="work_address",
-            on_change=on_address_change,
             placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000"
         )
 
+        validate_btn = st.button("验证地址", use_container_width=True, key="validate-address-btn", type="primary")
+
         # 处理地址验证
         address_valid = True
-        if st.session_state.should_validate and work_address.strip():
+        if validate_btn and work_address.strip():
             try:
                 with st.spinner("验证地址中..."):
                     matches = await st.session_state.validator.validate_address(work_address)
-                    st.session_state.should_validate = False
 
                     if matches:
-                        # 使用字典去重，以格式化地址作为键
-                        unique_matches = {}
-                        for match in matches:
-                            if match.formatted_address not in unique_matches or \
-                                    match.confidence_score > unique_matches[match.formatted_address].confidence_score:
-                                unique_matches[match.formatted_address] = match
+                        # 根据验证来源显示不同的提示
+                        if matches[0].validation_source == 'llm':
+                            st.success("✅ 找到以下地址匹配：")
+                        elif matches[0].validation_source == 'fallback':
+                            st.warning("ℹ️ DeepSeek API暂时不可用，当前使用本地验证模式，请仔细核对地址：")
+                        else:
+                            st.warning("⚠️ 无法完全验证地址，请确保地址准确：")
 
-                        # 转换回列表并按置信度排序
-                        unique_matches = sorted(
-                            unique_matches.values(),
-                            key=lambda x: x.confidence_score,
-                            reverse=True
-                        )
-                        st.success("找到以下可能的地址匹配,请从列表中选择准确的地址：", icon="✅")
-
-                        for i, match in enumerate(unique_matches):
+                        # 显示匹配结果
+                        for i, match in enumerate(matches):
                             with st.container():
                                 col1, col2, col3 = st.columns([6, 2, 1])
                                 with col1:
@@ -145,29 +107,30 @@ async def create_work_order_page():
                                 with col3:
                                     if st.button("选择", key=f"select_{i}", on_click=select_address, args=(match,)):
                                         st.rerun()
-                        st.info("如果您不确定以上哪个是正确地址，请在google中搜索查看！", icon="ℹ️")
 
-                        # 创建Google搜索URL
-                        search_query = work_address.replace(' ', '+')
-                        search_url = f"https://www.google.com/search?q={search_query}+Australia"
-
-                        st.link_button(
-                            "🔍 在Google Search中搜索",
-                            search_url,
-                            use_container_width=True
-                        )
-
-                        st.divider()
+                        # 如果是LLM验证失败或本地验证，显示Google搜索选项
+                        if matches[0].validation_source != 'llm':
+                            st.info("如果不确定地址是否正确，建议在Google中搜索确认：", icon="ℹ️")
+                            search_query = work_address.replace(' ', '+')
+                            search_url = f"https://www.google.com/search?q={search_query}+Australia"
+                            st.link_button(
+                                "🔍 在Google中搜索此地址",
+                                search_url,
+                                use_container_width=True
+                            )
                     else:
-                        st.warning("未找到匹配的地址，请检查输入后重试。")
+                        st.warning("⚠️ 无法验证此地址，请检查输入是否正确。")
+                        st.info("您可以：\n1. 检查地址拼写\n2. 确保包含门牌号和街道名\n3. 添加州名和邮编")
                         address_valid = False
+
+            except Exception as e:
+                st.error(f"地址验证服务暂时不可用: {str(e)}")
+                st.info("您可以继续填写其他信息，稍后再尝试验证地址。")
+                address_valid = True  # 允许用户继续，但显示警告
             finally:
                 await st.session_state.validator.close_session()
 
-        # st.divider()
-
-        # 服务选择部分
-        st.info("请选择需要服务的项目。", icon="🛠️")
+        st.divider()
 
         service_options = {
             "basic_service": ["Steam clean of the carpet", "Steam clean of the mattress",
@@ -223,7 +186,7 @@ async def create_work_order_page():
             custom_item = []
 
         # 付款信息部分
-        st.info("请完善付款方式和工单金额。", icon="💰")
+        st.divider()
         col1, col2 = st.columns(2)
         with col1:
             payment_method = st.selectbox(
@@ -241,8 +204,8 @@ async def create_work_order_page():
         # 自动计算总金额
         total_amount = order_amount * 1.1 if payment_method == "transfer" else order_amount
         st.success(f"工单总金额：${total_amount:.2f} ({'含 GST' if payment_method == 'transfer' else '不含 GST'})")
-
-        confirm_create = st.checkbox("我确认工单总金额无误，立即创建工单！")
+        st.divider()
+        confirm_create = st.checkbox("我确认所有工单信息录入无误，立即创建工单！")
         create_btn = st.button("创建工单", use_container_width=True, type="primary")
         # 确认和取消按钮
         if create_btn and confirm_create:

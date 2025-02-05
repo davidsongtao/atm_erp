@@ -9,10 +9,12 @@ Description:
 """
 from utils.utils import navigation, stream_res
 import streamlit as st
+from utils.styles import apply_global_styles
 
 
 def pricing_page():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
     navigation()
     st.title("⌨️自动化报价生成")
     st.divider()

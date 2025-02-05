@@ -13,10 +13,13 @@ from datetime import date
 import streamlit as st
 from utils.utils import check_login_state, confirm_logout, navigation
 import os
+from utils.styles import apply_global_styles
 
 
 def admin_page():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
+
     login_state, role = check_login_state()
     # login_state = True
 
@@ -45,7 +48,6 @@ def admin_page():
         a.metric("本月总成交额", total_sale, "$395")
         b.metric("本月阿姨总支出", "10,269", "-$102")
         c.metric("本月毛利", "19,545", "$1,502")
-
 
         st.divider()
         # st.subheader("已派工单概览")
@@ -140,11 +142,8 @@ def admin_page():
                 # st.success("海叔组 | 小鱼组", icon="✅")
                 st.subheader("海叔组 | 小鱼组")
 
-
         if check_available:
             check_free()
-
-
 
         # # 工单概览
         # st.divider()

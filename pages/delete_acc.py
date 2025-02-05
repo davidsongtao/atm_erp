@@ -11,10 +11,13 @@ import time
 import streamlit as st
 from utils.utils import navigation, check_login_state
 from utils.db_operations import get_all_staff_acc, delete_account
+from utils.styles import apply_global_styles
 
 
 def delete_acc():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
+    apply_global_styles()
+
     login_state, role = check_login_state()
 
     # 检查登录状态
