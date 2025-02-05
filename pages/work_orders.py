@@ -18,7 +18,7 @@ import pandas as pd
 from utils.styles import apply_global_styles
 
 
-# 首先添加一个简化的发票签发对话框函数
+# 修改后的发票签发对话框函数
 @st.dialog("签发发票")
 def issue_invoice_dialog(order_data):
     """发票签发对话框
@@ -29,10 +29,21 @@ def issue_invoice_dialog(order_data):
     st.write(f"📍 工单地址：{order_data['work_address']}")
     st.number_input("工单总金额", value=order_data['total_amount'], disabled=True)
 
+    # 添加确认checkbox
+    confirm_checkbox = st.checkbox(
+        "我已确认以上信息无误，并确认签发该发票！",
+        key=f"confirm_invoice_checkbox_{order_data['id']}"
+    )
+
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("确认已签发", use_container_width=True, type="primary"):
+        if st.button(
+            "确认已签发",
+            use_container_width=True,
+            type="primary",
+            disabled=not confirm_checkbox  # 根据checkbox状态禁用确认按钮
+        ):
             # 更新数据库中的发票状态
             success, error = update_invoice_status(order_data['id'], datetime.now())
             if success:
@@ -47,7 +58,7 @@ def issue_invoice_dialog(order_data):
             st.rerun()
 
 
-# 在 work_orders.py 中添加新的对话框函数
+# 修改后的收据签发对话框函数
 @st.dialog("签发收据")
 def issue_receipt_dialog(order_data):
     """收据签发对话框
@@ -55,13 +66,25 @@ def issue_receipt_dialog(order_data):
     Args:
         order_data (pd.Series): 工单数据
     """
-    st.write(f"📍 工单地址{order_data['work_address']}")
+    st.write(f"📍 工单地址：{order_data['work_address']}")
     st.number_input("工单总金额", value=order_data['total_amount'], disabled=True)
+
+    # 添加确认checkbox
+    confirm_checkbox = st.checkbox(
+        "我已确认以上信息无误，并确认签发该收据！",
+        key=f"confirm_receipt_checkbox_{order_data['id']}"
+    )
+
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("收据已签发", use_container_width=True, type="primary"):
-            # 更新数据库中的收据状态，此处 receipt_date 未使用
+        if st.button(
+            "收据已签发",
+            use_container_width=True,
+            type="primary",
+            disabled=not confirm_checkbox  # 根据checkbox状态禁用确认按钮
+        ):
+            # 更新数据库中的收据状态
             success, error = update_receipt_status(order_data['id'], datetime.now())
             if success:
                 st.success("收据状态已更新！", icon="✅")
@@ -71,7 +94,11 @@ def issue_receipt_dialog(order_data):
                 st.error(f"收据状态更新失败：{error}", icon="⚠️")
 
     with col2:
-        if st.button("前往创建收据页面", use_container_width=True):
+        if st.button(
+            "前往创建收据页面",
+            use_container_width=True,
+            disabled=not confirm_checkbox  # 根据checkbox状态禁用按钮
+        ):
             # 构建初始化数据
             receipt_data = {
                 "address": order_data['work_address'],
