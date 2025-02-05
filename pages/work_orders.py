@@ -139,7 +139,8 @@ def confirm_payment_dialog(order_id, work_address, total_amount, payment_method)
             min_value=0.0,
             value=float(total_amount),
             step=0.1,
-            format="%.2f"
+            format="%.2f",
+            disabled=True,
         )
 
     with col2:
