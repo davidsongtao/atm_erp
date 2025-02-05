@@ -36,22 +36,20 @@ def work_order_statistics():
 
         st.title("📊 工单统计")
         st.divider()
-
+        st.subheader("统计指标")
         # 时间范围选择，默认选择"year"（本年）
-        col1, col2 = st.columns(2)
-        with col1:
-            time_range = st.selectbox(
-                "选择时间范围",
-                options=["year", "quarter", "month", "week", "day"],
-                format_func=lambda x: {
-                    "day": "今日",
-                    "week": "本周",
-                    "month": "本月",
-                    "quarter": "本季度",
-                    "year": "本年"
-                }[x],
-                index=0  # 设置默认选项为第一个（即"year"）
-            )
+        time_range = st.selectbox(
+            "选择时间范围",
+            options=["year", "quarter", "month", "week", "day"],
+            format_func=lambda x: {
+                "day": "今日",
+                "week": "本周",
+                "month": "本月",
+                "quarter": "本季度",
+                "year": "今年"
+            }[x],
+            index=0  # 设置默认选项为第一个（即"year"）
+        )
 
         # 获取工单数据
         orders_df, error = get_work_orders(time_range)
@@ -83,8 +81,6 @@ def work_order_statistics():
 
 def show_statistics(df):
     """显示统计指标"""
-    st.subheader("统计指标")
-
     # 统计数据计算
     total_orders = len(df)
     total_amount = df['total_amount'].sum()
@@ -150,6 +146,7 @@ def show_statistics(df):
 
 def show_work_orders_table(df):
     """显示工单详情表格"""
+    st.divider()
     st.subheader("工单详情")
 
     # 定义支付方式映射
@@ -162,7 +159,7 @@ def show_work_orders_table(df):
     reverse_payment_mapping = {v: k for k, v in payment_method_mapping.items()}
 
     # 创建一个清空按钮
-    clear_button = st.button("清空筛选条件", type="secondary")
+    clear_button = st.button("清空筛选条件", type="primary")
 
     # 如果点击清空按钮，重置所有筛选条件
     if clear_button:
