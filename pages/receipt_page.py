@@ -9,12 +9,14 @@ Description:
 """
 import time
 import asyncio
-from datetime import date
+from datetime import date, datetime
 import streamlit as st
 from docx import Document
 from utils.utils import check_login_state, generate_receipt, formate_date, navigation, clear_form_state
 from utils.validator import LLMAddressValidator, get_validator
 from utils.styles import apply_global_styles
+
+
 
 
 def initialize_receipt_data():
@@ -310,6 +312,17 @@ async def receipt_page():  # 继续 receipt_page 函数
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     apply_global_styles()
 
+    # 在 receipt_page.py 的页面加载时
+    if 'receipt_order_info' in st.session_state:
+        order_info = st.session_state.receipt_order_info
+        # 使用工单信息填充表单
+        st.text_input("客户姓名", value=order_info['customer_name'])
+        st.text_input("工作地址", value=order_info['work_address'])
+        st.date_input("收据日期", value=datetime.strptime(order_info['receipt_date'], '%Y-%m-%d').date())
+        # ... 其他表单字段
+
+        # 清除session_state中的工单信息
+        del st.session_state.receipt_order_info
 
     login_state, role = check_login_state()
 

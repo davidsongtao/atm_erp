@@ -13,9 +13,59 @@ import toml
 import streamlit as st
 from datetime import datetime, date, timedelta
 from utils.utils import navigation, check_login_state
-from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status
+from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status, update_receipt_status
 import pandas as pd
 from utils.styles import apply_global_styles
+
+
+# 在 work_orders.py 中添加新的对话框函数
+@st.dialog("签发收据")
+def issue_receipt_dialog(order_data):
+    """收据签发对话框
+
+    Args:
+        order_data (pd.Series): 工单数据
+    """
+    st.write(f"📍 工单地址{order_data['work_address']}")
+    st.number_input("工单总金额", value=order_data['total_amount'], disabled=True)
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("收据已签发", use_container_width=True, type="primary"):
+            # 更新数据库中的收据状态，此处 receipt_date 未使用
+            success, error = update_receipt_status(order_data['id'], datetime.now())
+            if success:
+                st.success("收据状态已更新！", icon="✅")
+                time.sleep(2)  # 显示2秒成功消息
+                st.rerun()  # 重新加载页面
+            else:
+                st.error(f"收据状态更新失败：{error}", icon="⚠️")
+
+    with col2:
+        if st.button("前往创建收据页面", use_container_width=True):
+            # 构建初始化数据
+            receipt_data = {
+                "address": order_data['work_address'],
+                "selected_date": datetime.now().date(),
+                "amount": float(order_data['total_amount']),
+                "basic_service": order_data['basic_service'].split('|') if order_data['basic_service'] else [],
+                "rooms": order_data['rooms'].split('|') if order_data['rooms'] else [],
+                "electrical": order_data['electricals'].split('|') if order_data['electricals'] else [],
+                "other": order_data['other_services'].split('|') if order_data['other_services'] else [],
+                "custom_notes": order_data['custom_item'].split('|') if order_data['custom_item'] else [],
+                "custom_notes_enabled": bool(order_data['custom_item']),
+                "excluded_enabled": False,
+                "custom_excluded_enabled": False,
+                "manual_excluded_selection": [],
+                "custom_excluded_items": [],
+                "order_id": order_data['id']  # 保存工单ID以便后续更新状态
+            }
+
+            # 存储到session state
+            st.session_state['previous_form_data'] = receipt_data
+
+            # 跳转到收据页面
+            st.switch_page("pages/receipt_page.py")
 
 
 # 修改后的确认收款对话框函数
@@ -203,19 +253,7 @@ def display_orders(orders, tab_name):
                         time.sleep(3)
                         st.rerun()
                 with col3:
-                    # 根据paperwork值显示对应按钮 (1=receipt, 0=invoice)
-                    if order['paperwork'] == 0:  # 使用字符串比较
-                        is_invoice_sent = order['invoice_sent']
-                        if st.button(
-                                "签发发票",
-                                key=f"{tab_name}_confirm_invoice_{order['id']}",
-                                use_container_width=True,
-                                disabled=is_invoice_sent,
-                                help="此工单已签发发票" if is_invoice_sent else "点击签发发票",
-                                type="primary"
-                        ):
-                            st.warning("该功能正在开发中，敬请期待！")
-                    else:  # paperwork == '1'
+                    if order['paperwork'] == 1:  # 收据类型
                         is_receipt_sent = order['receipt_sent']
                         if st.button(
                                 "签发收据",
@@ -225,7 +263,7 @@ def display_orders(orders, tab_name):
                                 help="此工单已签发收据" if is_receipt_sent else "点击签发收据",
                                 type="primary"
                         ):
-                            st.warning("该功能正在开发中，敬请期待！")
+                            issue_receipt_dialog(order)
             st.divider()
 
 

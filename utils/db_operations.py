@@ -355,3 +355,38 @@ def update_payment_status(order_id, payment_date):
     except Exception as e:
         logger.error(f"更新收款状态失败：{e}")
         return False, str(e)
+
+
+def update_receipt_status(order_id, receipt_date):
+    """更新工单的收据状态
+
+    Args:
+        order_id (int): 工单ID
+        receipt_date (datetime): 收据签发日期 (暂未使用)
+
+    Returns:
+        tuple: (success, error_message)
+    """
+    try:
+        conn = connect_db()
+
+        # 使用 session 执行更新，只更新 receipt_sent 状态
+        with conn.session as session:
+            session.execute(
+                text("""
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE
+                    WHERE id = :order_id
+                """),
+                params={
+                    'order_id': order_id
+                }
+            )
+            session.commit()
+
+        logger.success(f"工单 {order_id} 收据状态更新成功")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"更新收据状态失败：{e}")
+        return False, str(e)
