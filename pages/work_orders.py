@@ -13,9 +13,59 @@ import toml
 import streamlit as st
 from datetime import datetime, date, timedelta
 from utils.utils import navigation, check_login_state
-from utils.db_operations import get_work_orders, get_work_orders_by_date_range
+from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status
 import pandas as pd
 from utils.styles import apply_global_styles
+
+
+# 修改后的确认收款对话框函数
+@st.dialog("确认收款")
+def confirm_payment_dialog(order_id, work_address, total_amount, payment_method):  # 添加payment_method参数
+    st.write(f"📍 工单地址：{work_address}")
+
+    # 使用columns布局来并排显示收款金额和付款方式
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # 添加收款金额输入框，默认值为工单总额
+        payment_amount = st.number_input(
+            "收款金额",
+            min_value=0.0,
+            value=float(total_amount),
+            step=0.1,
+            format="%.2f"
+        )
+
+    with col2:
+        # 显示付款方式
+        payment_text = "转账(含GST)" if payment_method == 'transfer' else "现金"
+        st.text_input("付款方式", value=payment_text, disabled=True)
+
+    # 添加确认checkbox
+    confirm_checkbox = st.checkbox("我已确认以上信息无误，并已收到相应款项", key=f"confirm_checkbox_{order_id}")
+
+    # 添加确认和取消按钮
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button(
+                "确认",
+                type="primary",
+                use_container_width=True,
+                disabled=not confirm_checkbox  # 根据checkbox状态禁用确认按钮
+        ):
+            # 更新数据库中的收款状态
+            success, error = update_payment_status(order_id, datetime.now())
+            if success:
+                st.success("收款确认成功！", icon="✅")
+                time.sleep(2)  # 显示2秒成功消息
+                st.rerun()  # 重新加载页面
+            else:
+                st.error(f"收款确认失败：{error}", icon="⚠️")
+
+    with col2:
+        if st.button("取消", type="secondary", use_container_width=True):
+            st.rerun()
 
 
 def get_theme_color():
@@ -50,29 +100,29 @@ def display_orders(orders, tab_name):
             col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
                 if order['assigned_cleaner'] == '暂未派单':
-                    st.markdown(f"👷 保洁小组：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未确认</span>", unsafe_allow_html=True)
-                    st.markdown(f"📆 保洁日期：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未确认</span>", unsafe_allow_html=True)
-                    st.markdown(f"🕒 保洁时间：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>暂未派单</span>", unsafe_allow_html=True)
+                    st.markdown(f"👷 保洁小组：<span style='color:red'>⭕ 暂未确认</span>", unsafe_allow_html=True)
+                    st.markdown(f"📆 保洁日期：<span style='color:red'>⭕ 暂未确认</span>", unsafe_allow_html=True)
+                    st.markdown(f"🕒 保洁时间：<span style='color:red'>⭕ 暂未确认</span>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"👷 保洁小组：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['assigned_cleaner']}</span>", unsafe_allow_html=True)
-                    st.markdown(f"📆 保洁日期：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['work_date'].strftime('%Y-%m-%d')}</span>", unsafe_allow_html=True)
-                    st.markdown(f"🕒 保洁时间：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>{order['work_time']}</span>", unsafe_allow_html=True)
+                    st.markdown(f"👷 保洁小组：<span style='color:green'>✅ {order['assigned_cleaner']}</span>", unsafe_allow_html=True)
+                    st.markdown(f"📆 保洁日期：<span style='color:green'>✅ {order['work_date'].strftime('%Y-%m-%d')}</span>", unsafe_allow_html=True)
+                    st.markdown(f"🕒 保洁时间：<span style='color:green'>✅ {order['work_time']}</span>", unsafe_allow_html=True)
             with col2:
                 # 根据收款状态决定高亮颜色
                 if order['payment_received']:
                     # 已收款 - 绿色主题
-                    st.markdown(f"💰 工单总额：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
+                    st.markdown(f"💰 工单总额：<span style='color:green;font-weight:bold;'>✅ ${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
                     if order['payment_method'] == 'transfer':
-                        st.markdown(f"💳 付款方式：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>转账(含GST)</span>", unsafe_allow_html=True)
+                        st.markdown(f"💳 付款方式：<span style='color:green'>✅ 转账(含GST)</span>", unsafe_allow_html=True)
                     else:
-                        st.markdown(f"💳 付款方式：<span style='color:green;background-color:#ecffec;padding:2px 6px;border-radius:3px;font-weight:bold;'>现金</span>", unsafe_allow_html=True)
+                        st.markdown(f"💳 付款方式：<span style='color:green'>✅ 现金</span>", unsafe_allow_html=True)
                 else:
                     # 未收款 - 红色主题
-                    st.markdown(f"💰 工单总额：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
+                    st.markdown(f"💰 工单总额：<span style='color:red;font-weight:bold;'>⭕ ${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
                     if order['payment_method'] == 'transfer':
-                        st.markdown(f"💳 付款方式：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>转账(含GST)</span>", unsafe_allow_html=True)
+                        st.markdown(f"💳 付款方式：<span style='color:red'>⭕ 转账(含GST)</span>", unsafe_allow_html=True)
                     else:
-                        st.markdown(f"💳 付款方式：<span style='color:red;background-color:#ffecec;padding:2px 6px;border-radius:3px;font-weight:bold;'>现金</span>", unsafe_allow_html=True)
+                        st.markdown(f"💳 付款方式：<span style='color:red'>⭕ 现金</span>", unsafe_allow_html=True)
                 st.write(f"👤 登记人员： {order['created_by']}")
             with col3:
                 st.write(f"💵收款状态：{'✅' if order['payment_received'] else '❌'}")
@@ -132,7 +182,26 @@ def display_orders(orders, tab_name):
                             help="此工单已确认收款" if is_paid else "点击确认收款",
                             type="primary"
                     ):
-                        st.warning("该功能正在开发中，敬请期待！")
+                        confirm_payment_dialog(
+                            order['id'],
+                            order['work_address'],
+                            order['total_amount'],
+                            order['payment_method']  # 添加payment_method参数
+                        )
+
+                    # 显示操作结果提示
+                    if st.session_state.get('show_success'):
+                        st.success("收款确认成功！")
+                        st.session_state.pop('show_success')
+                        time.sleep(3)
+                        st.rerun()
+
+                    if st.session_state.get('show_error'):
+                        st.error(f"收款确认失败：{st.session_state.get('error_message')}")
+                        st.session_state.pop('show_error')
+                        st.session_state.pop('error_message')
+                        time.sleep(3)
+                        st.rerun()
                 with col3:
                     # 根据paperwork值显示对应按钮 (1=receipt, 0=invoice)
                     if order['paperwork'] == 0:  # 使用字符串比较

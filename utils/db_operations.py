@@ -328,28 +328,30 @@ def update_payment_status(order_id, payment_date):
     更新工单的收款状态
     Args:
         order_id: 工单ID
-        payment_date: 收款日期
+        payment_date: 收款日期（暂时未使用）
     Returns:
         tuple: (是否成功, 错误信息)
     """
     try:
-        conn = get_database_connection()
-        cursor = conn.cursor()
+        conn = connect_db()
 
-        # 更新收款状态和收款日期
-        sql = """
-            UPDATE work_orders 
-            SET payment_received = 1, 
-                payment_date = %s,
-                updated_at = NOW()
-            WHERE id = %s
-        """
-        cursor.execute(sql, (payment_date, order_id))
-        conn.commit()
+        # 使用 session 执行更新，暂时只更新 payment_received 状态
+        with conn.session as session:
+            session.execute(
+                text("""
+                    UPDATE work_orders 
+                    SET payment_received = TRUE
+                    WHERE id = :order_id
+                """),
+                params={
+                    'order_id': order_id
+                }
+            )
+            session.commit()
 
-        cursor.close()
-        conn.close()
+        logger.success(f"工单 {order_id} 收款状态更新成功")
         return True, None
 
     except Exception as e:
+        logger.error(f"更新收款状态失败：{e}")
         return False, str(e)
