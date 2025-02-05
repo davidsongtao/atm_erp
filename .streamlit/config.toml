@@ -1,4 +1,11 @@
 [client]
 showSidebarNavigation = false
+
 [server]
 port = 8501
+
+[theme]
+primaryColor = "#229ffd"
+backgroundColor = "#FFFFFF"
+textColor = "#000000"
+secondaryBackgroundColor = "#F0F2F6"

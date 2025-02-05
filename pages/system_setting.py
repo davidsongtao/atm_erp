@@ -121,25 +121,84 @@ def password_settings():
 
 
 def appearance_settings():
+    import toml
+    import os
 
-    theme_color = st.color_picker("选择主题色", "#FF4B4B")
+    # 加载当前配置
+    config_path = ".streamlit/config.toml"
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding='utf-8') as f:
+                current_config = toml.load(f)
+        else:
+            current_config = {"theme": {"primaryColor": "#1E88E5"}}
+    except Exception as e:
+        st.error(f"加载配置文件失败: {str(e)}")
+        current_config = {"theme": {"primaryColor": "#1E88E5"}}
+
+    # 主题色选择
+    theme_color = st.color_picker(
+        "选择主题色",
+        value=current_config.get("theme", {}).get("primaryColor", "#1E88E5")
+    )
+
+    # 主题模式选择
+    theme_modes = {
+        "Light": {
+            "backgroundColor": "#FFFFFF",
+            "textColor": "#000000",
+            "secondaryBackgroundColor": "#F0F2F6"
+        },
+        "Dark": {
+            "backgroundColor": "#0E1117",
+            "textColor": "#FFFFFF",
+            "secondaryBackgroundColor": "#262730"
+        }
+    }
+
+    current_mode = "Light"
+    if current_config.get("theme", {}).get("backgroundColor") == "#0E1117":
+        current_mode = "Dark"
 
     theme_mode = st.radio(
         "选择主题模式",
-        options=["Light", "Dark", "System"],
+        options=["Light", "Dark"],
+        index=0 if current_mode == "Light" else 1,
         horizontal=True
     )
 
-    confirm_change_theme = st.checkbox("我确定想要进行主题设置！", value=False, key="confirm_change_theme")
+    # 预览效果
+
+    confirm_change_theme = st.checkbox("我确定想要进行主题设置！", value=False,
+                                       key="confirm_change_theme")
 
     save_change = st.button("保存设置", use_container_width=True, type="primary")
 
     if save_change and confirm_change_theme:
-        st.warning("界面设置功能正在开发中，暂时不可用...", icon="⚠️")
+        try:
+            # 准备新的配置
+            if "theme" not in current_config:
+                current_config["theme"] = {}
+
+            # 更新主题配置
+            current_config["theme"]["primaryColor"] = theme_color
+            current_config["theme"].update(theme_modes[theme_mode])
+
+            # 保存到配置文件
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
+            with open(config_path, "w", encoding='utf-8') as f:
+                toml.dump(current_config, f)
+
+            st.success("主题设置已保存！请刷新页面查看效果。", icon="✅")
+
+        except Exception as e:
+            st.error(f"保存主题设置失败: {str(e)}", icon="⚠️")
 
     elif save_change and not confirm_change_theme:
         st.error("请勾选确认信息后进行提交！", icon="⚠️")
-    if st.button("取消", use_container_width=True, type="secondary", key="change_theme_cancel"):
+
+    if st.button("立即刷新", use_container_width=True, type="secondary",
+                 key="change_theme_cancel"):
         st.switch_page("pages/admin_page.py")
 
 

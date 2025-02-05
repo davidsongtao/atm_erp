@@ -16,6 +16,12 @@ from utils.utils import navigation, check_login_state
 from utils.styles import apply_global_styles
 
 
+def get_status_display(value, is_required):
+    if not is_required:
+        return '⚪'  # 浅灰色圆点表示不需要
+    return '🟢' if value else '🔴'  # 绿色表示已完成，红色表示未完成
+
+
 def work_order_statistics():
     # 设置页面配置
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png', layout="wide")
@@ -222,8 +228,16 @@ def show_work_orders_table(df):
             key='receipt_status_filter'
         )
 
-    # 应用筛选
+    # 预处理数据类型
     filtered_df = df.copy()
+
+    # 将paperwork转换为整数类型
+    filtered_df['paperwork'] = pd.to_numeric(filtered_df['paperwork'], errors='coerce').fillna(0).astype(int)
+
+    # 处理布尔值列
+    bool_columns = ['payment_received', 'invoice_sent', 'receipt_sent']
+    for col in bool_columns:
+        filtered_df[col] = pd.to_numeric(filtered_df[col], errors='coerce').fillna(0).astype(bool)
 
     # 应用支付方式筛选
     if payment_filter_values:
@@ -239,18 +253,31 @@ def show_work_orders_table(df):
 
     # 应用收款状态筛选
     if payment_status_filter != "全部":
-        is_paid = "1" if payment_status_filter == "已收款" else "0"
+        is_paid = payment_status_filter == "已收款"
         filtered_df = filtered_df[filtered_df['payment_received'] == is_paid]
 
-    # 应用开票状态筛选
+    # 发票状态筛选逻辑
     if invoice_status_filter != "全部":
-        is_invoice_sent = invoice_status_filter == "已开票"
-        filtered_df = filtered_df[filtered_df['invoice_sent'] == is_invoice_sent]
+        # 只保留需要发票的订单
+        filtered_df = filtered_df[filtered_df['paperwork'] == 0]
+        if invoice_status_filter == "已开票":
+            # 在需要发票的订单中筛选已开票的
+            filtered_df = filtered_df[filtered_df['invoice_sent']]
+        else:  # 未开票
+            # 在需要发票的订单中筛选未开票的
+            filtered_df = filtered_df[~filtered_df['invoice_sent']]
 
-    # 应用收据状态筛选
+    # 收据状态筛选逻辑
     if receipt_status_filter != "全部":
-        is_receipt_sent = receipt_status_filter == "已开收据"
-        filtered_df = filtered_df[filtered_df['receipt_sent'] == is_receipt_sent]
+        # 只保留需要收据的订单
+        filtered_df = filtered_df[filtered_df['paperwork'] == 1]
+        if receipt_status_filter == "已开收据":
+            # 在需要收据的订单中筛选已开收据的
+            filtered_df = filtered_df[filtered_df['receipt_sent']]
+        else:  # 未开收据
+            # 在需要收据的订单中筛选未开收据的
+            filtered_df = filtered_df[~filtered_df['receipt_sent']]
+
 
     # 格式化日期时间列
     for col in ['order_date', 'work_date']:
@@ -286,7 +313,6 @@ def show_work_orders_table(df):
         if pd.notna(row.get('cuistom_item')):
             services.append(str(row['cuistom_item']))
 
-        # 用分号连接所有服务
         return ' ; '.join(filter(None, services))
 
     # 添加服务内容列
@@ -295,28 +321,42 @@ def show_work_orders_table(df):
     # 转换支付方式显示
     display_df['payment_method'] = display_df['payment_method'].map(payment_method_mapping).fillna(display_df['payment_method'])
 
-    # 统一处理状态显示（收款、发票、收据）
-    for column in ['payment_received', 'invoice_sent', 'receipt_sent']:
-        display_df[column] = pd.to_numeric(df[column], errors='coerce')
-        display_df[column] = display_df[column].map({
-            1.0: '🟢',
-            0.0: '🔴'
-        }).fillna('❓')
+    # 获取发票和收据的需求状态
+    display_df['needs_invoice'] = display_df['paperwork'] == 0
+    display_df['needs_receipt'] = display_df['paperwork'] == 1
+
+    # 处理支付状态显示（支付状态总是需要显示）
+    display_df['payment_received'] = display_df['payment_received'].map({
+        True: '🟢',
+        False: '🔴'
+    }).fillna('❓')
+
+    # 处理发票状态显示
+    display_df['invoice_sent'] = display_df.apply(
+        lambda row: get_status_display(row['invoice_sent'], row['needs_invoice']),
+        axis=1
+    )
+
+    # 处理收据状态显示
+    display_df['receipt_sent'] = display_df.apply(
+        lambda row: get_status_display(row['receipt_sent'], row['needs_receipt']),
+        axis=1
+    )
 
     # 选择要显示的列并重新排序
     columns_to_display = [
-        'work_datetime',  # 合并后的工作日期和时间
-        'work_address',  # 工作地址
-        'payment_method',  # 支付方式
-        'order_amount',  # 订单金额
-        'total_amount',  # 总金额
-        'assigned_cleaner',  # 保洁员
-        'payment_received',  # 收款情况
-        'invoice_sent',  # 已开票
-        'receipt_sent',  # 已开收据
-        'created_by',  # 创建人
-        'source',  # 来源
-        'service_content'  # 服务内容
+        'work_datetime',
+        'work_address',
+        'payment_method',
+        'order_amount',
+        'total_amount',
+        'assigned_cleaner',
+        'payment_received',
+        'invoice_sent',
+        'receipt_sent',
+        'created_by',
+        'source',
+        'service_content'
     ]
 
     display_df = display_df[columns_to_display]
@@ -330,15 +370,16 @@ def show_work_orders_table(df):
             "payment_method": "支付方式",
             "order_amount": "订单金额",
             "total_amount": "总金额",
-            "assigned_cleaner": "保洁员",
+            "assigned_cleaner": "保洁小组",
             "payment_received": "收款情况",
-            "invoice_sent": "已开票",
+            "invoice_sent": "已开发票",
             "receipt_sent": "已开收据",
             "created_by": "创建人",
             "source": "来源",
             "service_content": "服务内容"
         },
-        hide_index=True
+        hide_index=True,
+        use_container_width=True
     )
 
 

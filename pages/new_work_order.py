@@ -185,14 +185,16 @@ async def create_work_order_page():
         else:
             custom_item = []
 
-        # 付款信息部分
+        # 在付款信息部分添加开票选择
         st.divider()
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             payment_method = st.selectbox(
                 "付款方式",
                 options=["transfer", "cash"],
-                format_func=lambda x: "转账(+10% GST)" if x == "transfer" else "现金"
+                format_func=lambda x: "转账(+10% GST)" if x == "transfer" else "现金",
+                index=None,
+                placeholder="请选择付款方式..."
             )
         with col2:
             order_amount = st.number_input(
@@ -200,13 +202,25 @@ async def create_work_order_page():
                 min_value=0.0,
                 format="%.2f"
             )
+        with col3:
+            # 添加开票方式选择
+            paperwork = st.selectbox(
+                "开票方式",
+                options=[0, 1],
+                format_func=lambda x: "开发票" if x == 0 else "开收据",
+                help="选择开具发票或收据",
+                index=None,
+                placeholder="请选择开票方式..."
+            )
 
         # 自动计算总金额
         total_amount = order_amount * 1.1 if payment_method == "transfer" else order_amount
         st.success(f"工单总金额：${total_amount:.2f} ({'含 GST' if payment_method == 'transfer' else '不含 GST'})")
         st.divider()
+
         confirm_create = st.checkbox("我确认所有工单信息录入无误，立即创建工单！")
         create_btn = st.button("创建工单", use_container_width=True, type="primary")
+
         # 确认和取消按钮
         if create_btn and confirm_create:
             if not all([source, work_address, order_amount > 0, address_valid]):
@@ -216,10 +230,8 @@ async def create_work_order_page():
             else:
                 success, error = create_work_order(
                     order_date=order_date,
-                    # work_date=work_date,
-                    created_by=current_user,  # 这里使用 name 而不是 username
+                    created_by=current_user,
                     source=source,
-                    # work_time=work_time,
                     work_address=work_address,
                     payment_method=payment_method,
                     order_amount=order_amount,
@@ -227,7 +239,8 @@ async def create_work_order_page():
                     rooms=room_services,
                     electricals=electrical_services,
                     other_services=other_services,
-                    custom_item=custom_item
+                    custom_item=custom_item,
+                    paperwork=paperwork  # 新增参数
                 )
 
                 if success:

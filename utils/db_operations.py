@@ -207,7 +207,8 @@ def delete_account(username):
 
 
 def create_work_order(order_date, created_by, source, work_address, payment_method,
-                      order_amount, basic_service, rooms, electricals, other_services, custom_item):
+                      order_amount, basic_service, rooms, electricals, other_services,
+                      custom_item, paperwork):
     try:
         conn = connect_db()
 
@@ -228,12 +229,12 @@ def create_work_order(order_date, created_by, source, work_address, payment_meth
                 (order_date, work_date, work_time, created_by, source, work_address, 
                 payment_method, order_amount, total_amount, basic_service, rooms,
                 electricals, other_services, custom_item, assigned_cleaner,
-                payment_received, invoice_sent, receipt_sent)
+                payment_received, invoice_sent, receipt_sent, paperwork)
                 VALUES 
                 (:order_date, NULL, NULL, :created_by, :source, :work_address,
                 :payment_method, :order_amount, :total_amount, :basic_service, :rooms,
                 :electricals, :other_services, :custom_item, '暂未派单',
-                FALSE, FALSE, FALSE)
+                FALSE, FALSE, FALSE, :paperwork)
                 """),
                 params={
                     'order_date': order_date,
@@ -247,7 +248,8 @@ def create_work_order(order_date, created_by, source, work_address, payment_meth
                     'rooms': rooms_str,
                     'electricals': electricals_str,
                     'other_services': other_services_str,
-                    'custom_item': custom_items_str
+                    'custom_item': custom_items_str,
+                    'paperwork': paperwork  # 新增参数
                 }
             )
             session.commit()
@@ -319,3 +321,35 @@ def get_work_orders_by_date_range(start_date, end_date):
     except Exception as e:
         logger.error(f"获取工单列表失败：{e}")
         return None, str(e)
+
+
+def update_payment_status(order_id, payment_date):
+    """
+    更新工单的收款状态
+    Args:
+        order_id: 工单ID
+        payment_date: 收款日期
+    Returns:
+        tuple: (是否成功, 错误信息)
+    """
+    try:
+        conn = get_database_connection()
+        cursor = conn.cursor()
+
+        # 更新收款状态和收款日期
+        sql = """
+            UPDATE work_orders 
+            SET payment_received = 1, 
+                payment_date = %s,
+                updated_at = NOW()
+            WHERE id = %s
+        """
+        cursor.execute(sql, (payment_date, order_id))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+        return True, None
+
+    except Exception as e:
+        return False, str(e)

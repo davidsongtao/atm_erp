@@ -7,14 +7,34 @@ Description: 工单管理页面
 @Time     ：2025/1/8
 @Contact  ：king.songtao@gmail.com
 """
-
+import os
 import time
+import toml
 import streamlit as st
 from datetime import datetime, date, timedelta
 from utils.utils import navigation, check_login_state
 from utils.db_operations import get_work_orders, get_work_orders_by_date_range
 import pandas as pd
 from utils.styles import apply_global_styles
+
+
+def get_theme_color():
+    """
+    从 .streamlit/config.toml 读取主题色
+    Returns:
+        str: 主题色（十六进制颜色代码）
+    """
+    config_path = ".streamlit/config.toml"
+    default_color = "#FF4B4B"
+
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding='utf-8') as f:
+                config = toml.load(f)
+                return config.get("theme", {}).get("primaryColor", default_color)
+        return default_color
+    except Exception:
+        return default_color
 
 
 def display_orders(orders, tab_name):
@@ -81,8 +101,8 @@ def display_orders(orders, tab_name):
 
             # 检查是否是已完成工单
             is_completed = order['payment_received'] and (
-                (order['paperwork'] == '0' and order['invoice_sent']) or
-                (order['paperwork'] == '1' and order['receipt_sent'])
+                    (order['paperwork'] == '0' and order['invoice_sent']) or
+                    (order['paperwork'] == '1' and order['receipt_sent'])
             )
 
             # 仅当不是已完成工单时显示按钮
@@ -164,22 +184,26 @@ def work_orders():
             if st.button("修改工单", use_container_width=True, type="primary", disabled=True):
                 st.switch_page("pages/new_work_order.py")
 
-        st.markdown("""
+        # 获取当前主题色
+        theme_color = get_theme_color()
+
+        # 动态设置 tab 样式
+        st.markdown(f"""
         <style>
-        	.stTabs [data-baseweb="tab-list"] {
-        		gap: 2px;
-            }
-        	.stTabs [data-baseweb="tab"] {
-        		height: 50px;
-        		background-color: #F0F2F6;
-        		border-radius: 0px 0px 0px 0px;
-        		padding-left: 15px;
-        		padding-right: 15px;
-            }
-        	.stTabs [aria-selected="true"] {
-          		background-color: #FF4B4B;
-          		color: #FFFFFF
-        	}
+            .stTabs [data-baseweb="tab-list"] {{
+                gap: 2px;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                height: 50px;
+                background-color: #F0F2F6;
+                border-radius: 0px 0px 0px 0px;
+                padding-left: 15px;
+                padding-right: 15px;
+            }}
+            .stTabs [aria-selected="true"] {{
+                background-color: {theme_color} !important;
+                color: #FFFFFF !important;
+            }}
         </style>""", unsafe_allow_html=True)
 
         # 时间范围过滤器
