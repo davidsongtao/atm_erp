@@ -146,29 +146,56 @@ def show_work_orders_table(df):
     """显示工单详情表格"""
     st.subheader("工单详情")
 
-    # 添加筛选器 - 使用两行布局
-    col1, col2, col3 = st.columns(3)
+    # 定义支付方式映射
+    payment_method_mapping = {
+        'cash': '现金支付',
+        'transfer': '银行转账'
+    }
+
+    # 创建反向映射（用于筛选）
+    reverse_payment_mapping = {v: k for k, v in payment_method_mapping.items()}
+
+    # 创建一个清空按钮
+    clear_button = st.button("清空筛选条件", type="secondary")
+
+    # 如果点击清空按钮，重置所有筛选条件
+    if clear_button:
+        st.session_state.payment_filter = []
+        st.session_state.cleaner_filter = []
+        st.session_state.creator_filter = []
+        st.session_state.payment_status_filter = "全部"
+        st.session_state.invoice_status_filter = "全部"
+        st.session_state.receipt_status_filter = "全部"
+        st.rerun()
 
     # 第一行筛选条件
+    col1, col2, col3 = st.columns(3)
+
     with col1:
+        # 将实际值映射为显示值
+        display_options = [payment_method_mapping.get(method, method) for method in df['payment_method'].unique()]
         payment_filter = st.multiselect(
             "支付方式筛选",
-            options=df['payment_method'].unique(),
-            default=[]
+            options=display_options,
+            key='payment_filter'
         )
+        # 将显示值转换回实际值用于筛选
+        payment_filter_values = [reverse_payment_mapping.get(display, display) for display in payment_filter]
 
     with col2:
+        # 过滤掉"暂未派单"选项并获取保洁员列表
+        cleaner_options = [cleaner for cleaner in df['assigned_cleaner'].unique() if cleaner != '暂未派单']
         cleaner_filter = st.multiselect(
-            "保洁员筛选",
-            options=df['assigned_cleaner'].unique(),
-            default=[]
+            "保洁小组筛选",
+            options=cleaner_options,
+            key='cleaner_filter'
         )
 
     with col3:
         creator_filter = st.multiselect(
             "创建人筛选",
             options=df['created_by'].unique(),
-            default=[]
+            key='creator_filter'
         )
 
     # 第二行筛选条件
@@ -178,29 +205,29 @@ def show_work_orders_table(df):
         payment_status_filter = st.selectbox(
             "收款状态",
             options=["全部", "已收款", "未收款"],
-            index=0
+            key='payment_status_filter'
         )
 
     with col5:
         invoice_status_filter = st.selectbox(
             "开票状态",
             options=["全部", "已开票", "未开票"],
-            index=0
+            key='invoice_status_filter'
         )
 
     with col6:
         receipt_status_filter = st.selectbox(
             "收据状态",
             options=["全部", "已开收据", "未开收据"],
-            index=0
+            key='receipt_status_filter'
         )
 
     # 应用筛选
     filtered_df = df.copy()
 
     # 应用支付方式筛选
-    if payment_filter:
-        filtered_df = filtered_df[filtered_df['payment_method'].isin(payment_filter)]
+    if payment_filter_values:
+        filtered_df = filtered_df[filtered_df['payment_method'].isin(payment_filter_values)]
 
     # 应用保洁员筛选
     if cleaner_filter:
@@ -212,7 +239,7 @@ def show_work_orders_table(df):
 
     # 应用收款状态筛选
     if payment_status_filter != "全部":
-        is_paid = payment_status_filter == "已收款"
+        is_paid = "1" if payment_status_filter == "已收款" else "0"
         filtered_df = filtered_df[filtered_df['payment_received'] == is_paid]
 
     # 应用开票状态筛选
@@ -230,23 +257,86 @@ def show_work_orders_table(df):
         if col in filtered_df.columns:
             filtered_df[col] = pd.to_datetime(filtered_df[col]).dt.strftime('%Y-%m-%d')
 
+    display_df = filtered_df.copy()
+
+    # 合并工作日期和时间
+    display_df['work_datetime'] = display_df['work_date'] + ' ' + display_df['work_time']
+
+    # 创建服务内容列
+    def combine_services(row):
+        services = []
+
+        # 检查并添加基础服务
+        if pd.notna(row.get('basic_service')):
+            services.append(str(row['basic_service']))
+
+        # 检查并添加房间服务
+        if pd.notna(row.get('rooms')):
+            services.append(str(row['rooms']))
+
+        # 检查并添加电器服务
+        if pd.notna(row.get('electricals')):
+            services.append(str(row['electricals']))
+
+        # 检查并添加其他服务
+        if pd.notna(row.get('other_services')):
+            services.append(str(row['other_services']))
+
+        # 检查并添加自定义项目
+        if pd.notna(row.get('cuistom_item')):
+            services.append(str(row['cuistom_item']))
+
+        # 用分号连接所有服务
+        return ' ; '.join(filter(None, services))
+
+    # 添加服务内容列
+    display_df['service_content'] = display_df.apply(combine_services, axis=1)
+
+    # 转换支付方式显示
+    display_df['payment_method'] = display_df['payment_method'].map(payment_method_mapping).fillna(display_df['payment_method'])
+
+    # 统一处理状态显示（收款、发票、收据）
+    for column in ['payment_received', 'invoice_sent', 'receipt_sent']:
+        display_df[column] = pd.to_numeric(df[column], errors='coerce')
+        display_df[column] = display_df[column].map({
+            1.0: '🟢',
+            0.0: '🔴'
+        }).fillna('❓')
+
+    # 选择要显示的列并重新排序
+    columns_to_display = [
+        'work_datetime',  # 合并后的工作日期和时间
+        'work_address',  # 工作地址
+        'payment_method',  # 支付方式
+        'order_amount',  # 订单金额
+        'total_amount',  # 总金额
+        'assigned_cleaner',  # 保洁员
+        'payment_received',  # 收款情况
+        'invoice_sent',  # 已开票
+        'receipt_sent',  # 已开收据
+        'created_by',  # 创建人
+        'source',  # 来源
+        'service_content'  # 服务内容
+    ]
+
+    display_df = display_df[columns_to_display]
+
     # 显示数据表格
     st.dataframe(
-        filtered_df,
+        display_df,
         column_config={
-            "order_date": "创建日期",
-            "work_date": "工作日期",
-            "work_time": "工作时间",
-            "created_by": "创建人",
-            "source": "来源",
+            "work_datetime": "工作日期时间",
             "work_address": "工作地址",
             "payment_method": "支付方式",
             "order_amount": "订单金额",
             "total_amount": "总金额",
             "assigned_cleaner": "保洁员",
-            "payment_received": "已收款",
+            "payment_received": "收款情况",
             "invoice_sent": "已开票",
-            "receipt_sent": "已开收据"
+            "receipt_sent": "已开收据",
+            "created_by": "创建人",
+            "source": "来源",
+            "service_content": "服务内容"
         },
         hide_index=True
     )

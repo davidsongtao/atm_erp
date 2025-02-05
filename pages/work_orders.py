@@ -57,7 +57,7 @@ def display_orders(orders, tab_name):
             with col3:
                 st.write(f"💵收款状态：{'✅' if order['payment_received'] else '❌'}")
                 # 根据paperwork值显示对应状态 (1=receipt, 0=invoice)
-                if order['paperwork'] == '0':  # 使用字符串比较
+                if order['paperwork'] == 0:  # 使用字符串比较
                     st.write(f"📧发票状态：{'✅' if order['invoice_sent'] else '❌'}")
                 else:  # paperwork == '1'
                     st.write(f"🧾收据状态：{'✅' if order['receipt_sent'] else '❌'}")
@@ -115,7 +115,7 @@ def display_orders(orders, tab_name):
                         st.warning("该功能正在开发中，敬请期待！")
                 with col3:
                     # 根据paperwork值显示对应按钮 (1=receipt, 0=invoice)
-                    if order['paperwork'] == '0':  # 使用字符串比较
+                    if order['paperwork'] == 0:  # 使用字符串比较
                         is_invoice_sent = order['invoice_sent']
                         if st.button(
                                 "签发发票",
@@ -265,7 +265,7 @@ def work_orders():
         if orders is not None and not orders.empty:
             # 处理数据类型
             # 确保 paperwork 列的比较使用字符串
-            orders['paperwork'] = orders['paperwork'].astype(str)
+            orders['paperwork'] = orders['paperwork'].astype(int)
 
             # 确保布尔值列的类型正确
             boolean_columns = ['payment_received', 'invoice_sent', 'receipt_sent']
@@ -284,22 +284,22 @@ def work_orders():
             pending_invoice = orders[
                 (orders['payment_received'] == True) &  # 已收款
                 (orders['invoice_sent'] == False) &  # 未开发票
-                (orders['paperwork'] == '0')  # 类型为发票
+                (orders['paperwork'] == 0)  # 类型为发票
                 ]
 
             # 待开收据：已收款但未开收据且paperwork='1'的工单
             pending_receipt = orders[
                 (orders['payment_received'] == True) &  # 已收款
                 (orders['receipt_sent'] == False) &  # 未开收据
-                (orders['paperwork'] == '1')  # 类型为收据,使用字符串 '1'
+                (orders['paperwork'] == 1)  # 类型为收据,使用字符串 '1'
                 ]
 
             # 已完成：根据paperwork类型判断完成状态
             completed = orders[
                 (orders['payment_received'] == True) &
                 (
-                        ((orders['paperwork'] == '0') & (orders['invoice_sent'] == True)) |  # 发票类型且已开发票
-                        ((orders['paperwork'] == '1') & (orders['receipt_sent'] == True))  # 收据类型且已开收据
+                        ((orders['paperwork'] == 0) & (orders['invoice_sent'] == True)) |  # 发票类型且已开发票
+                        ((orders['paperwork'] == 1) & (orders['receipt_sent'] == True))  # 收据类型且已开收据
                 )
                 ]
 
