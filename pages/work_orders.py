@@ -257,6 +257,7 @@ def display_orders(orders, tab_name):
                 st.write(service_text)
 
             # 检查是否是已完成工单
+            # 检查是否是已完成工单
             is_completed = order['payment_received'] and (
                     (order['paperwork'] == '0' and order['invoice_sent']) or
                     (order['paperwork'] == '1' and order['receipt_sent'])
@@ -293,25 +294,11 @@ def display_orders(orders, tab_name):
                             order['id'],
                             order['work_address'],
                             order['total_amount'],
-                            order['payment_method']  # 添加payment_method参数
+                            order['payment_method']
                         )
-
-                    # 显示操作结果提示
-                    if st.session_state.get('show_success'):
-                        st.success("收款确认成功！")
-                        st.session_state.pop('show_success')
-                        time.sleep(3)
-                        st.rerun()
-
-                    if st.session_state.get('show_error'):
-                        st.error(f"收款确认失败：{st.session_state.get('error_message')}")
-                        st.session_state.pop('show_error')
-                        st.session_state.pop('error_message')
-                        time.sleep(3)
-                        st.rerun()
                 with col3:
-                    # 只有已收款的工单才能签发发票或收据
-                    if order['payment_received']:
+                    # 只有已收款的工单且已派单才能签发发票或收据
+                    if order['payment_received'] and is_assigned:
                         if order['paperwork'] == 1:  # 收据类型
                             is_receipt_sent = order['receipt_sent']
                             if st.button(
@@ -335,14 +322,16 @@ def display_orders(orders, tab_name):
                             ):
                                 issue_invoice_dialog(order)
                     else:
-                        # 未收款的工单显示禁用的按钮，并给出提示信息
+                        # 未派单或未收款的工单显示禁用的按钮，并给出提示信息
+                        help_text = "请先派单且收款后再签发" if not is_assigned else "请先确认收款后再签发"
+
                         if order['paperwork'] == 1:  # 收据类型
                             st.button(
                                 "签发收据",
                                 key=f"{tab_name}_confirm_receipt_{order['id']}",
                                 use_container_width=True,
                                 disabled=True,
-                                help="请先确认收款后再签发收据"
+                                help=help_text
                             )
                         elif order['paperwork'] == 0:  # 发票类型
                             st.button(
@@ -350,7 +339,7 @@ def display_orders(orders, tab_name):
                                 key=f"{tab_name}_confirm_invoice_{order['id']}",
                                 use_container_width=True,
                                 disabled=True,
-                                help="请先确认收款后再签发发票"
+                                help=help_text
                             )
             st.divider()
 
