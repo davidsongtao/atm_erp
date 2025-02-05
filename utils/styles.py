@@ -137,5 +137,25 @@ def apply_global_styles():
             .stAlert > div > div {
                 border-radius: 0px !important;
             }
+            
+            /* 下载按钮特定样式 */
+            .stDownloadButton button {
+                border-radius: 0px !important;
+            }
+            
+            /* 下载按钮容器样式 */
+            .stDownloadButton > div {
+                border-radius: 0px !important;
+            }
+            
+            /* 确保下载按钮内部元素也是直角 */
+            .stDownloadButton * {
+                border-radius: 0px !important;
+            }
+            
+            /* 扩展现有的按钮样式以涵盖所有类型 */
+            button, .stButton>button, .stDownloadButton button {
+                border-radius: 0px !important;
+            }
         </style>
     """, unsafe_allow_html=True)

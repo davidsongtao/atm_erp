@@ -13,9 +13,38 @@ import toml
 import streamlit as st
 from datetime import datetime, date, timedelta
 from utils.utils import navigation, check_login_state
-from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status, update_receipt_status
+from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status, update_receipt_status, update_invoice_status
 import pandas as pd
 from utils.styles import apply_global_styles
+
+
+# 首先添加一个简化的发票签发对话框函数
+@st.dialog("签发发票")
+def issue_invoice_dialog(order_data):
+    """发票签发对话框
+
+    Args:
+        order_data (pd.Series): 工单数据
+    """
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+    st.number_input("工单总金额", value=order_data['total_amount'], disabled=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("确认已签发", use_container_width=True, type="primary"):
+            # 更新数据库中的发票状态
+            success, error = update_invoice_status(order_data['id'], datetime.now())
+            if success:
+                st.success("发票状态已更新！", icon="✅")
+                time.sleep(2)  # 显示2秒成功消息
+                st.rerun()  # 重新加载页面
+            else:
+                st.error(f"发票状态更新失败：{error}", icon="⚠️")
+
+    with col2:
+        if st.button("取消", use_container_width=True):
+            st.rerun()
 
 
 # 在 work_orders.py 中添加新的对话框函数
@@ -253,17 +282,48 @@ def display_orders(orders, tab_name):
                         time.sleep(3)
                         st.rerun()
                 with col3:
-                    if order['paperwork'] == 1:  # 收据类型
-                        is_receipt_sent = order['receipt_sent']
-                        if st.button(
+                    # 只有已收款的工单才能签发发票或收据
+                    if order['payment_received']:
+                        if order['paperwork'] == 1:  # 收据类型
+                            is_receipt_sent = order['receipt_sent']
+                            if st.button(
+                                    "签发收据",
+                                    key=f"{tab_name}_confirm_receipt_{order['id']}",
+                                    use_container_width=True,
+                                    disabled=is_receipt_sent,
+                                    help="此工单已签发收据" if is_receipt_sent else "点击签发收据",
+                                    type="primary"
+                            ):
+                                issue_receipt_dialog(order)
+                        elif order['paperwork'] == 0:  # 发票类型
+                            is_invoice_sent = order['invoice_sent']
+                            if st.button(
+                                    "签发发票",
+                                    key=f"{tab_name}_confirm_invoice_{order['id']}",
+                                    use_container_width=True,
+                                    disabled=is_invoice_sent,
+                                    help="此工单已签发发票" if is_invoice_sent else "点击签发发票",
+                                    type="primary"
+                            ):
+                                issue_invoice_dialog(order)
+                    else:
+                        # 未收款的工单显示禁用的按钮，并给出提示信息
+                        if order['paperwork'] == 1:  # 收据类型
+                            st.button(
                                 "签发收据",
                                 key=f"{tab_name}_confirm_receipt_{order['id']}",
                                 use_container_width=True,
-                                disabled=is_receipt_sent,
-                                help="此工单已签发收据" if is_receipt_sent else "点击签发收据",
-                                type="primary"
-                        ):
-                            issue_receipt_dialog(order)
+                                disabled=True,
+                                help="请先确认收款后再签发收据"
+                            )
+                        elif order['paperwork'] == 0:  # 发票类型
+                            st.button(
+                                "签发发票",
+                                key=f"{tab_name}_confirm_invoice_{order['id']}",
+                                use_container_width=True,
+                                disabled=True,
+                                help="请先确认收款后再签发发票"
+                            )
             st.divider()
 
 
@@ -415,20 +475,23 @@ def work_orders():
             pending_invoice = orders[
                 (orders['payment_received'] == True) &  # 已收款
                 (orders['invoice_sent'] == False) &  # 未开发票
-                (orders['paperwork'] == 0)  # 类型为发票
+                (orders['paperwork'] == 0) &  # 类型为发票
+                (orders['assigned_cleaner'] != '暂未派单')  # 已派单
                 ]
 
             # 待开收据：已收款但未开收据且paperwork='1'的工单
             pending_receipt = orders[
                 (orders['payment_received'] == True) &  # 已收款
                 (orders['receipt_sent'] == False) &  # 未开收据
-                (orders['paperwork'] == 1)  # 类型为收据,使用字符串 '1'
+                (orders['paperwork'] == 1) &  # 类型为收据
+                (orders['assigned_cleaner'] != '暂未派单')  # 已派单
                 ]
 
             # 已完成：根据paperwork类型判断完成状态
             completed = orders[
-                (orders['payment_received'] == True) &
-                (
+                (orders['assigned_cleaner'] != '暂未派单') &  # 已派单
+                (orders['payment_received'] == True) &  # 已收款
+                (  # 根据paperwork类型判断完成状态
                         ((orders['paperwork'] == 0) & (orders['invoice_sent'] == True)) |  # 发票类型且已开发票
                         ((orders['paperwork'] == 1) & (orders['receipt_sent'] == True))  # 收据类型且已开收据
                 )
