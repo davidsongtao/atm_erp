@@ -334,110 +334,6 @@ def get_work_orders_by_date_range(start_date, end_date):
         return None, str(e)
 
 
-def update_payment_status(order_id, payment_date):
-    """
-    更新工单的收款状态
-    Args:
-        order_id: 工单ID
-        payment_date: 收款日期（暂时未使用）
-    Returns:
-        tuple: (是否成功, 错误信息)
-    """
-    try:
-        conn = connect_db()
-
-        # 使用 session 执行更新，暂时只更新 payment_received 状态
-        with conn.session as session:
-            session.execute(
-                text("""
-                    UPDATE work_orders 
-                    SET payment_received = TRUE
-                    WHERE id = :order_id
-                """),
-                params={
-                    'order_id': order_id
-                }
-            )
-            session.commit()
-
-        logger.success(f"工单 {order_id} 收款状态更新成功")
-        return True, None
-
-    except Exception as e:
-        logger.error(f"更新收款状态失败：{e}")
-        return False, str(e)
-
-
-def update_receipt_status(order_id, receipt_date):
-    """更新工单的收据状态
-
-    Args:
-        order_id (int): 工单ID
-        receipt_date (datetime): 收据签发日期 (暂未使用)
-
-    Returns:
-        tuple: (success, error_message)
-    """
-    try:
-        conn = connect_db()
-
-        # 使用 session 执行更新，只更新 receipt_sent 状态
-        with conn.session as session:
-            session.execute(
-                text("""
-                    UPDATE work_orders 
-                    SET receipt_sent = TRUE
-                    WHERE id = :order_id
-                """),
-                params={
-                    'order_id': order_id
-                }
-            )
-            session.commit()
-
-        logger.success(f"工单 {order_id} 收据状态更新成功")
-        return True, None
-
-    except Exception as e:
-        logger.error(f"更新收据状态失败：{e}")
-        return False, str(e)
-
-
-def update_invoice_status(order_id, invoice_date):
-    """更新工单的发票状态
-
-    Args:
-        order_id (int): 工单ID
-        invoice_date (datetime): 发票签发日期 (暂未使用)
-
-    Returns:
-        tuple: (success, error_message)
-    """
-    try:
-        conn = connect_db()
-
-        # 使用 session 执行更新，只更新 invoice_sent 状态
-        with conn.session as session:
-            session.execute(
-                text("""
-                    UPDATE work_orders 
-                    SET invoice_sent = TRUE
-                    WHERE id = :order_id
-                """),
-                params={
-                    'order_id': order_id
-                }
-            )
-            session.commit()
-
-        logger.success(f"工单 {order_id} 发票状态更新成功")
-        return True, None
-
-    except Exception as e:
-        logger.error(f"更新发票状态失败：{e}")
-        return False, str(e)
-
-
 def get_all_clean_teams():
     """获取所有保洁组信息
 
@@ -757,58 +653,6 @@ def update_remarks(order_id: int, remarks: str) -> tuple[bool, str]:
         return False, str(e)
 
 
-def update_cleaning_status(order_id: int, status: int, completed_at: datetime = None) -> tuple[bool, str]:
-    """更新工单清洁状态
-
-    Args:
-        order_id (int): 工单ID
-        status (int): 状态值 0=未开始,1=进行中,2=已完成
-        completed_at (datetime, optional): 完成时间,仅在状态为已完成时需要
-
-    Returns:
-        tuple[bool, str]: (成功状态, 错误信息)
-    """
-    try:
-        conn = connect_db()
-        params = {
-            'order_id': order_id,
-            'status': status,
-            'completed_at': completed_at
-        }
-
-        with conn.session as session:
-            if status == 2:  # 已完成状态
-                session.execute(
-                    text("""
-                        UPDATE work_orders 
-                        SET cleaning_status = :status,
-                            cleaning_completed_at = :completed_at,
-                            updated_at = NOW()
-                        WHERE id = :order_id
-                    """),
-                    params=params
-                )
-            else:
-                session.execute(
-                    text("""
-                        UPDATE work_orders 
-                        SET cleaning_status = :status,
-                            cleaning_completed_at = NULL,
-                            updated_at = NOW()
-                        WHERE id = :order_id
-                    """),
-                    params=params
-                )
-            session.commit()
-
-        logger.success(f"工单 {order_id} 清洁状态更新成功")
-        return True, None
-
-    except Exception as e:
-        logger.error(f"更新清洁状态失败：{e}")
-        return False, str(e)
-
-
 def delete_work_order(order_id: int) -> tuple[bool, str]:
     """删除工单
 
@@ -835,4 +679,277 @@ def delete_work_order(order_id: int) -> tuple[bool, str]:
 
     except Exception as e:
         logger.error(f"删除工单失败：{e}")
+        return False, str(e)
+
+
+def update_work_order(data):
+    """更新工单信息
+    Args:
+        data (dict): 工单更新数据
+    Returns:
+        tuple: (success, error)
+    """
+    try:
+        conn = connect_db()
+
+        # 构建 UPDATE 语句
+        update_fields = []
+        params = {'order_id': data['id']}
+
+        for key, value in data.items():
+            if key != 'id':  # 排除id字段
+                update_fields.append(f"{key} = :{key}")
+                params[key] = value
+
+        query = text(f"""
+            UPDATE work_orders 
+            SET {', '.join(update_fields)}
+            WHERE id = :order_id
+        """)
+
+        with conn.session as session:
+            result = session.execute(query, params)
+            session.commit()
+
+        success = result.rowcount > 0
+        error = None if success else "未找到要更新的工单"
+
+        return success, error
+
+    except Exception as e:
+        return False, str(e)
+
+
+def update_cleaning_status(order_id, status, completed_at=None, cancel=False):
+    """更新清洁状态"""
+    try:
+        conn = connect_db()
+
+        with conn.session as session:
+            if cancel:
+                query = text("""
+                    UPDATE work_orders 
+                    SET cleaning_status = 1,
+                        cleaning_completed_at = NULL
+                    WHERE id = :order_id
+                """)
+                session.execute(query, {'order_id': order_id})
+            else:
+                query = text("""
+                    UPDATE work_orders 
+                    SET cleaning_status = :status,
+                        cleaning_completed_at = :completed_at
+                    WHERE id = :order_id
+                """)
+                session.execute(query, {
+                    'status': status,
+                    'completed_at': completed_at,
+                    'order_id': order_id
+                })
+
+            session.commit()
+
+        success = conn.query(
+            "SELECT COUNT(*) as count FROM work_orders WHERE id = :order_id",
+            params={'order_id': order_id}
+        )['count'][0] > 0
+
+        error = None if success else "未找到要更新的工单"
+
+        return success, error
+
+    except Exception as e:
+        return False, str(e)
+
+
+# 修改收款状态更新函数，添加撤销功能
+def update_payment_status(order_id, payment_time=None, cancel=False):
+    """更新收款状态
+    Args:
+        order_id (int): 工单ID
+        payment_time (datetime): 收款时间
+        cancel (bool): 是否为撤销操作
+    Returns:
+        tuple: (success, error)
+    """
+    try:
+        conn = connect_db()
+
+        with conn.session as session:
+            if cancel:
+                query = text("""
+                    UPDATE work_orders 
+                    SET payment_received = false, payment_time = NULL 
+                    WHERE id = :order_id
+                """)
+                session.execute(query, {'order_id': order_id})
+            else:
+                query = text("""
+                    UPDATE work_orders 
+                    SET payment_received = true, payment_time = :payment_time 
+                    WHERE id = :order_id
+                """)
+                session.execute(query, {
+                    'payment_time': payment_time,
+                    'order_id': order_id
+                })
+
+            session.commit()
+
+        # 检查是否有影响的行
+        success = conn.query(
+            "SELECT COUNT(*) as count FROM work_orders WHERE id = :order_id",
+            params={'order_id': order_id}
+        )['count'][0] > 0
+
+        error = None if success else "未找到要更新的工单"
+
+        return success, error
+
+    except Exception as e:
+        return False, str(e)
+
+
+# 修改发票状态更新函数，添加撤销功能
+def update_invoice_status(order_id, invoice_time=None, cancel=False):
+    """更新发票状态
+    Args:
+        order_id (int): 工单ID
+        invoice_time (datetime): 发票签发时间
+        cancel (bool): 是否为撤销操作
+    Returns:
+        tuple: (success, error)
+    """
+    try:
+        conn = connect_db()
+
+        with conn.session as session:
+            if cancel:
+                query = text("""
+                    UPDATE work_orders 
+                    SET invoice_sent = false, invoice_time = NULL 
+                    WHERE id = :order_id
+                """)
+                session.execute(query, {'order_id': order_id})
+            else:
+                query = text("""
+                    UPDATE work_orders 
+                    SET invoice_sent = true, invoice_time = :invoice_time 
+                    WHERE id = :order_id
+                """)
+                session.execute(query, {
+                    'invoice_time': invoice_time,
+                    'order_id': order_id
+                })
+
+            session.commit()
+
+        # 检查是否有影响的行
+        success = conn.query(
+            "SELECT COUNT(*) as count FROM work_orders WHERE id = :order_id",
+            params={'order_id': order_id}
+        )['count'][0] > 0
+
+        error = None if success else "未找到要更新的工单"
+
+        return success, error
+
+    except Exception as e:
+        return False, str(e)
+
+
+# 修改收据状态更新函数，添加撤销功能
+def update_receipt_status(order_id, receipt_time=None, cancel=False):
+    """更新收据状态
+    Args:
+        order_id (int): 工单ID
+        receipt_time (datetime): 收据签发时间
+        cancel (bool): 是否为撤销操作
+    Returns:
+        tuple: (success, error)
+    """
+    try:
+        conn = connect_db()
+
+        with conn.session as session:
+            if cancel:
+                query = text("""
+                    UPDATE work_orders 
+                    SET receipt_sent = false, receipt_time = NULL 
+                    WHERE id = :order_id
+                """)
+                session.execute(query, {'order_id': order_id})
+            else:
+                query = text("""
+                    UPDATE work_orders 
+                    SET receipt_sent = true, receipt_time = :receipt_time 
+                    WHERE id = :order_id
+                """)
+                session.execute(query, {
+                    'receipt_time': receipt_time,
+                    'order_id': order_id
+                })
+
+            session.commit()
+
+        # 检查是否有影响的行
+        success = conn.query(
+            "SELECT COUNT(*) as count FROM work_orders WHERE id = :order_id",
+            params={'order_id': order_id}
+        )['count'][0] > 0
+
+        error = None if success else "未找到要更新的工单"
+
+        return success, error
+
+    except Exception as e:
+        return False, str(e)
+
+
+# 添加撤销派单函数
+def cancel_assignment(order_id):
+    """撤销派单
+    Args:
+        order_id (int): 工单ID
+    Returns:
+        tuple: (success, error)
+    """
+    try:
+        conn = connect_db()
+
+        # 如果连接失败，返回 False 和错误消息
+        if conn is None:
+            logger.error("数据库连接失败")
+            return False, "数据库连接失败"
+
+        # 确保 order_id 是整数类型
+        order_id = int(order_id)
+
+        with conn.session as session:
+            query = text("""
+                UPDATE work_orders 
+                SET assigned_cleaner = '暂未派单',
+                    work_date = NULL,
+                    work_time = NULL,
+                    cleaning_status = 0,
+                    cleaning_completed_at = NULL
+                WHERE id = :order_id
+            """)
+            result = session.execute(query, {'order_id': order_id})
+            session.commit()
+
+        # 检查是否有影响的行
+        affected_rows = conn.query(
+            "SELECT COUNT(*) as count FROM work_orders WHERE id = :order_id",
+            params={'order_id': order_id}
+        )['count'][0]
+
+        success = result.rowcount > 0
+        error = None if success else "未找到要更新的工单"
+
+        return success, error
+
+    except Exception as e:
+        logger.error(f"撤销派单失败：{e}")
+        # 确保总是返回一个元组
         return False, str(e)

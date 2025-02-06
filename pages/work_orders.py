@@ -19,6 +19,34 @@ from utils.styles import apply_global_styles
 from utils.db_operations import update_remarks
 
 
+# 在work_orders.py中添加修改工单对话框
+# 在 work_orders.py 中添加修改工单对话框
+@st.dialog("修改工单")
+def edit_order_dialog(order_data):
+    """修改工单确认对话框
+    Args:
+        order_data (pd.Series): 工单数据
+    """
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+    st.write("确定要修改此工单吗？")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button(
+                "确认修改",
+                use_container_width=True,
+                type="primary"
+        ):
+            # 将工单数据存储到 session state 中
+            st.session_state['edit_order_data'] = order_data.to_dict()
+            st.switch_page("pages/edit_orders.py")
+
+    with col2:
+        if st.button("取消", use_container_width=True):
+            st.rerun()
+
+
 # 添加删除确认对话框
 @st.dialog("删除工单")
 def delete_order_dialog(order_data):
@@ -488,8 +516,8 @@ def display_orders(orders, tab_name):
             if remarks:
                 st.markdown(f"📝 **备注信息**：{remarks}")
 
-            # 按钮显示部分
-            col1, col2, col3, col4, col5, col6 = st.columns(6)
+            # 修改按钮部分
+            col1, col2, col3, col4, col5, col6, col7 = st.columns(7)  # 增加一列
 
             with col1:
                 # 派单按钮
@@ -576,12 +604,22 @@ def display_orders(orders, tab_name):
                     update_remarks_dialog(order)
 
             with col6:
-                # 删除按钮 - 始终可用
+                # 修改工单按钮
+                if st.button(
+                        "修改工单",
+                        key=f"{tab_name}_edit_order_{order['id']}",
+                        use_container_width=True,
+                        type="primary"
+                ):
+                    edit_order_dialog(order)
+
+            with col7:
+                # 删除按钮
                 if st.button(
                         "删除工单",
                         key=f"{tab_name}_delete_order_{order['id']}",
                         use_container_width=True,
-                        type="primary"  # 或者用 "secondary" 让它不那么醒目
+                        type="primary"
                 ):
                     delete_order_dialog(order)
 
