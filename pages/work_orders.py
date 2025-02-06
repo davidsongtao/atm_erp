@@ -94,7 +94,7 @@ def handle_status_cancellation(order_data, status_type):
 
 def display_order_popover(order, tab_name):
     """显示工单状态修改的Popover"""
-    with st.popover("撤销......"):
+    with st.popover("更多......"):
         # 根据不同状态启用/禁用按钮
         col1, col2, col3, col4, col5 = st.columns(5)
 
@@ -149,6 +149,22 @@ def display_order_popover(order, tab_name):
                          type="primary",
                          key=f"{tab_name}_cancel_cleaning_{order['id']}"):
                 cancel_status_dialog(order, 'cleaning')
+
+        col6, col7, col8, col9, col10 = st.columns(5)
+
+        with col7:
+            if st.button("删除工单",
+                         use_container_width=True,
+                         type="primary",
+                         key=f"{tab_name}_delete_order_{order['id']}"):
+                delete_order_dialog(order)
+
+        with col6:
+            if st.button("修改工单",
+                         use_container_width=True,
+                         type="primary",
+                         key=f"{tab_name}_edit_order_{order['id']}"):
+                edit_order_dialog(order)
 
 
 # 在work_orders.py中添加修改工单对话框
@@ -655,7 +671,7 @@ def display_orders(orders, tab_name):
             # 显示备注信息
             remarks = order.get('remarks', '')
             if remarks:
-                st.markdown(f"📝 **备注信息**：{remarks}")
+                st.markdown(f"📝 备注信息：{remarks}")
 
             # 修改按钮部分
             col1, col2, col3, col4, col5, col6 = st.columns(6)  # 减少一列
@@ -780,8 +796,9 @@ def work_orders():
             if st.button("工单统计", use_container_width=True, type="primary"):
                 st.switch_page("pages/orders_show.py")
         with col3:
-            if st.button("修改工单", use_container_width=True, type="primary", disabled=True):
-                st.switch_page("pages/new_work_order.py")
+            if st.button("月度结算", use_container_width=True, type="primary"):
+                st.switch_page("pages/monthly_review.py")
+        
 
         # 获取当前主题色
         theme_color = get_theme_color()

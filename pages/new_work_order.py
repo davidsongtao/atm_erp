@@ -254,21 +254,6 @@ async def create_work_order_page():
             )
 
         # 自定义服务项目
-        # st.markdown("""
-        #         <style>
-        #             /* 隐藏所有自定义项目的label */
-        #             div[data-testid="stTextInput"] > label {
-        #                 display: none !important;
-        #                 height: 0px !important;
-        #                 margin: 0px !important;
-        #                 padding: 0px !important;
-        #             }
-        #             /* 移除label占用的空间 */
-        #             div[data-testid="stTextInput"] > .st-emotion-cache-1umgz6j {
-        #                 margin-top: 0px !important;
-        #             }
-        #         </style>
-        #     """, unsafe_allow_html=True)
         custom_service = st.checkbox("添加自定义服务项目")
         if custom_service:
             custom_item = handle_custom_items()

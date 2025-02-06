@@ -139,8 +139,10 @@ def show_team_monthly_stats(team, selected_year, selected_month):
         file_name=f"{team['team_name']}_{selected_year}_{selected_month}_月度报表.csv",
         mime='text/csv',
         type="primary",
-        help="点击下载月度报表，将显示在浏览器的下载列表中。"
+        help="点击下载月度报表，将显示在浏览器的下载列表中。",
+        use_container_width=True
     )
+
 
 
 def monthly_review():
