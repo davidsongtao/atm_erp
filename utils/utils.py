@@ -294,11 +294,11 @@ def get_response(prompt, memory):
     from langchain.chat_models import ChatOpenAI
     from langchain.chains import ConversationChain
 
-    # 使用 ChatOpenAI 而不是 OpenAI
+    # 从streamlit secrets中获取API配置
     chat_model = ChatOpenAI(
         model="deepseek-chat",
-        openai_api_key="sk-cabc0773085a4122b473aeb954300db4",
-        openai_api_base="https://api.deepseek.com/v1",
+        openai_api_key=st.secrets["api_keys"]["openai_api_key"],
+        openai_api_base=st.secrets["api_keys"]["openai_api_base"],
         temperature=0.7
     )
 
@@ -306,21 +306,18 @@ def get_response(prompt, memory):
     chain = ConversationChain(
         llm=chat_model,
         memory=memory,
-        verbose=True  # 设置为True可以看到更多调试信息
+        verbose=True
     )
 
     try:
-        # 确保prompt是字符串
         if not isinstance(prompt, str):
             prompt = str(prompt)
 
-        # 调用对话链
         response = chain.run(prompt)
         return response
 
     except Exception as e:
-        print(f"Error in get_response: {str(e)}")
-        # 返回一个友好的错误信息
+        logger.error(f"Error in get_response: {str(e)}")
         return f"抱歉，生成回复时出现错误：{str(e)}"
 
 

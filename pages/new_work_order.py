@@ -28,16 +28,10 @@ async def create_work_order_page():
         st.divider()
 
         # 初始化验证器相关的session state
+        # 修改验证器初始化部分
         if 'validator' not in st.session_state:
-            st.session_state.validator = get_validator(
-                st.secrets.get("DEEPSEEK_API_KEY")
-            )
-
-        if "should_validate" not in st.session_state:
-            st.session_state.should_validate = False
-
-        if "work_address" not in st.session_state:
-            st.session_state.work_address = ""
+            api_key = st.secrets["api_keys"]["openai_api_key"]
+            st.session_state.validator = get_validator(api_key)
 
         # 初始化时间选择相关的session state
         if 'am_pm' not in st.session_state:
@@ -68,19 +62,17 @@ async def create_work_order_page():
             st.text_input("工单所有人", value=current_user, disabled=True)
         source = st.text_input("工单来源", placeholder="请输入客户来源")
 
-        def select_address(match):
-            st.session_state.work_address = match.formatted_address
-
-        # 创建地址输入和验证按钮
+        # 修改地址输入部分
         work_address = st.text_input(
             "工作地址",
-            key="work_address",
+            value=st.session_state.get("current_address", ""),
+            key="address_input",
             placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000"
         )
 
         validate_btn = st.button("验证地址", use_container_width=True, key="validate-address-btn", type="primary")
 
-        # 处理地址验证
+        # 修改地址验证处理部分
         address_valid = True
         if validate_btn and work_address.strip():
             try:
@@ -98,15 +90,22 @@ async def create_work_order_page():
 
                         # 显示匹配结果
                         for i, match in enumerate(matches):
-                            with st.container():
-                                col1, col2, col3 = st.columns([6, 2, 1])
-                                with col1:
-                                    st.write(f"🏠 {match.formatted_address}")
-                                with col2:
-                                    st.write(f"匹配度: {match.confidence_score:.2f}")
-                                with col3:
-                                    if st.button("选择", key=f"select_{i}", on_click=select_address, args=(match,)):
-                                        st.rerun()
+                            col1, col2, col3 = st.columns([6, 2, 1])
+                            with col1:
+                                st.write(f"🏠 {match.formatted_address}")
+                            with col2:
+                                st.write(f"匹配度: {match.confidence_score:.2f}")
+                            with col3:
+                                # 使用回调函数处理选择
+                                def select_address():
+                                    st.session_state.current_address = match.formatted_address
+
+                                st.button(
+                                    "选择",
+                                    key=f"select_{i}",
+                                    on_click=select_address,
+                                    use_container_width=True
+                                )
 
                         # 如果是LLM验证失败或本地验证，显示Google搜索选项
                         if matches[0].validation_source != 'llm':
@@ -123,8 +122,8 @@ async def create_work_order_page():
                         st.info("您可以：\n1. 检查地址拼写\n2. 确保包含门牌号和街道名\n3. 添加州名和邮编")
                         address_valid = False
 
-            except Exception as e:
-                st.error(f"地址验证服务暂时不可用: {str(e)}")
+            except Exception:
+                st.error("地址验证服务暂时不可用")
                 st.info("您可以继续填写其他信息，稍后再尝试验证地址。")
                 address_valid = True  # 允许用户继续，但显示警告
             finally:
@@ -223,16 +222,14 @@ async def create_work_order_page():
 
         # 确认和取消按钮
         if create_btn and confirm_create:
-            if not all([source, work_address, order_amount > 0, address_valid]):
+            if not all([source, st.session_state.get("current_address", ""), order_amount > 0, address_valid]):
                 st.error("请填写所有必填项！", icon="⚠️")
-            elif not any([basic_services, room_services, electrical_services, other_services, custom_item]):
-                st.error("请至少选择一项服务！", icon="⚠️")
             else:
                 success, error = create_work_order(
                     order_date=order_date,
                     created_by=current_user,
                     source=source,
-                    work_address=work_address,
+                    work_address=st.session_state.get("current_address", ""),
                     payment_method=payment_method,
                     order_amount=order_amount,
                     basic_service=basic_services,

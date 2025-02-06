@@ -17,8 +17,6 @@ from utils.validator import LLMAddressValidator, get_validator
 from utils.styles import apply_global_styles
 
 
-
-
 def initialize_receipt_data():
     """初始化收据数据"""
     if 'previous_form_data' in st.session_state:
@@ -77,17 +75,16 @@ async def render_input_form(service_options, receipt_data):
     """渲染输入表单"""
     # 初始化验证器相关的session state
     if 'validator' not in st.session_state:
-        st.session_state.validator = get_validator(
-            st.secrets.get("DEEPSEEK_API_KEY")
-        )
+        api_key = st.secrets["api_keys"]["openai_api_key"]
+        st.session_state.validator = get_validator(api_key)
 
-    if "address" not in st.session_state:
-        st.session_state.address = receipt_data["address"]
-
-    # 创建地址输入的列布局
-    addr_col1, addr_col2 = st.columns([4, 1])
-
-    address = st.text_input('客户地址', key="address", placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000")
+    # 使用不同的 key，避免和 session_state 冲突
+    address = st.text_input(
+        '客户地址',
+        value=st.session_state.get("current_address", receipt_data["address"]),
+        key="address_input",  # 修改了这里的 key
+        placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000"
+    )
 
     validate_btn = st.button("验证地址", use_container_width=True, key="validate-address-btn", type="primary")
 
@@ -95,7 +92,7 @@ async def render_input_form(service_options, receipt_data):
     address_valid = True
     if validate_btn and address.strip():
         try:
-            with st.spinner("验证地址中..."):
+            with st.spinner("验证地址中，耗时较长，请耐心等待，过程中请不要刷新页面..."):
                 matches = await st.session_state.validator.validate_address(address)
 
                 if matches:
@@ -109,16 +106,20 @@ async def render_input_form(service_options, receipt_data):
 
                     # 显示匹配结果
                     for i, match in enumerate(matches):
-                        with st.container():
-                            col1, col2, col3 = st.columns([6, 2, 1])
-                            with col1:
-                                st.write(f"🏠 {match.formatted_address}")
-                            with col2:
-                                st.write(f"匹配度: {match.confidence_score:.2f}")
-                            with col3:
-                                if st.button("选择", key=f"select_{i}"):
-                                    st.session_state.address = match.formatted_address
-                                    st.rerun()
+                        cols = st.columns([6, 2, 1])
+                        cols[0].write(f"🏠 {match.formatted_address}")
+                        cols[1].write(f"匹配度: {match.confidence_score:.2f}")
+
+                        # 使用回调函数处理选择
+                        def select_address():
+                            st.session_state.current_address = match.formatted_address
+
+                        cols[2].button(
+                            "选择",
+                            key=f"select_{i}",
+                            on_click=select_address,
+                            use_container_width=True
+                        )
 
                     # 如果是LLM验证失败或本地验证，显示Google搜索选项
                     if matches[0].validation_source != 'llm':

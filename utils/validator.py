@@ -6,7 +6,6 @@ import hashlib
 from datetime import datetime, timedelta
 import re
 import streamlit as st
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 
 @dataclass
@@ -44,26 +43,37 @@ class LLMAddressValidator:
 
     def _create_validation_prompt(self, address: str) -> str:
         """创建地址验证提示词"""
-        return f"""作为澳大利亚地址验证专家，请分析并标准化以下地址。
-输入地址: {address}
+        return f"""作为澳大利亚地址验证专家，你需要执行以下步骤：
 
-请严格按照以下格式回复：
-地址: <标准化后的完整地址>
-单元号: <如果有单元号>
-街道号: <门牌号>
-街道: <街道名称>
-区域: <区域/市郊>
-州: <州缩写>
-邮编: <邮政编码>
-置信度: <0.0-1.0之间的数字，表示地址正确的置信度>
+    1. 分析输入地址: {address}
+    2. 想象你可以用Google搜索这个地址，并特别关注 realestate.com.au 网站上的结果
+    3. 基于搜索结果和你的知识，标准化并验证这个地址
 
-注意:
-1. 所有地址必须包含街道号、街道名、区域、州和邮编
-2. 州必须使用标准缩写(VIC, NSW, QLD, WA, SA, TAS, ACT, NT)
-3. 如果无法解析某个字段，使用 "N/A"
-4. 置信度基于地址完整性和可识别性"""
+    请按照以下标准格式返回结果：
+    地址: <标准化后的完整地址，使用与realestate.com.au相同的格式>
+    单元号: <如果有单元号>
+    街道号: <门牌号>
+    街道: <街道名称>
+    区域: <区域/市郊>
+    州: <州缩写>
+    邮编: <邮政编码>
+    置信度: <0.0-1.0之间的数字，表示地址正确的置信度>
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+    验证要求：
+    1. 地址格式必须符合澳大利亚标准，包含街道号、街道名、区域、州和邮编
+    2. 州名必须使用标准缩写(VIC, NSW, QLD, WA, SA, TAS, ACT, NT)
+    3. 对于无法识别的字段，使用 "N/A"
+    4. 置信度评分标准：
+       - 1.0: 在realestate.com.au上能找到完全匹配的地址
+       - 0.8-0.9: 地址完整且可信，但可能有细微差异
+       - 0.6-0.7: 地址基本可识别，但缺少部分细节
+       - 0.5以下: 地址信息不完整或无法验证
+
+    如果是公寓或单元：
+    - 正确格式示例："12/34 Smith Street, Melbourne VIC 3000"
+    - 单元号在前，用斜杠分隔
+    - 确保包含所有必要的方向标示(如North, South等)"""
+
     async def _call_deepseek_api(self, prompt: str) -> Optional[Dict]:
         """调用 Deepseek API 进行地址验证"""
         if not self.session:
@@ -83,14 +93,17 @@ class LLMAddressValidator:
                             {"role": "user", "content": prompt}
                         ],
                         "temperature": 0.1
-                    },
-                    timeout=aiohttp.ClientTimeout(total=10)
+                    }
             ) as response:
                 if response.status == 200:
                     return await response.json()
                 return None
+
+        except aiohttp.ClientError as e:
+            st.error(f"API请求错误: {str(e)}")
+            return None
         except Exception as e:
-            st.warning(f"地址验证服务暂时不可用: {str(e)}，将使用本地验证...")
+            st.error(f"未预期的错误: {str(e)}")
             return None
 
     def _parse_llm_response(self, response: Dict, raw_input: str) -> Optional[AddressMatch]:
@@ -98,38 +111,36 @@ class LLMAddressValidator:
         try:
             content = response['choices'][0]['message']['content']
 
-            # 使用正则表达式提取各个字段
-            address = re.search(r'地址: (.+)', content)
-            unit = re.search(r'单元号: (.+)', content)
-            confidence = re.search(r'置信度: (0\.\d+)', content)
+            address_match = re.search(r'地址:\s*(.+)', content)
+            unit_match = re.search(r'单元号:\s*(.+)', content)
+            confidence_match = re.search(r'置信度:\s*([\d.]+)', content)
 
-            if not (address and confidence):
+            if not all([address_match, confidence_match]):
                 return None
 
-            formatted_address = address.group(1).strip()
+            formatted_address = address_match.group(1).strip()
             if formatted_address.lower() == 'n/a':
                 return None
 
-            # 提取单元号（如果存在）
             unit_number = None
-            if unit and unit.group(1).strip().lower() != 'n/a':
-                unit_number = unit.group(1).strip()
+            if unit_match and unit_match.group(1).strip().lower() != 'n/a':
+                unit_number = unit_match.group(1).strip()
 
-            # 解析其他组件
             components = {}
             for field in ['街道号', '街道', '区域', '州', '邮编']:
-                match = re.search(f'{field}: (.+)', content)
+                match = re.search(f'{field}:\s*(.+)', content)
                 if match and match.group(1).strip().lower() != 'n/a':
                     components[field] = match.group(1).strip()
 
             return AddressMatch(
                 raw_input=raw_input,
                 formatted_address=formatted_address,
-                confidence_score=float(confidence.group(1)),
+                confidence_score=float(confidence_match.group(1)),
                 components=components,
                 unit_number=unit_number,
                 validation_source='llm'
             )
+
         except Exception as e:
             st.error(f"解析验证结果时出错: {str(e)}")
             return None
