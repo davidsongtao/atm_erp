@@ -67,10 +67,31 @@ async def create_work_order_page():
             "工作地址",
             value=st.session_state.get("current_address", ""),
             key="address_input",
-            placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000"
+            placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000",
+            help="请输入地址以开始验证"
         )
 
-        validate_btn = st.button("验证地址", use_container_width=True, key="validate-address-btn", type="primary")
+        # 检查地址是否为空
+        is_address_empty = not work_address.strip()
+
+        # 验证按钮 - 当地址为空时禁用
+        validate_btn = st.button(
+            "自动化验证地址",
+            use_container_width=True,
+            key="validate-address-btn",
+            type="primary",
+            disabled=is_address_empty,
+        )
+
+        # Google搜索按钮 - 当地址为空时禁用
+        search_query = work_address.replace(' ', '+')
+        search_url = f"https://www.google.com/search?q={search_query}+Australia"
+        st.link_button(
+            "🔍 在Google中搜索此地址",
+            search_url,
+            use_container_width=True,
+            disabled=is_address_empty
+        )
 
         # 修改地址验证处理部分
         address_valid = True

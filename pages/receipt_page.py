@@ -82,16 +82,36 @@ async def render_input_form(service_options, receipt_data):
     address = st.text_input(
         '客户地址',
         value=st.session_state.get("current_address", receipt_data["address"]),
-        key="address_input",  # 修改了这里的 key
+        key="address_input",
         placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000"
     )
 
-    validate_btn = st.button("验证地址", use_container_width=True, key="validate-address-btn", type="primary")
+    # 检查地址是否为空
+    is_address_empty = not bool(address.strip())
 
-    
+    # 根据地址是否为空来设置按钮的状态
+    validate_btn = st.button(
+        "自动化验证地址",
+        use_container_width=True,
+        key="validate-address-btn",
+        type="primary",
+        disabled=is_address_empty,
+        help="请输入地址以开始验证"
+    )
+
+    # 创建Google搜索链接按钮，同样根据地址是否为空来设置状态
+    search_query = address.replace(' ', '+')
+    search_url = f"https://www.google.com/search?q={search_query}+Australia"
+    st.link_button(
+        "🔍 在Google中搜索此地址",
+        search_url,
+        use_container_width=True,
+        disabled=is_address_empty
+    )
+
     # 处理地址验证
     address_valid = True
-    if validate_btn and address.strip():
+    if validate_btn and not is_address_empty:
         try:
             with st.spinner("验证地址中，耗时较长，请耐心等待，过程中请不要刷新页面..."):
                 matches = await st.session_state.validator.validate_address(address)
