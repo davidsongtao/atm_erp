@@ -523,7 +523,7 @@ def display_orders(orders, tab_name):
                 # 派单按钮
                 is_assigned = order['assigned_cleaner'] != '暂未派单'
                 if st.button(
-                        "立即派单",
+                        "派单",
                         key=f"{tab_name}_confirm_worker_{order['id']}",
                         use_container_width=True,
                         type="primary",
@@ -537,7 +537,7 @@ def display_orders(orders, tab_name):
                 cleaning_status = order.get('cleaning_status', 0)
                 is_in_progress = cleaning_status == 1
                 if st.button(
-                        "完成清洁",
+                        "完成",
                         key=f"{tab_name}_complete_cleaning_{order['id']}",
                         use_container_width=True,
                         type="primary",
@@ -552,7 +552,7 @@ def display_orders(orders, tab_name):
             with col3:
                 # 确认收款按钮
                 if st.button(
-                        "确认收款",
+                        "收款",
                         key=f"{tab_name}_confirm_payment_{order['id']}",
                         use_container_width=True,
                         type="primary",
@@ -570,7 +570,7 @@ def display_orders(orders, tab_name):
                 # 根据paperwork类型显示对应按钮
                 if order['paperwork'] == 0:  # 发票类型
                     if st.button(
-                            "签发发票",
+                            "发票",
                             key=f"{tab_name}_confirm_invoice_{order['id']}",
                             use_container_width=True,
                             type="primary",
@@ -582,7 +582,7 @@ def display_orders(orders, tab_name):
                         issue_invoice_dialog(order)
                 else:  # 收据类型
                     if st.button(
-                            "签发收据",
+                            "收据",
                             key=f"{tab_name}_confirm_receipt_{order['id']}",
                             use_container_width=True,
                             type="primary",
@@ -596,7 +596,7 @@ def display_orders(orders, tab_name):
             with col5:
                 # 更新备注按钮 - 始终可用
                 if st.button(
-                        "更新备注",
+                        "备注",
                         key=f"{tab_name}_update_remarks_{order['id']}",
                         use_container_width=True,
                         type="primary"
@@ -606,7 +606,7 @@ def display_orders(orders, tab_name):
             with col6:
                 # 修改工单按钮
                 if st.button(
-                        "修改工单",
+                        "修改",
                         key=f"{tab_name}_edit_order_{order['id']}",
                         use_container_width=True,
                         type="primary"
@@ -616,7 +616,7 @@ def display_orders(orders, tab_name):
             with col7:
                 # 删除按钮
                 if st.button(
-                        "删除工单",
+                        "删除",
                         key=f"{tab_name}_delete_order_{order['id']}",
                         use_container_width=True,
                         type="primary"

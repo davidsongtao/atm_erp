@@ -811,11 +811,11 @@ def update_payment_status(order_id, payment_time=None, cancel=False):
 
 
 # 修改发票状态更新函数，添加撤销功能
-def update_invoice_status(order_id, invoice_time=None, cancel=False):
+def update_invoice_status(order_id, invoice_date=None, cancel=False):
     """更新发票状态
     Args:
         order_id (int): 工单ID
-        invoice_time (datetime): 发票签发时间
+        invoice_date (datetime): 发票签发日期
         cancel (bool): 是否为撤销操作
     Returns:
         tuple: (success, error)
@@ -827,18 +827,18 @@ def update_invoice_status(order_id, invoice_time=None, cancel=False):
             if cancel:
                 query = text("""
                     UPDATE work_orders 
-                    SET invoice_sent = false, invoice_time = NULL 
+                    SET invoice_sent = false, invoice_date = NULL 
                     WHERE id = :order_id
                 """)
                 session.execute(query, {'order_id': order_id})
             else:
                 query = text("""
                     UPDATE work_orders 
-                    SET invoice_sent = true, invoice_time = :invoice_time 
+                    SET invoice_sent = true, invoice_date = :invoice_date 
                     WHERE id = :order_id
                 """)
                 session.execute(query, {
-                    'invoice_time': invoice_time,
+                    'invoice_date': invoice_date,
                     'order_id': order_id
                 })
 

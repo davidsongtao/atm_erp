@@ -18,6 +18,81 @@ from utils.db_operations import update_invoice_status, update_cleaning_status
 from utils.styles import apply_global_styles
 
 
+@st.dialog("撤销派单")
+def cancel_assignment_dialog(order_data):
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+    st.warning("您确定要撤销此工单的派单状态吗？此操作不可逆。")
+
+    if st.button("确认撤销", use_container_width=True, type="primary"):
+        success, error = cancel_assignment(order_data['id'])
+        if success:
+            st.success("已成功撤销派单！", icon="✅")
+            time.sleep(2)
+            st.rerun()
+        else:
+            st.error(f"撤销派单失败：{error}", icon="❌")
+
+
+@st.dialog("撤销收款")
+def cancel_payment_dialog(order_data):
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+    st.warning("您确定要撤销此工单的收款状态吗？此操作不可逆。")
+
+    if st.button("确认撤销", use_container_width=True, type="primary"):
+        success, error = cancel_payment(order_data['id'])
+        if success:
+            st.success("已成功撤销收款！", icon="✅")
+            time.sleep(2)
+            st.rerun()
+        else:
+            st.error(f"撤销收款失败：{error}", icon="❌")
+
+
+@st.dialog("撤销发票")
+def cancel_invoice_dialog(order_data):
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+    st.warning("您确定要撤销此工单的发票状态吗？此操作不可逆。")
+
+    if st.button("确认撤销", use_container_width=True, type="primary"):
+        success, error = cancel_invoice(order_data['id'])
+        if success:
+            st.success("已成功撤销发票！", icon="✅")
+            time.sleep(2)
+            st.rerun()
+        else:
+            st.error(f"撤销发票失败：{error}", icon="❌")
+
+
+@st.dialog("撤销收据")
+def cancel_receipt_dialog(order_data):
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+    st.warning("您确定要撤销此工单的收据状态吗？此操作不可逆。")
+
+    if st.button("确认撤销", use_container_width=True, type="primary"):
+        success, error = cancel_receipt(order_data['id'])
+        if success:
+            st.success("已成功撤销收据！", icon="✅")
+            time.sleep(2)
+            st.rerun()
+        else:
+            st.error(f"撤销收据失败：{error}", icon="❌")
+
+
+@st.dialog("撤销清洁")
+def cancel_cleaning_dialog(order_data):
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+    st.warning("您确定要撤销此工单的清洁完成状态吗？此操作不可逆。")
+
+    if st.button("确认撤销", use_container_width=True, type="primary"):
+        success, error = cancel_cleaning(order_data['id'])
+        if success:
+            st.success("已成功撤销清洁完成状态！", icon="✅")
+            time.sleep(2)
+            st.rerun()
+        else:
+            st.error(f"撤销清洁完成状态失败：{error}", icon="❌")
+
+
 def cancel_assignment(order_id):
     """撤销派单"""
     from utils.db_operations import cancel_assignment as db_cancel_assignment
@@ -87,71 +162,44 @@ async def edit_work_order_page():
             if st.button("撤销派单",
                          use_container_width=True,
                          type="primary",
-                         disabled=order_data['assigned_cleaner'] == '暂未派单',
-                         help="暂未派单，无法撤销" if order_data['assigned_cleaner'] == '暂未派单' else ""
+                         disabled=(order_data['cleaning_status'] > 1 or
+                                   order_data['paperwork'] is not None or
+                                   order_data['assigned_cleaner'] == '暂未派单')
                          ):
-                success, error = cancel_assignment(order_data['id'])
-                if success:
-                    st.success("已撤销派单！")
-                    st.rerun()
-                else:
-                    st.error(f"撤销失败：{error}")
+                cancel_assignment_dialog(order_data)
 
         with status_col2:
             if st.button("撤销收款",
                          use_container_width=True,
                          type="primary",
-                         disabled=not order_data['payment_received'],
-                         help="尚未收款，无法撤销" if not order_data['payment_received'] else ""
+                         disabled=(order_data['paperwork'] is not None or
+                                   not order_data['payment_received'])
                          ):
-                success, error = cancel_payment(order_data['id'])
-                if success:
-                    st.success("已撤销收款！")
-                    st.rerun()
-                else:
-                    st.error(f"撤销失败：{error}")
+                cancel_payment_dialog(order_data)
 
         with status_col3:
             if st.button("撤销发票",
                          use_container_width=True,
                          type="primary",
-                         disabled=(order_data['paperwork'] != 0 or not order_data['invoice_sent']),
-                         help="不满足发票撤销条件" if (order_data['paperwork'] != 0 or not order_data['invoice_sent']) else ""
+                         disabled=not order_data['invoice_sent']
                          ):
-                success, error = cancel_invoice(order_data['id'])
-                if success:
-                    st.success("已撤销发票！")
-                    st.rerun()
-                else:
-                    st.error(f"撤销失败：{error}")
+                cancel_invoice_dialog(order_data)
 
         with status_col4:
             if st.button("撤销收据",
                          use_container_width=True,
                          type="primary",
-                         disabled=(order_data['paperwork'] != 1 or not order_data['receipt_sent']),
-                         help="不满足收据撤销条件" if (order_data['paperwork'] != 1 or not order_data['receipt_sent']) else ""
+                         disabled=not order_data['receipt_sent']
                          ):
-                success, error = cancel_receipt(order_data['id'])
-                if success:
-                    st.success("已撤销收据！")
-                    st.rerun()
-                else:
-                    st.error(f"撤销失败：{error}")
+                cancel_receipt_dialog(order_data)
 
         with status_col5:
             if st.button("撤销完成清洁",
                          use_container_width=True,
                          type="primary",
-                         disabled=order_data['cleaning_status'] != 2,
-                         help="清洁未完成或无法撤销" if order_data['cleaning_status'] != 2 else ""
+                         disabled=order_data['cleaning_status'] != 2
                          ):
-                success, error = cancel_cleaning(order_data['id'])
-                if success:
-                    st.success("已撤销完成清洁！")
-                    st.rerun()
-                else:
-                    st.error(f"撤销失败：{error}")
+                cancel_cleaning_dialog(order_data)
 
         st.divider()
 
