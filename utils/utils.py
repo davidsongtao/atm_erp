@@ -200,7 +200,8 @@ def navigation():
         # st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
 
     if st.sidebar.button("👩‍👩‍👧‍👦月度结算", key="staff_management_button", use_container_width=True, type="primary"):
-        st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+        # st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+        st.switch_page("pages/monthly_review.py")
 
     # 自动化报价
     # if st.sidebar.button("🤖智能助理", key="ai_assistant", use_container_width=True, type="primary"):
