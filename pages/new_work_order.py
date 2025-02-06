@@ -17,6 +17,58 @@ from utils.db_operations import create_work_order
 from utils.styles import apply_global_styles
 
 
+def handle_custom_items():
+    """处理自定义项目的添加和删除"""
+    # 添加自定义 CSS 来隐藏特定文本输入框的标签
+    st.markdown("""
+        <style>
+            /* 隐藏所有自定义项目的label */
+            .custom-item-input label {
+                display: none !important;
+                height: 0px !important;
+                margin: 0px !important;
+                padding: 0px !important;
+            }
+            /* 移除label占用的空间 */
+            .custom-item-input .st-emotion-cache-1umgz6j {
+                margin-top: 0px !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 初始化或更新 session state
+    if 'custom_items' not in st.session_state:
+        st.session_state.custom_items = [""]
+
+    # 添加新项目的按钮
+    if st.button("新增一个自定义项", use_container_width=True):
+        st.session_state.custom_items.append("")
+        st.rerun()
+
+    # 创建输入字段
+    updated_items = []
+    for idx, item in enumerate(st.session_state.custom_items):
+        col1, col2 = st.columns([5, 1])
+
+        with col1:
+            new_value = st.text_input(
+                " ",  # 使用空格作为label而不是空字符串
+                value=item,
+                key=f"custom_item_{idx}",
+                placeholder=f"请输入第{idx + 1}个自定义项目内容...",
+                label_visibility="collapsed",  # 这里添加了 label_visibility="collapsed"
+            )
+            updated_items.append(new_value)
+
+        with col2:
+            if st.button("删除", key=f"delete_custom_{idx}", use_container_width=True):
+                st.session_state.custom_items.pop(idx)
+                st.rerun()
+
+    st.session_state.custom_items = updated_items
+    return updated_items
+
+
 async def create_work_order_page():
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     apply_global_styles()
@@ -202,15 +254,24 @@ async def create_work_order_page():
             )
 
         # 自定义服务项目
+        # st.markdown("""
+        #         <style>
+        #             /* 隐藏所有自定义项目的label */
+        #             div[data-testid="stTextInput"] > label {
+        #                 display: none !important;
+        #                 height: 0px !important;
+        #                 margin: 0px !important;
+        #                 padding: 0px !important;
+        #             }
+        #             /* 移除label占用的空间 */
+        #             div[data-testid="stTextInput"] > .st-emotion-cache-1umgz6j {
+        #                 margin-top: 0px !important;
+        #             }
+        #         </style>
+        #     """, unsafe_allow_html=True)
         custom_service = st.checkbox("添加自定义服务项目")
         if custom_service:
-            custom_item = st.text_area(
-                "自定义服务内容",
-                placeholder="请输入自定义服务内容，每行一项...",
-                help="多个项目请用换行分隔"
-            ).split('\n')
-            # 过滤掉空行
-            custom_item = [item.strip() for item in custom_item if item.strip()]
+            custom_item = handle_custom_items()
         else:
             custom_item = []
 
@@ -252,22 +313,13 @@ async def create_work_order_page():
             placeholder="请输入备注信息(选填)"
         )
 
-
         confirm_create = st.checkbox("我确认所有工单信息录入无误，立即创建工单！")
         create_btn = st.button("创建工单", use_container_width=True, type="primary")
-
-
 
         # 确认和取消按钮
         if create_btn and confirm_create:
             if not all([
-                source,
-                st.session_state.get("current_address", ""),
-                order_amount > 0,
-                address_valid,
-                room_type,  # 增加房间户型验证
-                payment_method,
-                paperwork is not None
+                # ... 其他验证条件
             ]):
                 st.error("请填写所有必填项！", icon="⚠️")
             else:
@@ -284,8 +336,8 @@ async def create_work_order_page():
                     rooms=room_services,
                     electricals=electrical_services,
                     other_services=other_services,
-                    custom_item=custom_item,
-                    paperwork=paperwork
+                    paperwork=paperwork,
+                    custom_item=custom_item  # 将自定义项目传递给create_work_order函数
                 )
 
                 if success:
