@@ -859,11 +859,11 @@ def update_invoice_status(order_id, invoice_date=None, cancel=False):
 
 
 # 修改收据状态更新函数，添加撤销功能
-def update_receipt_status(order_id, receipt_time=None, cancel=False):
+def update_receipt_status(order_id, receipt_date=None, cancel=False):
     """更新收据状态
     Args:
         order_id (int): 工单ID
-        receipt_time (datetime): 收据签发时间
+        receipt_date (datetime): 收据签发日期 (注意改为 receipt_date)
         cancel (bool): 是否为撤销操作
     Returns:
         tuple: (success, error)
@@ -875,18 +875,18 @@ def update_receipt_status(order_id, receipt_time=None, cancel=False):
             if cancel:
                 query = text("""
                     UPDATE work_orders 
-                    SET receipt_sent = false, receipt_time = NULL 
+                    SET receipt_sent = false, receipt_date = NULL 
                     WHERE id = :order_id
                 """)
                 session.execute(query, {'order_id': order_id})
             else:
                 query = text("""
                     UPDATE work_orders 
-                    SET receipt_sent = true, receipt_time = :receipt_time 
+                    SET receipt_sent = true, receipt_date = :receipt_date 
                     WHERE id = :order_id
                 """)
                 session.execute(query, {
-                    'receipt_time': receipt_time,
+                    'receipt_date': receipt_date,
                     'order_id': order_id
                 })
 
