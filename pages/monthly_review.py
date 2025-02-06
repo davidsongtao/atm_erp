@@ -100,7 +100,7 @@ def show_team_monthly_stats(team, selected_year, selected_month):
     # 显示统计信息
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("工单总数", f"{total_orders} 单")
+        st.metric("工单总数", f"{total_orders}")
     with col2:
         st.metric("总金额", f"${total_amount:.2f}")
     with col3:
