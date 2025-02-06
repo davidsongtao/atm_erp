@@ -104,7 +104,8 @@ async def create_work_order_page():
                                     "选择",
                                     key=f"select_{i}",
                                     on_click=select_address,
-                                    use_container_width=True
+                                    use_container_width=True,
+                                    type="primary"
                                 )
 
                         # 如果是LLM验证失败或本地验证，显示Google搜索选项
@@ -115,7 +116,8 @@ async def create_work_order_page():
                             st.link_button(
                                 "🔍 在Google中搜索此地址",
                                 search_url,
-                                use_container_width=True
+                                use_container_width=True,
+                                type="primary"
                             )
                     else:
                         st.warning("⚠️ 无法验证此地址，请检查输入是否正确。")
