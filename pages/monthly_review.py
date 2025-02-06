@@ -97,16 +97,27 @@ def show_team_monthly_stats(team, selected_year, selected_month):
     cash_amount = orders[orders['payment_method'] == 'cash']['total_amount'].sum()
     transfer_amount = orders[orders['payment_method'] == 'transfer']['total_amount'].sum()
 
+    # 新增统计项
+    atm_pending = orders[orders['payment_method'] == 'transfer']['order_amount'].sum() * 0.7
+    team_payment = cash_amount * 0.3
+
     # 显示统计信息
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("工单总数", f"{total_orders}")
+        st.metric("工单总数", f"{total_orders}", help="统计月完成工单总数")
     with col2:
-        st.metric("总金额", f"${total_amount:.2f}")
+        st.metric("总金额", f"${total_amount:.2f}", help="包含现金收入及转账收入，转账收入部分包含10%GST")
     with col3:
-        st.metric("现金收款", f"${cash_amount:.2f}")
+        st.metric("现金收款合计", f"${cash_amount:.2f}", help="统计月所有现金收款工单总金额")
+
+    col4, col5, col6 = st.columns(3)
+
     with col4:
-        st.metric("转账收款", f"${transfer_amount:.2f}")
+        st.metric("转账收款", f"${transfer_amount:.2f}", help="统计月所有转账收款工单总金额")
+    with col5:
+        st.metric("ATM待支付", f"${atm_pending:.2f}", help="该统计月ATM需要支付给保洁组的总金额。计算公式：(转账收款总额 - 10%GST) × 70%")
+    with col6:
+        st.metric("保洁组应缴", f"${team_payment:.2f}", help="该统计月保洁组需要缴纳给ATM的总金额。计算公式：现金收款总额 × 30%")
 
     # 创建包含统计信息的CSV文件内容
     # 首先将原始数据转换为CSV字符串
@@ -118,6 +129,8 @@ def show_team_monthly_stats(team, selected_year, selected_month):
     csv_data += f"总金额,${total_amount:.2f}\n"
     csv_data += f"现金收款,${cash_amount:.2f}\n"
     csv_data += f"转账收款,${transfer_amount:.2f}\n"
+    csv_data += f"ATM待支付,${atm_pending:.2f}\n"
+    csv_data += f"保洁组应缴,${team_payment:.2f}\n"
 
     # 添加月度报表下载按钮
     st.download_button(

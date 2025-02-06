@@ -373,8 +373,13 @@ def show_assign_order_dialog(order_data):
                 "确认派单",
                 use_container_width=True,
                 type="primary",
-                disabled=not confirm_checkbox or not selected_team
+                disabled=not confirm_checkbox or not selected_team or not work_time  # 添加 work_time 验证
         ):
+            # 如果未选择保洁时间，显示警告
+            if not work_time:
+                st.warning("请选择保洁时间", icon="⚠️")
+                return
+
             # 更新数据库中的派单状态
             success, error = assign_work_order(
                 order_data['id'],
