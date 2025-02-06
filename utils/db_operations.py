@@ -7,7 +7,7 @@ Description: 数据库操作
 @Time     ：2024/12/26 下午9:05
 @Contact  ：king.songtao@gmail.com
 """
-from datetime import date
+from datetime import date, datetime
 
 import pandas as pd
 import streamlit as st
@@ -211,8 +211,12 @@ def delete_account(username):
 
 
 def create_work_order(order_date, created_by, source, work_address, room_type, payment_method,
-                      order_amount, remarks, basic_service, rooms, electricals, other_services,
-                      custom_item, paperwork):
+                     order_amount, remarks, basic_service, rooms, electricals, other_services,
+                     custom_item, paperwork):
+    """创建新工单
+    Args:
+        ...新增room_type和remarks参数...
+    """
     try:
         conn = connect_db()
 
@@ -230,15 +234,16 @@ def create_work_order(order_date, created_by, source, work_address, room_type, p
             session.execute(
                 text("""
                 INSERT INTO work_orders 
-                (order_date, work_date, work_time, created_by, source, work_address, room_type,
-                payment_method, order_amount, total_amount, remarks, basic_service, rooms,
-                electricals, other_services, custom_item, assigned_cleaner,
-                payment_received, invoice_sent, receipt_sent, paperwork)
+                (order_date, work_date, work_time, created_by, source, work_address, 
+                room_type, payment_method, order_amount, total_amount, remarks, 
+                basic_service, rooms, electricals, other_services, custom_item, 
+                assigned_cleaner, cleaning_status, payment_received, invoice_sent, 
+                receipt_sent, paperwork)
                 VALUES 
-                (:order_date, NULL, NULL, :created_by, :source, :work_address, :room_type,
-                :payment_method, :order_amount, :total_amount, :remarks, :basic_service, :rooms,
-                :electricals, :other_services, :custom_item, '暂未派单',
-                FALSE, FALSE, FALSE, :paperwork)
+                (:order_date, NULL, NULL, :created_by, :source, :work_address,
+                :room_type, :payment_method, :order_amount, :total_amount, :remarks,
+                :basic_service, :rooms, :electricals, :other_services, :custom_item,
+                '暂未派单', 0, FALSE, FALSE, FALSE, :paperwork)
                 """),
                 params={
                     'order_date': order_date,
@@ -697,6 +702,7 @@ def assign_work_order(order_id: int, team_name: str, work_date: date, work_time:
                     SET assigned_cleaner = :team_name,
                         work_date = :work_date,
                         work_time = :work_time,
+                        cleaning_status = 1,  -- 设置为进行中
                         updated_at = NOW()
                     WHERE id = :order_id
                 """),
@@ -748,4 +754,56 @@ def update_remarks(order_id: int, remarks: str) -> tuple[bool, str]:
         return True, None
     except Exception as e:
         logger.error(f"更新备注失败：{e}")
+        return False, str(e)
+
+
+def update_cleaning_status(order_id: int, status: int, completed_at: datetime = None) -> tuple[bool, str]:
+    """更新工单清洁状态
+
+    Args:
+        order_id (int): 工单ID
+        status (int): 状态值 0=未开始,1=进行中,2=已完成
+        completed_at (datetime, optional): 完成时间,仅在状态为已完成时需要
+
+    Returns:
+        tuple[bool, str]: (成功状态, 错误信息)
+    """
+    try:
+        conn = connect_db()
+        params = {
+            'order_id': order_id,
+            'status': status,
+            'completed_at': completed_at
+        }
+
+        with conn.session as session:
+            if status == 2:  # 已完成状态
+                session.execute(
+                    text("""
+                        UPDATE work_orders 
+                        SET cleaning_status = :status,
+                            cleaning_completed_at = :completed_at,
+                            updated_at = NOW()
+                        WHERE id = :order_id
+                    """),
+                    params=params
+                )
+            else:
+                session.execute(
+                    text("""
+                        UPDATE work_orders 
+                        SET cleaning_status = :status,
+                            cleaning_completed_at = NULL,
+                            updated_at = NOW()
+                        WHERE id = :order_id
+                    """),
+                    params=params
+                )
+            session.commit()
+
+        logger.success(f"工单 {order_id} 清洁状态更新成功")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"更新清洁状态失败：{e}")
         return False, str(e)

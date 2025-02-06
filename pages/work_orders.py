@@ -13,10 +13,53 @@ import toml
 import streamlit as st
 from datetime import datetime, date, timedelta
 from utils.utils import navigation, check_login_state
-from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status, update_receipt_status, update_invoice_status, assign_work_order, get_active_clean_teams
+from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status, update_receipt_status, update_invoice_status, assign_work_order, get_active_clean_teams, update_cleaning_status
 import pandas as pd
 from utils.styles import apply_global_styles
 from utils.db_operations import update_remarks
+
+@st.dialog("完成清洁")
+def complete_cleaning_dialog(order_data):
+    """完成清洁确认对话框
+    Args:
+        order_data (pd.Series): 工单数据
+    """
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+    st.write(f"👷 保洁小组：{order_data['assigned_cleaner']}")
+    st.write(f"📆 保洁日期：{order_data['work_date'].strftime('%Y-%m-%d')}")
+    st.write(f"🕒 保洁时间：{order_data['work_time']}")
+
+    # 确认复选框
+    confirm_checkbox = st.checkbox(
+        "我已确认该地址的清洁工作已全部完成！",
+        key=f"confirm_cleaning_checkbox_{order_data['id']}"
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button(
+                "确认完成",
+                use_container_width=True,
+                type="primary",
+                disabled=not confirm_checkbox
+        ):
+            # 更新清洁状态为已完成
+            success, error = update_cleaning_status(
+                order_data['id'],
+                status=2,
+                completed_at=datetime.now()
+            )
+            if success:
+                st.success("清洁状态已更新！", icon="✅")
+                time.sleep(2)
+                st.rerun()
+            else:
+                st.error(f"状态更新失败：{error}", icon="⚠️")
+
+    with col2:
+        if st.button("取消", use_container_width=True):
+            st.rerun()
 
 
 @st.dialog("更新备注")
@@ -329,14 +372,16 @@ def get_theme_color():
 
 def display_orders(orders, tab_name):
     """显示工单列表
-
     Args:
         orders: 工单数据 DataFrame
         tab_name: 标签页名称，用于生成唯一的按钮 key
     """
     for _, order in orders.iterrows():
         with st.container():
+            # 工单地址
             st.write(f"📍 工单地址： {order['work_address']}")
+
+            # 基本信息显示
             col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
                 if order['assigned_cleaner'] == '暂未派单':
@@ -347,6 +392,7 @@ def display_orders(orders, tab_name):
                     st.markdown(f"👷 保洁小组：<span style='color:green'>✅ {order['assigned_cleaner']}</span>", unsafe_allow_html=True)
                     st.markdown(f"📆 保洁日期：<span style='color:green'>✅ {order['work_date'].strftime('%Y-%m-%d')}</span>", unsafe_allow_html=True)
                     st.markdown(f"🕒 保洁时间：<span style='color:green'>✅ {order['work_time']}</span>", unsafe_allow_html=True)
+
             with col2:
                 # 根据收款状态决定高亮颜色
                 if order['payment_received']:
@@ -364,12 +410,13 @@ def display_orders(orders, tab_name):
                     else:
                         st.markdown(f"💳 付款方式：<span style='color:red'>⭕ 现金</span>", unsafe_allow_html=True)
                 st.write(f"👤 登记人员： {order['created_by']}")
+
             with col3:
                 st.write(f"💵收款状态：{'✅' if order['payment_received'] else '❌'}")
                 # 根据paperwork值显示对应状态 (1=receipt, 0=invoice)
-                if order['paperwork'] == 0:  # 使用字符串比较
+                if order['paperwork'] == 0:
                     st.write(f"📧发票状态：{'✅' if order['invoice_sent'] else '❌'}")
-                else:  # paperwork == '1'
+                else:
                     st.write(f"🧾收据状态：{'✅' if order['receipt_sent'] else '❌'}")
 
                 # 显示户型信息
@@ -399,96 +446,89 @@ def display_orders(orders, tab_name):
             # 显示备注信息
             remarks = order.get('remarks', '')
             if remarks:
-                st.markdown(f"📝 备注信息：{remarks}")
+                st.markdown(f"📝 **备注信息**：{remarks}")
 
-            # 检查是否是已完成工单
-            is_completed = order['payment_received'] and (
-                    (order['paperwork'] == '0' and order['invoice_sent']) or
-                    (order['paperwork'] == '1' and order['receipt_sent'])
-            )
+            # 按钮显示部分
+            col1, col2, col3, col4, col5 = st.columns(5)
 
-            # 仅当不是已完成工单时显示按钮
-            if not is_completed:
-                col1, col2, col3, col4 = st.columns([1, 1, 1, 1])  # 改为4列布局
+            with col1:
+                # 派单按钮
+                is_assigned = order['assigned_cleaner'] != '暂未派单'
+                if st.button(
+                        "立即派单",
+                        key=f"{tab_name}_confirm_worker_{order['id']}",
+                        use_container_width=True,
+                        type="primary",
+                        disabled=is_assigned,
+                        help="此工单已完成派单" if is_assigned else "点击进行派单"
+                ):
+                    show_assign_order_dialog(order)
 
-                with col1:
-                    # 派单按钮部分保持不变
-                    is_assigned = order['assigned_cleaner'] != '暂未派单'
-                    if st.button(
-                            "立即派单",
-                            key=f"{tab_name}_confirm_worker_{order['id']}",
-                            use_container_width=True,
-                            disabled=is_assigned,
-                            help="此工单已完成派单" if is_assigned else "点击进行派单",
-                            type="primary"
-                    ):
-                        show_assign_order_dialog(order)
+            with col2:
+                # 完成清洁按钮
+                cleaning_status = order.get('cleaning_status', 0)
+                is_in_progress = cleaning_status == 1
+                if st.button(
+                        "完成清洁",
+                        key=f"{tab_name}_complete_cleaning_{order['id']}",
+                        use_container_width=True,
+                        type="primary",
+                        disabled=not is_in_progress or order['assigned_cleaner'] == '暂未派单',
+                        help="清洁已完成" if cleaning_status == 2 else
+                        "工单未派单" if order['assigned_cleaner'] == '暂未派单' else
+                        "工单未开始" if cleaning_status == 0 else
+                        "点击完成清洁"
+                ):
+                    complete_cleaning_dialog(order)
 
-                with col2:
-                    # 确认收款按钮部分保持不变
-                    is_paid = order['payment_received']
-                    if st.button(
-                            "确认收款",
-                            key=f"{tab_name}_confirm_payment_{order['id']}",
-                            use_container_width=True,
-                            disabled=is_paid,
-                            help="此工单已确认收款" if is_paid else "点击确认收款",
-                            type="primary"
-                    ):
-                        confirm_payment_dialog(
-                            order['id'],
-                            order['work_address'],
-                            order['total_amount'],
-                            order['payment_method']
-                        )
             with col3:
-                    # 只有已收款的工单且已派单才能签发发票或收据
-                    if order['payment_received'] and is_assigned:
-                        if order['paperwork'] == 1:  # 收据类型
-                            is_receipt_sent = order['receipt_sent']
-                            if st.button(
-                                    "签发收据",
-                                    key=f"{tab_name}_confirm_receipt_{order['id']}",
-                                    use_container_width=True,
-                                    disabled=is_receipt_sent,
-                                    help="此工单已签发收据" if is_receipt_sent else "点击签发收据",
-                                    type="primary"
-                            ):
-                                issue_receipt_dialog(order)
-                        elif order['paperwork'] == 0:  # 发票类型
-                            is_invoice_sent = order['invoice_sent']
-                            if st.button(
-                                    "签发发票",
-                                    key=f"{tab_name}_confirm_invoice_{order['id']}",
-                                    use_container_width=True,
-                                    disabled=is_invoice_sent,
-                                    help="此工单已签发发票" if is_invoice_sent else "点击签发发票",
-                                    type="primary"
-                            ):
-                                issue_invoice_dialog(order)
-                    else:
-                        # 未派单或未收款的工单显示禁用的按钮，并给出提示信息
-                        help_text = "请先派单且收款后再签发" if not is_assigned else "请先确认收款后再签发"
-
-                        if order['paperwork'] == 1:  # 收据类型
-                            st.button(
-                                "签发收据",
-                                key=f"{tab_name}_confirm_receipt_{order['id']}",
-                                use_container_width=True,
-                                disabled=True,
-                                help=help_text
-                            )
-                        elif order['paperwork'] == 0:  # 发票类型
-                            st.button(
-                                "签发发票",
-                                key=f"{tab_name}_confirm_invoice_{order['id']}",
-                                use_container_width=True,
-                                disabled=True,
-                                help=help_text
-                            )
+                # 确认收款按钮
+                if st.button(
+                        "确认收款",
+                        key=f"{tab_name}_confirm_payment_{order['id']}",
+                        use_container_width=True,
+                        type="primary",
+                        disabled=order['payment_received'] or order['assigned_cleaner'] == '暂未派单',
+                        help="此工单已确认收款" if order['payment_received'] else
+                        "工单未派单" if order['assigned_cleaner'] == '暂未派单' else
+                        "点击确认收款"
+                ):
+                    confirm_payment_dialog(
+                        order['id'],
+                        order['work_address'],
+                        order['total_amount'],
+                        order['payment_method']
+                    )
 
             with col4:
-                # 添加更新备注按钮
+                # 根据paperwork类型显示对应按钮
+                if order['paperwork'] == 0:  # 发票类型
+                    if st.button(
+                            "签发发票",
+                            key=f"{tab_name}_confirm_invoice_{order['id']}",
+                            use_container_width=True,
+                            type="primary",
+                            disabled=not order['payment_received'] or order['invoice_sent'],
+                            help="尚未收款" if not order['payment_received'] else
+                            "此工单已签发发票" if order['invoice_sent'] else
+                            "点击签发发票"
+                    ):
+                        issue_invoice_dialog(order)
+                else:  # 收据类型
+                    if st.button(
+                            "签发收据",
+                            key=f"{tab_name}_confirm_receipt_{order['id']}",
+                            use_container_width=True,
+                            type="primary",
+                            disabled=not order['payment_received'] or order['receipt_sent'],
+                            help="尚未收款" if not order['payment_received'] else
+                            "此工单已签发收据" if order['receipt_sent'] else
+                            "点击签发收据"
+                    ):
+                        issue_receipt_dialog(order)
+
+            with col5:
+                # 更新备注按钮 - 始终可用
                 if st.button(
                         "更新备注",
                         key=f"{tab_name}_update_remarks_{order['id']}",
@@ -498,6 +538,8 @@ def display_orders(orders, tab_name):
                     update_remarks_dialog(order)
 
             st.divider()
+
+
 
 
 def work_orders():
@@ -626,98 +668,109 @@ def work_orders():
             orders, error = get_work_orders(time_range[1])
 
         # 显示工单列表
-        if orders is not None and not orders.empty:
-            # 处理数据类型
-            # 确保 paperwork 列的比较使用字符串
-            orders['paperwork'] = orders['paperwork'].astype(int)
+            # 获取工单数据后的分类处理
+            if orders is not None and not orders.empty:
+                # 确保布尔值列的类型正确
+                boolean_columns = ['payment_received', 'invoice_sent', 'receipt_sent']
+                for col in boolean_columns:
+                    if orders[col].dtype == 'object':
+                        orders[col] = orders[col].map({'True': True, 'False': False})
+                    orders[col] = orders[col].astype(bool)
 
-            # 确保布尔值列的类型正确
-            boolean_columns = ['payment_received', 'invoice_sent', 'receipt_sent']
-            for col in boolean_columns:
-                if orders[col].dtype == 'object':
-                    orders[col] = orders[col].map({'True': True, 'False': False})
-                orders[col] = orders[col].astype(bool)
+                # 重新定义工单分类
+                # 待派单：未派单的工单
+                pending_assign = orders[orders['assigned_cleaner'] == '暂未派单']
 
-            # 待派单：所有未派单的工单
-            pending_assign = orders[orders['assigned_cleaner'] == '暂未派单']
+                # 进行中：已派单且清洁状态为进行中
+                in_progress = orders[
+                    (orders['assigned_cleaner'] != '暂未派单') &
+                    (orders['cleaning_status'] == 1)
+                    ]
 
-            # 待收款：所有未收款的工单
-            pending_payment = orders[orders['payment_received'] == False]
+                # 待收款：未收款的工单，不考虑清洁状态
+                pending_payment = orders[
+                    (orders['assigned_cleaner'] != '暂未派单') &  # 已派单
+                    (orders['payment_received'] == False)  # 未收款
+                    ]
 
-            # 待开票：已收款但未开发票且paperwork='0'的工单
-            pending_invoice = orders[
-                (orders['payment_received'] == True) &  # 已收款
-                (orders['invoice_sent'] == False) &  # 未开发票
-                (orders['paperwork'] == 0) &  # 类型为发票
-                (orders['assigned_cleaner'] != '暂未派单')  # 已派单
-                ]
+                # 待开发票：已收款但未开发票的发票类工单
+                pending_invoice = orders[
+                    (orders['payment_received'] == True) &  # 已收款
+                    (orders['paperwork'] == 0) &  # 发票类型
+                    (orders['invoice_sent'] == False)  # 未开发票
+                    ]
 
-            # 待开收据：已收款但未开收据且paperwork='1'的工单
-            pending_receipt = orders[
-                (orders['payment_received'] == True) &  # 已收款
-                (orders['receipt_sent'] == False) &  # 未开收据
-                (orders['paperwork'] == 1) &  # 类型为收据
-                (orders['assigned_cleaner'] != '暂未派单')  # 已派单
-                ]
+                # 待开收据：已收款但未开收据的收据类工单
+                pending_receipt = orders[
+                    (orders['payment_received'] == True) &  # 已收款
+                    (orders['paperwork'] == 1) &  # 收据类型
+                    (orders['receipt_sent'] == False)  # 未开收据
+                    ]
 
-            # 已完成：根据paperwork类型判断完成状态
-            completed = orders[
-                (orders['assigned_cleaner'] != '暂未派单') &  # 已派单
-                (orders['payment_received'] == True) &  # 已收款
-                (  # 根据paperwork类型判断完成状态
-                        ((orders['paperwork'] == 0) & (orders['invoice_sent'] == True)) |  # 发票类型且已开发票
-                        ((orders['paperwork'] == 1) & (orders['receipt_sent'] == True))  # 收据类型且已开收据
-                )
-                ]
+                # 已完成：清洁已完成、已收款、已开具发票/收据的工单
+                completed = orders[
+                    (orders['cleaning_status'] == 2) &  # 已完成清洁
+                    (orders['payment_received'] == True) &  # 已收款
+                    (  # 已开具发票或收据
+                            ((orders['paperwork'] == 0) & (orders['invoice_sent'] == True)) |
+                            ((orders['paperwork'] == 1) & (orders['receipt_sent'] == True))
+                    )
+                    ]
 
-            # 显示工单详情部分
-            st.divider()
+                # 获取每个分类的工单总数
+                total_pending_assign = len(pending_assign)
+                total_in_progress = len(in_progress)
+                total_pending_payment = len(pending_payment)
+                total_pending_invoice = len(pending_invoice)
+                total_pending_receipt = len(pending_receipt)
+                total_completed = len(completed)
 
-            # 获取每个分类的工单总数
-            total_pending_assign = len(pending_assign)
-            total_pending_payment = len(pending_payment)
-            total_pending_invoice = len(pending_invoice)
-            total_pending_receipt = len(pending_receipt)
-            total_completed = len(completed)
+                # 创建标签页
+                tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+                    f"待派单({total_pending_assign})",
+                    f"进行中({total_in_progress})",
+                    f"待收款({total_pending_payment})",
+                    f"待开发票({total_pending_invoice})",
+                    f"待开收据({total_pending_receipt})",
+                    f"已完成({total_completed})"
+                ])
 
-            # 创建标签页
-            tab1, tab2, tab3, tab4, tab5 = st.tabs([
-                f"待派单({total_pending_assign})",
-                f"待收款({total_pending_payment})",
-                f"待开发票({total_pending_invoice})",
-                f"待开收据({total_pending_receipt})",
-                f"已完成({total_completed})"
-            ])
+                # 创建标签页
+                with tab1:
+                    if not pending_assign.empty:
+                        display_orders(pending_assign, "pending_assign")
+                    else:
+                        st.info("暂无待派单工单")
 
-            with tab1:
-                if not pending_assign.empty:
-                    display_orders(pending_assign, "pending_assign")
-                else:
-                    st.info("暂无待派单工单")
+                with tab2:
+                    if not in_progress.empty:
+                        display_orders(in_progress, "in_progress")
+                    else:
+                        st.info("暂无进行中工单")
 
-            with tab2:
-                if not pending_payment.empty:
-                    display_orders(pending_payment, "pending_payment")
-                else:
-                    st.info("暂无待收款工单")
+                with tab3:
+                    if not pending_payment.empty:
+                        display_orders(pending_payment, "pending_payment")
+                    else:
+                        st.info("暂无待收款工单")
 
-            with tab3:
-                if not pending_invoice.empty:
-                    display_orders(pending_invoice, "pending_invoice")
-                else:
-                    st.info("暂无待开票工单")
+                with tab4:
+                    if not pending_invoice.empty:
+                        display_orders(pending_invoice, "pending_invoice")
+                    else:
+                        st.info("暂无待开发票工单")
 
-            with tab4:
-                if not pending_receipt.empty:
-                    display_orders(pending_receipt, "pending_receipt")
-                else:
-                    st.info("暂无待开收据工单")
+                with tab5:
+                    if not pending_receipt.empty:
+                        display_orders(pending_receipt, "pending_receipt")
+                    else:
+                        st.info("暂无待开收据工单")
 
-            with tab5:
-                if not completed.empty:
-                    display_orders(completed, "completed")
-                else:
-                    st.info("暂无已完成工单")
+                with tab6:
+                    if not completed.empty:
+                        display_orders(completed, "completed")
+                    else:
+                        st.info("暂无已完成工单")
 
     else:
         error = st.error("您还没有登录！3秒后跳转至登录页面...", icon="⚠️")
