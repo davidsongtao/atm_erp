@@ -7,6 +7,8 @@ Description: 数据库操作
 @Time     ：2024/12/26 下午9:05
 @Contact  ：king.songtao@gmail.com
 """
+from datetime import date
+
 import pandas as pd
 import streamlit as st
 from configs.settings import *
@@ -586,6 +588,7 @@ def get_active_clean_teams():
         logger.error(f"获取在职保洁组失败：{e}")
         return None, str(e)
 
+
 def delete_clean_team(team_id: int) -> tuple[bool, str]:
     """删除保洁组
 
@@ -627,6 +630,7 @@ def delete_clean_team(team_id: int) -> tuple[bool, str]:
         logger.error(f"删除保洁组失败：{e}")
         return False, str(e)
 
+
 def get_team_monthly_orders(team_id, year, month):
     """
     获取指定保洁组的月度工单统计
@@ -666,3 +670,46 @@ def get_team_monthly_orders(team_id, year, month):
     except Exception as e:
         logger.error(f"获取保洁组月度工单统计失败！错误信息：{e}")
         return pd.DataFrame(), f"获取保洁组月度工单统计失败：{str(e)}"
+
+
+def assign_work_order(order_id: int, team_name: str, work_date: date, work_time: str) -> tuple[bool, str]:
+    """更新工单的派单信息
+
+    Args:
+        order_id (int): 工单ID
+        team_name (str): 保洁组名称
+        work_date (date): 保洁日期
+        work_time (str): 保洁时间
+
+    Returns:
+        tuple[bool, str]: (是否成功, 错误信息)
+    """
+    try:
+        conn = connect_db()
+
+        # 使用 session 执行更新
+        with conn.session as session:
+            session.execute(
+                text("""
+                    UPDATE work_orders 
+                    SET assigned_cleaner = :team_name,
+                        work_date = :work_date,
+                        work_time = :work_time,
+                        updated_at = NOW()
+                    WHERE id = :order_id
+                """),
+                params={
+                    'order_id': order_id,
+                    'team_name': team_name,
+                    'work_date': work_date,
+                    'work_time': work_time
+                }
+            )
+            session.commit()
+
+        logger.success(f"工单 {order_id} 派单成功")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"派单失败：{e}")
+        return False, str(e)

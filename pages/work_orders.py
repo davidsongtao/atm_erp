@@ -13,9 +13,95 @@ import toml
 import streamlit as st
 from datetime import datetime, date, timedelta
 from utils.utils import navigation, check_login_state
-from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status, update_receipt_status, update_invoice_status
+from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status, update_receipt_status, update_invoice_status, assign_work_order, get_active_clean_teams
 import pandas as pd
 from utils.styles import apply_global_styles
+
+
+@st.dialog("派单信息")
+def show_assign_order_dialog(order_data):
+    """派单对话框
+    Args:
+        order_data (pd.Series): 工单数据
+    """
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+
+    # 获取在职保洁组列表
+    active_teams, error = get_active_clean_teams()
+    if error:
+        st.error(f"获取保洁组列表失败：{error}", icon="⚠️")
+        return
+
+    if not active_teams:
+        st.warning("当前没有在职的保洁组", icon="⚠️")
+        return
+
+    # 过滤掉"暂未派单"选项
+    active_teams = [team for team in active_teams if team['team_name'] != '暂未派单']
+
+    # 选择保洁组
+    selected_team = st.selectbox(
+        "选择保洁组",
+        options=[team['team_name'] for team in active_teams],
+        placeholder="请选择保洁组",
+        index=None
+    )
+
+    # 选择保洁日期
+    min_date = datetime.now().date()
+    work_date = st.date_input(
+        "保洁日期",
+        value=min_date,
+        min_value=min_date
+    )
+
+    # 生成时间选项
+    time_options = []
+    for hour in range(7, 23):  # 7 AM to 10 PM
+        period = "AM" if hour < 12 else "PM"
+        display_hour = hour if hour <= 12 else hour - 12
+        time_options.append(f"{display_hour}:00 {period}")
+
+    # 选择保洁时间
+    work_time = st.selectbox(
+        "保洁时间",
+        options=time_options,
+        placeholder="请选择保洁时间",
+        index=None
+    )
+
+    # 确认复选框
+    confirm_checkbox = st.checkbox(
+        "我已确认以上信息无误，并确认派单！",
+        key=f"confirm_assign_checkbox_{order_data['id']}"
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button(
+                "确认派单",
+                use_container_width=True,
+                type="primary",
+                disabled=not confirm_checkbox or not selected_team
+        ):
+            # 更新数据库中的派单状态
+            success, error = assign_work_order(
+                order_data['id'],
+                selected_team,
+                work_date,
+                work_time
+            )
+            if success:
+                st.success("派单成功！", icon="✅")
+                time.sleep(2)  # 显示2秒成功消息
+                st.rerun()  # 重新加载页面
+            else:
+                st.error(f"派单失败：{error}", icon="⚠️")
+
+    with col2:
+        if st.button("取消", use_container_width=True):
+            st.rerun()
 
 
 # 修改后的发票签发对话框函数
@@ -39,10 +125,10 @@ def issue_invoice_dialog(order_data):
 
     with col1:
         if st.button(
-            "确认已签发",
-            use_container_width=True,
-            type="primary",
-            disabled=not confirm_checkbox  # 根据checkbox状态禁用确认按钮
+                "确认已签发",
+                use_container_width=True,
+                type="primary",
+                disabled=not confirm_checkbox  # 根据checkbox状态禁用确认按钮
         ):
             # 更新数据库中的发票状态
             success, error = update_invoice_status(order_data['id'], datetime.now())
@@ -79,10 +165,10 @@ def issue_receipt_dialog(order_data):
 
     with col1:
         if st.button(
-            "收据已签发",
-            use_container_width=True,
-            type="primary",
-            disabled=not confirm_checkbox  # 根据checkbox状态禁用确认按钮
+                "收据已签发",
+                use_container_width=True,
+                type="primary",
+                disabled=not confirm_checkbox  # 根据checkbox状态禁用确认按钮
         ):
             # 更新数据库中的收据状态
             success, error = update_receipt_status(order_data['id'], datetime.now())
@@ -95,9 +181,9 @@ def issue_receipt_dialog(order_data):
 
     with col2:
         if st.button(
-            "前往创建收据页面",
-            use_container_width=True,
-            disabled=not confirm_checkbox  # 根据checkbox状态禁用按钮
+                "前往创建收据页面",
+                use_container_width=True,
+                disabled=not confirm_checkbox  # 根据checkbox状态禁用按钮
         ):
             # 构建初始化数据
             receipt_data = {
@@ -278,7 +364,7 @@ def display_orders(orders, tab_name):
                             help="此工单已完成派单" if is_assigned else "点击进行派单",
                             type="primary"
                     ):
-                        st.warning("该功能正在开发中，敬请期待！")
+                        show_assign_order_dialog(order)
                 with col2:
                     # 确认收款按钮状态
                     is_paid = order['payment_received']
