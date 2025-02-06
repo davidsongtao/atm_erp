@@ -94,7 +94,7 @@ def handle_status_cancellation(order_data, status_type):
 
 def display_order_popover(order, tab_name):
     """显示工单状态修改的Popover"""
-    with st.popover("撤销"):
+    with st.popover("撤销......"):
         # 根据不同状态启用/禁用按钮
         col1, col2, col3, col4, col5 = st.columns(5)
 
@@ -669,7 +669,7 @@ def display_orders(orders, tab_name):
                 cleaning_status = order.get('cleaning_status', 0)
                 is_in_progress = cleaning_status == 1
                 if st.button(
-                        "完成",
+                        "已清洁",
                         key=f"{tab_name}_complete_cleaning_{order['id']}",
                         use_container_width=True,
                         type="primary",
