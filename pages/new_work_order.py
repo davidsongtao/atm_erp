@@ -97,7 +97,7 @@ async def create_work_order_page():
         address_valid = True
         if validate_btn and work_address.strip():
             try:
-                with st.spinner("验证地址中..."):
+                with st.spinner("验证地址中，请勿进行其他操作。地址验证有可能耗时较长，请耐心等待..."):
                     matches = await st.session_state.validator.validate_address(work_address)
 
                     if matches:
@@ -153,6 +153,13 @@ async def create_work_order_page():
                 await st.session_state.validator.close_session()
 
         st.divider()
+
+        room_type = st.selectbox(
+            "清洁房间户型",
+            options=["1b1b", "2b1b", "2b2b", "3b2b"],
+            index=None,
+            placeholder="请选择房间户型",
+        )
 
         service_options = {
             "basic_service": ["Steam clean of the carpet", "Steam clean of the mattress",
@@ -240,12 +247,28 @@ async def create_work_order_page():
         st.success(f"工单总金额：${total_amount:.2f} ({'含 GST' if payment_method == 'transfer' else '不含 GST'})")
         st.divider()
 
+        remarks = st.text_area(
+            "备注信息",
+            placeholder="请输入备注信息(选填)"
+        )
+
+
         confirm_create = st.checkbox("我确认所有工单信息录入无误，立即创建工单！")
         create_btn = st.button("创建工单", use_container_width=True, type="primary")
 
+
+
         # 确认和取消按钮
         if create_btn and confirm_create:
-            if not all([source, st.session_state.get("current_address", ""), order_amount > 0, address_valid]):
+            if not all([
+                source,
+                st.session_state.get("current_address", ""),
+                order_amount > 0,
+                address_valid,
+                room_type,  # 增加房间户型验证
+                payment_method,
+                paperwork is not None
+            ]):
                 st.error("请填写所有必填项！", icon="⚠️")
             else:
                 success, error = create_work_order(
@@ -253,14 +276,16 @@ async def create_work_order_page():
                     created_by=current_user,
                     source=source,
                     work_address=st.session_state.get("current_address", ""),
+                    room_type=room_type,  # 新增房间户型参数
                     payment_method=payment_method,
                     order_amount=order_amount,
+                    remarks=remarks,  # 新增备注参数
                     basic_service=basic_services,
                     rooms=room_services,
                     electricals=electrical_services,
                     other_services=other_services,
                     custom_item=custom_item,
-                    paperwork=paperwork  # 新增参数
+                    paperwork=paperwork
                 )
 
                 if success:

@@ -16,6 +16,53 @@ from utils.utils import navigation, check_login_state
 from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status, update_receipt_status, update_invoice_status, assign_work_order, get_active_clean_teams
 import pandas as pd
 from utils.styles import apply_global_styles
+from utils.db_operations import update_remarks
+
+
+@st.dialog("更新备注")
+def update_remarks_dialog(order_data):
+    """更新备注对话框
+    Args:
+        order_data (pd.Series): 工单数据
+    """
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+
+    # 显示当前备注内容
+    current_remarks = order_data.get('remarks', '')
+    new_remarks = st.text_area(
+        "备注信息",
+        value=current_remarks,
+        placeholder="请输入新的备注信息...",
+        height=100
+    )
+
+    # 确认复选框
+    confirm_checkbox = st.checkbox(
+        "我已确认以上信息无误，并确认更新备注！",
+        key=f"confirm_remarks_checkbox_{order_data['id']}"
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button(
+                "确认更新",
+                use_container_width=True,
+                type="primary",
+                disabled=not confirm_checkbox
+        ):
+            # 更新数据库中的备注
+            success, error = update_remarks(order_data['id'], new_remarks)
+            if success:
+                st.success("备注更新成功！", icon="✅")
+                time.sleep(2)  # 显示2秒成功消息
+                st.rerun()  # 重新加载页面
+            else:
+                st.error(f"备注更新失败：{error}", icon="⚠️")
+
+    with col2:
+        if st.button("取消", use_container_width=True):
+            st.rerun()
 
 
 @st.dialog("派单信息")
@@ -325,6 +372,13 @@ def display_orders(orders, tab_name):
                 else:  # paperwork == '1'
                     st.write(f"🧾收据状态：{'✅' if order['receipt_sent'] else '❌'}")
 
+                # 显示户型信息
+                room_type = order.get('room_type', '')
+                if room_type:
+                    st.write(f"🏠户型：{room_type}")
+                else:
+                    st.write("🏠户型：未指定")
+
             # 服务内容展示
             services = []
             if order['basic_service']:
@@ -342,7 +396,11 @@ def display_orders(orders, tab_name):
                 service_text = "🛠️ 服务内容：" + ", ".join(services)
                 st.write(service_text)
 
-            # 检查是否是已完成工单
+            # 显示备注信息
+            remarks = order.get('remarks', '')
+            if remarks:
+                st.markdown(f"📝 备注信息：{remarks}")
+
             # 检查是否是已完成工单
             is_completed = order['payment_received'] and (
                     (order['paperwork'] == '0' and order['invoice_sent']) or
@@ -351,10 +409,10 @@ def display_orders(orders, tab_name):
 
             # 仅当不是已完成工单时显示按钮
             if not is_completed:
-                col1, col2, col3 = st.columns([1, 1, 1])
+                col1, col2, col3, col4 = st.columns([1, 1, 1, 1])  # 改为4列布局
 
                 with col1:
-                    # 派单按钮状态
+                    # 派单按钮部分保持不变
                     is_assigned = order['assigned_cleaner'] != '暂未派单'
                     if st.button(
                             "立即派单",
@@ -365,8 +423,9 @@ def display_orders(orders, tab_name):
                             type="primary"
                     ):
                         show_assign_order_dialog(order)
+
                 with col2:
-                    # 确认收款按钮状态
+                    # 确认收款按钮部分保持不变
                     is_paid = order['payment_received']
                     if st.button(
                             "确认收款",
@@ -382,7 +441,7 @@ def display_orders(orders, tab_name):
                             order['total_amount'],
                             order['payment_method']
                         )
-                with col3:
+            with col3:
                     # 只有已收款的工单且已派单才能签发发票或收据
                     if order['payment_received'] and is_assigned:
                         if order['paperwork'] == 1:  # 收据类型
@@ -427,6 +486,17 @@ def display_orders(orders, tab_name):
                                 disabled=True,
                                 help=help_text
                             )
+
+            with col4:
+                # 添加更新备注按钮
+                if st.button(
+                        "更新备注",
+                        key=f"{tab_name}_update_remarks_{order['id']}",
+                        use_container_width=True,
+                        type="primary"
+                ):
+                    update_remarks_dialog(order)
+
             st.divider()
 
 

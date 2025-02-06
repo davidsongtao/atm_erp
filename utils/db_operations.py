@@ -210,8 +210,8 @@ def delete_account(username):
         return False, str(e)
 
 
-def create_work_order(order_date, created_by, source, work_address, payment_method,
-                      order_amount, basic_service, rooms, electricals, other_services,
+def create_work_order(order_date, created_by, source, work_address, room_type, payment_method,
+                      order_amount, remarks, basic_service, rooms, electricals, other_services,
                       custom_item, paperwork):
     try:
         conn = connect_db()
@@ -230,13 +230,13 @@ def create_work_order(order_date, created_by, source, work_address, payment_meth
             session.execute(
                 text("""
                 INSERT INTO work_orders 
-                (order_date, work_date, work_time, created_by, source, work_address, 
-                payment_method, order_amount, total_amount, basic_service, rooms,
+                (order_date, work_date, work_time, created_by, source, work_address, room_type,
+                payment_method, order_amount, total_amount, remarks, basic_service, rooms,
                 electricals, other_services, custom_item, assigned_cleaner,
                 payment_received, invoice_sent, receipt_sent, paperwork)
                 VALUES 
-                (:order_date, NULL, NULL, :created_by, :source, :work_address,
-                :payment_method, :order_amount, :total_amount, :basic_service, :rooms,
+                (:order_date, NULL, NULL, :created_by, :source, :work_address, :room_type,
+                :payment_method, :order_amount, :total_amount, :remarks, :basic_service, :rooms,
                 :electricals, :other_services, :custom_item, '暂未派单',
                 FALSE, FALSE, FALSE, :paperwork)
                 """),
@@ -245,15 +245,17 @@ def create_work_order(order_date, created_by, source, work_address, payment_meth
                     'created_by': created_by,
                     'source': source,
                     'work_address': work_address,
+                    'room_type': room_type,
                     'payment_method': payment_method,
                     'order_amount': order_amount,
                     'total_amount': total_amount,
+                    'remarks': remarks,
                     'basic_service': basic_service_str,
                     'rooms': rooms_str,
                     'electricals': electricals_str,
                     'other_services': other_services_str,
                     'custom_item': custom_items_str,
-                    'paperwork': paperwork  # 新增参数
+                    'paperwork': paperwork
                 }
             )
             session.commit()
@@ -712,4 +714,38 @@ def assign_work_order(order_id: int, team_name: str, work_date: date, work_time:
 
     except Exception as e:
         logger.error(f"派单失败：{e}")
+        return False, str(e)
+
+
+def update_remarks(order_id: int, remarks: str) -> tuple[bool, str]:
+    """更新工单备注信息
+
+    Args:
+        order_id (int): 工单ID
+        remarks (str): 新的备注内容
+
+    Returns:
+        tuple[bool, str]: (成功状态, 错误信息)
+    """
+    try:
+        conn = connect_db()
+        with conn.session as session:
+            session.execute(
+                text("""
+                    UPDATE work_orders 
+                    SET remarks = :remarks,
+                        updated_at = NOW()
+                    WHERE id = :order_id
+                """),
+                params={
+                    'order_id': order_id,
+                    'remarks': remarks
+                }
+            )
+            session.commit()
+
+        logger.success(f"工单 {order_id} 备注更新成功")
+        return True, None
+    except Exception as e:
+        logger.error(f"更新备注失败：{e}")
         return False, str(e)
