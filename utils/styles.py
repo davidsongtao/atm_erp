@@ -157,5 +157,46 @@ def apply_global_styles():
             button, .stButton>button, .stDownloadButton button {
                 border-radius: 0px !important;
             }
+            
+            /* Dialog 样式 */
+            .stDialog > div {
+            border-radius: 0px !important;
+            }
+
+            .stDialog > div > div {
+            border-radius: 0px !important;
+            }
+       
+            /* Popover 样式 */
+            [data-baseweb="popover"] {
+                border-radius: 0px !important;
+            }
+            
+            [data-baseweb="popover"] > div {
+                border-radius: 0px !important;
+            }
+            
+            [data-baseweb="popover"] > div > div {
+                border-radius: 0px !important;
+            }
+            
+            /* 去掉 st.text_area 的圆角 */
+            .stTextArea textarea {
+                border-radius: 0px !important;
+            }
+            
+            .stTextArea > label {
+                border-radius: 0px !important;
+            }
+            
+            .stTextArea > div {
+                border-radius: 0px !important;
+            }
+            
+            .stTextArea > div > div {
+                border-radius: 0px !important;
+            }
+            
+            
         </style>
     """, unsafe_allow_html=True)
