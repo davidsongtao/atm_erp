@@ -80,42 +80,74 @@ def work_order_statistics():
 
 
 def show_statistics(df):
-    """显示统计指标"""
-    # 统计数据计算
+    """显示统计指标
+    按照work_orders.py中的分类逻辑计算统计指标
+    """
+    # 确保布尔值列的类型正确
+    boolean_columns = ['payment_received', 'invoice_sent', 'receipt_sent']
+    for col in boolean_columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].map({'True': True, 'False': False})
+        df[col] = df[col].astype(bool)
+
+    # 将paperwork转换为数值类型
+    df['paperwork'] = pd.to_numeric(df['paperwork'], errors='coerce').fillna(0).astype(int)
+
+    # 按work_orders.py的分类逻辑计算统计数据
+    # 待派单：未派单的工单
+    total_pending_assign = len(df[df['assigned_cleaner'] == '暂未派单'])
+
+    # 进行中：已派单且清洁状态为进行中
+    total_in_progress = len(df[
+        (df['assigned_cleaner'] != '暂未派单') &
+        (df['cleaning_status'] == 1)
+    ])
+
+    # 待收款：未收款的工单，包括未派单的工单
+    total_pending_payment = len(df[df['payment_received'] == False])
+
+    # 待开发票：已收款但未开发票的发票类工单，且已完成清洁
+    total_pending_invoice = len(df[
+        (df['payment_received'] == True) &  # 已收款
+        (df['paperwork'] == 0) &  # 发票类型
+        (df['invoice_sent'] == False) &  # 未开发票
+        (df['cleaning_status'] == 2)  # 已完成清洁
+    ])
+
+    # 待开收据：已收款但未开收据的收据类工单，且已完成清洁
+    total_pending_receipt = len(df[
+        (df['payment_received'] == True) &  # 已收款
+        (df['paperwork'] == 1) &  # 收据类型
+        (df['receipt_sent'] == False) &  # 未开收据
+        (df['cleaning_status'] == 2)  # 已完成清洁
+    ])
+
+    # 统计总金额和总工单数
     total_orders = len(df)
     total_amount = df['total_amount'].sum()
-    unassigned_orders = len(df[df['assigned_cleaner'] == '暂未派单'])
-    unpaid_orders = len(df[df['payment_received'] == False])
 
-    # 发票相关统计
-    invoice_needed = len(df[df['paperwork'] == '0'])  # 需要发票的订单
-    invoice_pending = len(df[(df['paperwork'] == '0') & (df['invoice_sent'] == False)])  # 待开发票
-
-    # 收据相关统计
-    receipt_needed = len(df[df['paperwork'] == '1'])  # 需要收据的订单
-    receipt_pending = len(df[(df['paperwork'] == '1') & (df['receipt_sent'] == False)])  # 待开收据
-
+    # 显示指标
     # 第一行指标
     col1, col2, col3 = st.columns(3)
 
     with col1:
         st.metric(
-            "总工单数",
-            f"{total_orders}",
+            "进行中",
+            f"{total_in_progress}/{total_orders}",
             border=True
         )
 
     with col2:
         st.metric(
-            "总工单金额",
+            "总销售额",
             f"${total_amount:,.2f}",
             border=True
         )
 
     with col3:
         st.metric(
-            "待派单工单数",
-            f"{unassigned_orders}",
+            "待派单",
+            f"{total_pending_assign}",
             border=True
         )
 
@@ -124,22 +156,22 @@ def show_statistics(df):
 
     with col4:
         st.metric(
-            "待收款工单数",
-            f"{unpaid_orders}",
+            "待收款",
+            f"{total_pending_payment}",
             border=True
         )
 
     with col5:
         st.metric(
-            "待开发票工单数",
-            f"{invoice_pending}",
+            "待开发票",
+            f"{total_pending_invoice}",
             border=True
         )
 
     with col6:
         st.metric(
-            "待开收据工单数",
-            f"{receipt_pending}",
+            "待开收据",
+            f"{total_pending_receipt}",
             border=True
         )
 

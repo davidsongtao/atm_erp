@@ -211,8 +211,8 @@ def delete_account(username):
 
 
 def create_work_order(order_date, created_by, source, work_address, room_type, payment_method,
-                     order_amount, remarks, basic_service, rooms, electricals, other_services,
-                     custom_item, paperwork):
+                      order_amount, remarks, basic_service, rooms, electricals, other_services,
+                      custom_item, paperwork):
     """创建新工单
     Args:
         ...新增room_type和remarks参数...
@@ -806,4 +806,33 @@ def update_cleaning_status(order_id: int, status: int, completed_at: datetime = 
 
     except Exception as e:
         logger.error(f"更新清洁状态失败：{e}")
+        return False, str(e)
+
+
+def delete_work_order(order_id: int) -> tuple[bool, str]:
+    """删除工单
+
+    Args:
+        order_id: 工单ID
+
+    Returns:
+        tuple[bool, str]: (是否成功, 错误信息)
+    """
+    try:
+        conn = connect_db()
+        with conn.session as session:
+            session.execute(
+                text("""
+                    DELETE FROM work_orders 
+                    WHERE id = :order_id
+                """),
+                params={'order_id': order_id}
+            )
+            session.commit()
+
+        logger.success(f"工单 {order_id} 删除成功")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"删除工单失败：{e}")
         return False, str(e)

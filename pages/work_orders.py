@@ -13,10 +13,50 @@ import toml
 import streamlit as st
 from datetime import datetime, date, timedelta
 from utils.utils import navigation, check_login_state
-from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status, update_receipt_status, update_invoice_status, assign_work_order, get_active_clean_teams, update_cleaning_status
+from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_payment_status, update_receipt_status, update_invoice_status, assign_work_order, get_active_clean_teams, update_cleaning_status, delete_work_order
 import pandas as pd
 from utils.styles import apply_global_styles
 from utils.db_operations import update_remarks
+
+
+# 添加删除确认对话框
+@st.dialog("删除工单")
+def delete_order_dialog(order_data):
+    """删除工单确认对话框
+    Args:
+        order_data (pd.Series): 工单数据
+    """
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+    st.warning("确定要删除此工单吗？此操作不可恢复！", icon="⚠️")
+
+    # 确认复选框
+    confirm_checkbox = st.checkbox(
+        "我已了解删除操作不可恢复，并确认删除此工单！",
+        key=f"confirm_delete_checkbox_{order_data['id']}"
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button(
+                "确认删除",
+                use_container_width=True,
+                type="primary",
+                disabled=not confirm_checkbox
+        ):
+            # 删除工单
+            success, error = delete_work_order(order_data['id'])
+            if success:
+                st.success("工单已删除！", icon="✅")
+                time.sleep(2)
+                st.rerun()
+            else:
+                st.error(f"删除失败：{error}", icon="⚠️")
+
+    with col2:
+        if st.button("取消", use_container_width=True):
+            st.rerun()
+
 
 @st.dialog("完成清洁")
 def complete_cleaning_dialog(order_data):
@@ -449,7 +489,7 @@ def display_orders(orders, tab_name):
                 st.markdown(f"📝 **备注信息**：{remarks}")
 
             # 按钮显示部分
-            col1, col2, col3, col4, col5 = st.columns(5)
+            col1, col2, col3, col4, col5, col6 = st.columns(6)
 
             with col1:
                 # 派单按钮
@@ -488,10 +528,8 @@ def display_orders(orders, tab_name):
                         key=f"{tab_name}_confirm_payment_{order['id']}",
                         use_container_width=True,
                         type="primary",
-                        disabled=order['payment_received'] or order['assigned_cleaner'] == '暂未派单',
-                        help="此工单已确认收款" if order['payment_received'] else
-                        "工单未派单" if order['assigned_cleaner'] == '暂未派单' else
-                        "点击确认收款"
+                        disabled=order['payment_received'],  # 移除 or order['assigned_cleaner'] == '暂未派单'
+                        help="此工单已确认收款" if order['payment_received'] else "点击确认收款"
                 ):
                     confirm_payment_dialog(
                         order['id'],
@@ -537,9 +575,17 @@ def display_orders(orders, tab_name):
                 ):
                     update_remarks_dialog(order)
 
+            with col6:
+                # 删除按钮 - 始终可用
+                if st.button(
+                        "删除工单",
+                        key=f"{tab_name}_delete_order_{order['id']}",
+                        use_container_width=True,
+                        type="primary"  # 或者用 "secondary" 让它不那么醒目
+                ):
+                    delete_order_dialog(order)
+
             st.divider()
-
-
 
 
 def work_orders():
@@ -667,7 +713,7 @@ def work_orders():
         else:
             orders, error = get_work_orders(time_range[1])
 
-        # 显示工单列表
+            # 显示工单列表
             # 获取工单数据后的分类处理
             if orders is not None and not orders.empty:
                 # 确保布尔值列的类型正确
@@ -687,24 +733,25 @@ def work_orders():
                     (orders['cleaning_status'] == 1)
                     ]
 
-                # 待收款：未收款的工单，不考虑清洁状态
+                # 待收款：未收款的工单，包括未派单的工单
                 pending_payment = orders[
-                    (orders['assigned_cleaner'] != '暂未派单') &  # 已派单
-                    (orders['payment_received'] == False)  # 未收款
+                    orders['payment_received'] == False  # 只保留未收款条件
                     ]
 
-                # 待开发票：已收款但未开发票的发票类工单
+                # 待开发票：已收款但未开发票的发票类工单，且已完成清洁
                 pending_invoice = orders[
                     (orders['payment_received'] == True) &  # 已收款
                     (orders['paperwork'] == 0) &  # 发票类型
-                    (orders['invoice_sent'] == False)  # 未开发票
+                    (orders['invoice_sent'] == False) &  # 未开发票
+                    (orders['cleaning_status'] == 2)  # 已完成清洁
                     ]
 
-                # 待开收据：已收款但未开收据的收据类工单
+                # 待开收据：已收款但未开收据的收据类工单，且已完成清洁
                 pending_receipt = orders[
                     (orders['payment_received'] == True) &  # 已收款
                     (orders['paperwork'] == 1) &  # 收据类型
-                    (orders['receipt_sent'] == False)  # 未开收据
+                    (orders['receipt_sent'] == False) &  # 未开收据
+                    (orders['cleaning_status'] == 2)  # 已完成清洁
                     ]
 
                 # 已完成：清洁已完成、已收款、已开具发票/收据的工单
