@@ -207,7 +207,7 @@ def navigation():
     #     # st.switch_page("pages/auto_quote_page.py")
     #     st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
     # 用户管理模块
-    if st.sidebar.button("👥账户管理", key="user_management_button", use_container_width=True, type="primary"):
+    if st.sidebar.button("👥人员管理", key="user_management_button", use_container_width=True, type="primary"):
         st.switch_page("pages/staff_acc.py")
         # st.warning("该功能正在开发中，敬请期待！", icon="⚠️")
 

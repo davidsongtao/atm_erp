@@ -7,6 +7,7 @@ Description: 数据库操作
 @Time     ：2024/12/26 下午9:05
 @Contact  ：king.songtao@gmail.com
 """
+import pandas as pd
 import streamlit as st
 from configs.settings import *
 from sqlalchemy import text
@@ -63,7 +64,8 @@ def get_all_staff_acc():
         conn = connect_db()
         # 将 ttl 设置为 0 以禁用缓存
         query_result = conn.query("SELECT *  FROM users", ttl=0)
-        df = query_result[['id', 'username', 'password', 'role', 'name']]
+        # 移除 id 列，只选择其他需要的列
+        df = query_result[['username', 'password', 'role', 'name']]
         df['password'] = "********"
         df = df.rename(columns=BaseConfig().CUSTOM_HEADER)
         return df, None
@@ -424,4 +426,238 @@ def update_invoice_status(order_id, invoice_date):
 
     except Exception as e:
         logger.error(f"更新发票状态失败：{e}")
+        return False, str(e)
+
+
+def get_all_clean_teams():
+    """获取所有保洁组信息
+
+    Returns:
+        tuple: (DataFrame or None, error_message)
+    """
+    try:
+        conn = connect_db()
+
+        # 使用 conn.query 替代 read_sql，同时修改SQL查询
+        df = conn.query("""
+            SELECT 
+                id, 
+                team_name AS '保洁组名称',
+                contact_number AS '联系电话',
+                CASE 
+                    WHEN is_active = 1 THEN '在职'
+                    ELSE '离职'
+                END AS '是否在职',
+                notes AS '备注',
+                created_at AS '创建时间',
+                updated_at AS '更新时间'
+            FROM clean_teams 
+            WHERE team_name != '暂未派单'
+            ORDER BY is_active DESC, team_name ASC
+        """, ttl=0)  # 禁用缓存
+
+        return df, None
+
+    except Exception as e:
+        logger.error(f"获取保洁组信息失败：{e}")
+        return None, str(e)
+
+
+def create_clean_team(team_name: str, contact_number: str, notes: str = None) -> tuple[bool, str]:
+    try:
+        conn = connect_db()
+
+        # 检查名称是否存在
+        check_result = conn.query(
+            "SELECT id FROM clean_teams WHERE team_name = :team_name",
+            params={'team_name': team_name},
+            ttl=0
+        )
+
+        if not check_result.empty:
+            return False, "保洁组名称已存在"
+
+        # 插入新记录
+        with conn.session as session:
+            session.execute(
+                text("""
+                INSERT INTO clean_teams (team_name, contact_number, notes)
+                VALUES (:team_name, :contact_number, :notes)
+                """),
+                params={
+                    'team_name': team_name,
+                    'contact_number': contact_number,
+                    'notes': notes
+                }
+            )
+            session.commit()
+
+        return True, ""
+
+    except Exception as e:
+        return False, str(e)
+
+
+def update_clean_team(team_id: int, team_name: str, contact_number: str, is_active: bool = True, notes: str = None) -> tuple[bool, str]:
+    """更新保洁组信息
+
+    Args:
+        team_id (int): 保洁组ID
+        team_name (str): 保洁组名称
+        contact_number (str): 联系电话
+        is_active (bool): 是否在职
+        notes (str, optional): 备注信息
+
+    Returns:
+        tuple[bool, str]: (是否成功, 错误信息)
+    """
+    try:
+        conn = connect_db()
+
+        # 检查是否存在相同名称的其他保洁组
+        check_result = conn.query(
+            """
+            SELECT id FROM clean_teams 
+            WHERE team_name = :team_name AND id != :team_id
+            """,
+            params={
+                'team_name': team_name,
+                'team_id': team_id
+            },
+            ttl=0
+        )
+
+        if not check_result.empty:
+            return False, "保洁组名称已存在"
+
+        # 更新保洁组信息
+        with conn.session as session:
+            session.execute(
+                text("""
+                UPDATE clean_teams 
+                SET team_name = :team_name,
+                    contact_number = :contact_number,
+                    is_active = :is_active,
+                    notes = :notes,
+                    updated_at = NOW()
+                WHERE id = :team_id
+                """),
+                params={
+                    'team_name': team_name,
+                    'contact_number': contact_number,
+                    'is_active': is_active,
+                    'notes': notes,
+                    'team_id': team_id
+                }
+            )
+            session.commit()
+
+        return True, ""
+
+    except Exception as e:
+        logger.error(f"更新保洁组信息失败：{e}")
+        return False, str(e)
+
+
+def get_active_clean_teams():
+    """获取所有在职的保洁组
+
+    Returns:
+        tuple: (DataFrame, error_message)
+    """
+    try:
+        conn = connect_db()
+
+        result = conn.query("""
+            SELECT 
+                id,
+                team_name,
+                contact_number
+            FROM clean_teams 
+            WHERE is_active = 1
+            ORDER BY team_name ASC
+        """, ttl=0)
+
+        # 转换为字典列表格式
+        teams = result.to_dict('records')
+        return teams, None
+
+    except Exception as e:
+        logger.error(f"获取在职保洁组失败：{e}")
+        return None, str(e)
+
+
+def get_team_monthly_orders(team_id, year, month):
+    """
+    获取指定保洁组的月度工单统计
+    """
+    try:
+        conn = connect_db()
+        query_result = conn.query("""
+            SELECT 
+                wo.id,
+                wo.work_date,
+                wo.work_address,
+                wo.order_amount,
+                wo.total_amount
+            FROM work_orders wo
+            WHERE wo.assigned_cleaner = (
+                SELECT team_name 
+                FROM clean_teams 
+                WHERE id = :team_id
+            )
+            AND YEAR(wo.work_date) = :year
+            AND MONTH(wo.work_date) = :month
+            ORDER BY wo.work_date ASC
+        """, params={
+            'team_id': team_id,
+            'year': year,
+            'month': month
+        }, ttl=0)
+
+        return query_result, None
+    except Exception as e:
+        logger.error(f"获取保洁组月度工单统计失败！错误信息：{e}")
+        return None, f"获取保洁组月度工单统计失败：{str(e)}"
+
+
+def delete_clean_team(team_id: int) -> tuple[bool, str]:
+    """删除保洁组
+
+    Args:
+        team_id (int): 保洁组ID
+
+    Returns:
+        tuple[bool, str]: (是否成功, 错误信息)
+    """
+    try:
+        conn = connect_db()
+
+        # 检查是否有关联的工单
+        check_result = conn.query(
+            """
+            SELECT COUNT(*) as count 
+            FROM work_orders wo 
+            JOIN clean_teams ct ON wo.assigned_cleaner = ct.team_name 
+            WHERE ct.id = :team_id
+            """,
+            params={'team_id': team_id},
+            ttl=0
+        ).to_dict()
+
+        if check_result['count'][0] > 0:
+            return False, "该保洁组有关联的工单,无法删除"
+
+        # 执行删除操作
+        with conn.session as session:
+            session.execute(
+                text("DELETE FROM clean_teams WHERE id = :team_id"),
+                params={'team_id': team_id}
+            )
+            session.commit()
+
+        return True, ""
+
+    except Exception as e:
+        logger.error(f"删除保洁组失败：{e}")
         return False, str(e)
