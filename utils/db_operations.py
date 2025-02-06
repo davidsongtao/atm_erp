@@ -1,6 +1,6 @@
 """
 Description: 数据库操作
-    
+
 -*- Encoding: UTF-8 -*-
 @File     ：db_operations.py
 @Author   ：King Songtao
@@ -586,41 +586,6 @@ def get_active_clean_teams():
         logger.error(f"获取在职保洁组失败：{e}")
         return None, str(e)
 
-
-def get_team_monthly_orders(team_id, year, month):
-    """
-    获取指定保洁组的月度工单统计
-    """
-    try:
-        conn = connect_db()
-        query_result = conn.query("""
-            SELECT 
-                wo.id,
-                wo.work_date,
-                wo.work_address,
-                wo.order_amount,
-                wo.total_amount
-            FROM work_orders wo
-            WHERE wo.assigned_cleaner = (
-                SELECT team_name 
-                FROM clean_teams 
-                WHERE id = :team_id
-            )
-            AND YEAR(wo.work_date) = :year
-            AND MONTH(wo.work_date) = :month
-            ORDER BY wo.work_date ASC
-        """, params={
-            'team_id': team_id,
-            'year': year,
-            'month': month
-        }, ttl=0)
-
-        return query_result, None
-    except Exception as e:
-        logger.error(f"获取保洁组月度工单统计失败！错误信息：{e}")
-        return None, f"获取保洁组月度工单统计失败：{str(e)}"
-
-
 def delete_clean_team(team_id: int) -> tuple[bool, str]:
     """删除保洁组
 
@@ -661,3 +626,43 @@ def delete_clean_team(team_id: int) -> tuple[bool, str]:
     except Exception as e:
         logger.error(f"删除保洁组失败：{e}")
         return False, str(e)
+
+def get_team_monthly_orders(team_id, year, month):
+    """
+    获取指定保洁组的月度工单统计
+    Args:
+        team_id: 保洁组ID
+        year: 年份
+        month: 月份
+    Returns:
+        tuple: (DataFrame, error_message)
+    """
+    try:
+        conn = connect_db()
+        query_result = conn.query("""
+            SELECT 
+                wo.work_date,
+                wo.work_time,
+                wo.work_address,
+                wo.order_amount,
+                wo.total_amount,
+                wo.payment_method
+            FROM work_orders wo
+            WHERE wo.assigned_cleaner = (
+                SELECT team_name 
+                FROM clean_teams 
+                WHERE id = :team_id
+            )
+            AND YEAR(wo.work_date) = :year
+            AND MONTH(wo.work_date) = :month
+            ORDER BY wo.work_date ASC, wo.work_time ASC
+        """, params={
+            'team_id': team_id,
+            'year': year,
+            'month': month
+        }, ttl=0)
+
+        return query_result, None
+    except Exception as e:
+        logger.error(f"获取保洁组月度工单统计失败！错误信息：{e}")
+        return pd.DataFrame(), f"获取保洁组月度工单统计失败：{str(e)}"
