@@ -50,7 +50,7 @@ class LLMAddressValidator:
     3. 基于搜索结果和你的知识，标准化并验证这个地址
 
     请按照以下标准格式返回结果：
-    地址: <标准化后的完整地址，使用与realestate.com.au相同的格式>
+    地址: <标准化后的完整地址，使用与 realestate.com.au 或 property.com.au 网站相同的格式>
     单元号: <如果有单元号>
     街道号: <门牌号>
     街道: <街道名称>
