@@ -88,6 +88,7 @@ async def render_input_form(service_options, receipt_data):
 
     validate_btn = st.button("验证地址", use_container_width=True, key="validate-address-btn", type="primary")
 
+    
     # 处理地址验证
     address_valid = True
     if validate_btn and address.strip():

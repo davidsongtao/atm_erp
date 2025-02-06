@@ -46,7 +46,7 @@ class LLMAddressValidator:
         return f"""作为澳大利亚地址验证专家，你需要执行以下步骤：
 
     1. 分析输入地址: {address}
-    2. 想象你可以用Google搜索这个地址，并特别关注 realestate.com.au 网站上的结果
+    2. 想象你可以用Google搜索这个地址，并特别关注 realestate.com.au 和 property.com.au 网站上的结果
     3. 基于搜索结果和你的知识，标准化并验证这个地址
 
     请按照以下标准格式返回结果：
