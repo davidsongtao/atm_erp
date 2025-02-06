@@ -590,9 +590,13 @@ def display_orders(orders, tab_name):
             col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
                 if order['assigned_cleaner'] == '暂未派单':
-                    st.markdown(f"👷 保洁小组：<span style='color:red'>⭕ 暂未确认</span>", unsafe_allow_html=True)
-                    st.markdown(f"📆 保洁日期：<span style='color:red'>⭕ 暂未确认</span>", unsafe_allow_html=True)
-                    st.markdown(f"🕒 保洁时间：<span style='color:red'>⭕ 暂未确认</span>", unsafe_allow_html=True)
+                    st.markdown(f"👷 保洁小组：<span style='color:red'>🔴 暂未确认</span>", unsafe_allow_html=True)
+                    st.markdown(f"📆 保洁日期：<span style='color:red'>🔴 暂未确认</span>", unsafe_allow_html=True)
+                    st.markdown(f"🕒 保洁时间：<span style='color:red'>🔴 暂未确认</span>", unsafe_allow_html=True)
+                elif order['cleaning_status'] == 1:  # 正在进行中，派单状态
+                    st.markdown(f"👷 保洁小组：<span style='color:green;'>🟢 {order['assigned_cleaner']}</span>", unsafe_allow_html=True)
+                    st.markdown(f"📆 保洁日期：<span style='color:green;'>🟢 {order['work_date'].strftime('%Y-%m-%d')}</span>", unsafe_allow_html=True)
+                    st.markdown(f"🕒 保洁时间：<span style='color:green;'>🟢 {order['work_time']}</span>", unsafe_allow_html=True)
                 else:
                     st.markdown(f"👷 保洁小组：<span style='color:green'>✅ {order['assigned_cleaner']}</span>", unsafe_allow_html=True)
                     st.markdown(f"📆 保洁日期：<span style='color:green'>✅ {order['work_date'].strftime('%Y-%m-%d')}</span>", unsafe_allow_html=True)
@@ -609,11 +613,11 @@ def display_orders(orders, tab_name):
                         st.markdown(f"💳 付款方式：<span style='color:green'>✅ 现金</span>", unsafe_allow_html=True)
                 else:
                     # 未收款 - 红色主题
-                    st.markdown(f"💰 工单总额：<span style='color:red;font-weight:bold;'>⭕ ${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
+                    st.markdown(f"💰 工单总额：<span style='color:red;font-weight:bold;'>🔴 ${order['total_amount']:.2f}</span>", unsafe_allow_html=True)
                     if order['payment_method'] == 'transfer':
-                        st.markdown(f"💳 付款方式：<span style='color:red'>⭕ 转账(含GST)</span>", unsafe_allow_html=True)
+                        st.markdown(f"💳 付款方式：<span style='color:red'>🔴 转账(含GST)</span>", unsafe_allow_html=True)
                     else:
-                        st.markdown(f"💳 付款方式：<span style='color:red'>⭕ 现金</span>", unsafe_allow_html=True)
+                        st.markdown(f"💳 付款方式：<span style='color:red'>🔴 现金</span>", unsafe_allow_html=True)
                 st.write(f"👤 登记人员： {order['created_by']}")
 
             with col3:
