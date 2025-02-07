@@ -170,6 +170,13 @@ def delete_images_dialog(order_data):
        </style>
     """, unsafe_allow_html=True)
 
+    # 用于存储要删除的图片ID
+    if 'selected_image_id' not in st.session_state:
+        st.session_state.selected_image_id = None
+
+    if 'confirm_delete' not in st.session_state:
+        st.session_state.confirm_delete = False
+
     # 预览图区域
     cols = st.columns(3)
     for idx, image in enumerate(images):
@@ -180,16 +187,49 @@ def delete_images_dialog(order_data):
             else:
                 st.image(image['image_data'])
 
-            # 删除按钮
-            if st.button("删除图片", key=f"delete_{idx}", use_container_width=True, type="primary"):
-                # 添加确认提示
-                if st.button("确认删除?", key=f"confirm_{idx}", use_container_width=True):
-                    if delete_order_image(image['id']):
-                        st.success("删除成功!")
-                        time.sleep(1)
-                        st.rerun()
-                    else:
-                        st.error("删除失败")
+            # 删除按钮 - 第一阶段选择
+            if st.button("删除图片",
+                         key=f"delete_{idx}",
+                         use_container_width=True,
+                         type="primary"):
+                st.session_state.selected_image_id = image['id']
+                st.session_state.confirm_delete = False
+
+    # 如果有选中的图片，显示确认删除界面
+    if st.session_state.selected_image_id is not None:
+        st.divider()
+        st.warning("确认要删除选中的图片吗？此操作不可恢复！", icon="⚠️")
+
+        # 确认复选框
+        st.session_state.confirm_delete = st.checkbox(
+            "我已了解删除操作不可恢复，并确认删除此图片！",
+            key=f"confirm_delete_checkbox_{st.session_state.selected_image_id}"
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button("确认删除",
+                         use_container_width=True,
+                         type="primary",
+                         disabled=not st.session_state.confirm_delete):
+                if delete_order_image(st.session_state.selected_image_id):
+                    st.success("删除成功!")
+                    # 重置状态
+                    st.session_state.selected_image_id = None
+                    st.session_state.confirm_delete = False
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error("删除失败")
+
+        with col2:
+            if st.button("取消",
+                         use_container_width=True):
+                # 重置状态
+                st.session_state.selected_image_id = None
+                st.session_state.confirm_delete = False
+                st.rerun()
 
 
 @st.dialog("确认撤销状态")

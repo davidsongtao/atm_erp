@@ -1,0 +1,5 @@
+2025-02-07 22:12:21 | SUCCESS  | utils.db_operations:login_auth:49 - 用户 admin 登录成功！
+2025-02-07 22:45:34 | SUCCESS  | utils.db_operations:login_auth:49 - 用户 admin 登录成功！
+2025-02-07 22:47:05 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 13 删除成功
+2025-02-07 22:48:55 | SUCCESS  | utils.db_operations:delete_work_order:689 - 工单 19 及其关联图片删除成功
+2025-02-07 22:48:55 | SUCCESS  | utils.db_operations:delete_work_order:689 - 工单 19 及其关联图片删除成功

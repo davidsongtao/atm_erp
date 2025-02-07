@@ -654,7 +654,7 @@ def update_remarks(order_id: int, remarks: str) -> tuple[bool, str]:
 
 
 def delete_work_order(order_id: int) -> tuple[bool, str]:
-    """删除工单
+    """删除工单及其关联的所有图片
 
     Args:
         order_id: 工单ID
@@ -665,21 +665,39 @@ def delete_work_order(order_id: int) -> tuple[bool, str]:
     try:
         conn = connect_db()
         with conn.session as session:
-            session.execute(
-                text("""
-                    DELETE FROM work_orders 
-                    WHERE id = :order_id
-                """),
-                params={'order_id': order_id}
-            )
-            session.commit()
+            try:
+                # 首先删除工单关联的所有图片
+                session.execute(
+                    text("""
+                        DELETE FROM work_order_images 
+                        WHERE order_id = :order_id
+                    """),
+                    params={'order_id': order_id}
+                )
 
-        logger.success(f"工单 {order_id} 删除成功")
-        return True, None
+                # 然后删除工单本身
+                session.execute(
+                    text("""
+                        DELETE FROM work_orders 
+                        WHERE id = :order_id
+                    """),
+                    params={'order_id': order_id}
+                )
+
+                # 提交事务
+                session.commit()
+                logger.success(f"工单 {order_id} 及其关联图片删除成功")
+                return True, None
+
+            except Exception as e:
+                # 如果发生错误，回滚事务
+                session.rollback()
+                raise e
 
     except Exception as e:
-        logger.error(f"删除工单失败：{e}")
-        return False, str(e)
+        error_msg = f"删除工单失败：{e}"
+        logger.error(error_msg)
+        return False, error_msg
 
 
 def update_work_order(data):
@@ -997,18 +1015,35 @@ from PIL import Image
 import io
 
 
-def create_thumbnail(image_data, size=(140, 140)):
-    """创建缩略图"""
+def create_thumbnail(image_data, size=(400, 400)):
+    """创建缩略图
+    尺寸设为400x400以保证清晰度
+    使用高质量的缩放和压缩参数
+    """
     try:
         # 将二进制数据转换为图片对象
         image = Image.open(io.BytesIO(image_data))
 
-        # 创建缩略图
-        image.thumbnail(size, Image.Resampling.LANCZOS)
+        # 计算等比例缩放尺寸
+        original_size = image.size
+        ratio = min(size[0] / original_size[0], size[1] / original_size[1])
+        new_size = (int(original_size[0] * ratio), int(original_size[1] * ratio))
 
-        # 转换回二进制
+        # 使用LANCZOS重采样进行高质量缩放
+        resized_image = image.resize(new_size, Image.Resampling.LANCZOS)
+
+        # 转换回二进制，使用较高的质量参数
         thumb_io = io.BytesIO()
-        image.save(thumb_io, format=image.format, quality=70)
+
+        # 根据图片格式选择最佳保存参数
+        if image.format == 'JPEG':
+            resized_image.save(thumb_io, format='JPEG', quality=85, optimize=True)
+        elif image.format == 'PNG':
+            resized_image.save(thumb_io, format='PNG', optimize=True)
+        else:
+            # 默认使用JPEG
+            resized_image.save(thumb_io, format='JPEG', quality=85, optimize=True)
+
         return thumb_io.getvalue()
     except Exception as e:
         logger.error(f"创建缩略图失败: {e}")
