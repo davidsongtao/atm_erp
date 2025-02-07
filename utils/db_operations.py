@@ -953,3 +953,91 @@ def cancel_assignment(order_id):
         logger.error(f"撤销派单失败：{e}")
         # 确保总是返回一个元组
         return False, str(e)
+
+
+def check_order_has_images(order_id):
+    """检查工单是否有图片"""
+    conn = connect_db()
+    if not conn:
+        return False
+
+    try:
+        query_result = conn.query(
+            "SELECT COUNT(*) as count FROM work_order_images WHERE order_id = :order_id",
+            params={'order_id': order_id},
+            ttl=0
+        ).to_dict()
+        return query_result['count'][0] > 0
+    except Exception as e:
+        logger.error(f"检查工单图片失败: {e}")
+        return False
+
+
+def get_order_images(order_id):
+    conn = connect_db()
+    if not conn:
+        return None
+
+    try:
+        # 默认使用 work_address + 创建时间作为 image_name
+        query_result = conn.query("""
+            SELECT i.id, i.image_data, 
+                   CONCAT(wo.work_address, '_', DATE_FORMAT(i.created_at, '%Y%m%d%H%i%s')) as image_name
+            FROM work_order_images i
+            JOIN work_orders wo ON i.order_id = wo.id
+            WHERE i.order_id = :order_id
+        """, params={'order_id': order_id}, ttl=0).to_dict('records')
+        return query_result
+    except Exception as e:
+        logger.error(f"获取工单图片失败: {e}")
+        return None
+
+
+def upload_order_images(order_id, work_address, image_files):
+    conn = connect_db()
+    if not conn:
+        return False
+
+    try:
+        with conn.session as session:
+            for idx, file in enumerate(image_files):
+                # 构建图片名称: 工单地址_序号
+                image_name = f"{work_address}_{idx + 1}"
+                image_data = file.read()
+
+                session.execute(
+                    text("""
+                        INSERT INTO work_order_images 
+                        (order_id, image_name, image_data) 
+                        VALUES (:order_id, :image_name, :image_data)
+                    """),
+                    {
+                        'order_id': order_id,
+                        'image_name': image_name,
+                        'image_data': image_data
+                    }
+                )
+            session.commit()
+        return True
+    except Exception as e:
+        logger.error(f"上传工单图片失败: {e}")
+        return False
+
+
+def delete_order_image(image_id):
+    """删除工单图片"""
+    conn = connect_db()
+    if not conn:
+        return False
+
+    try:
+        with conn.session as session:
+            session.execute(
+                text("DELETE FROM work_order_images WHERE id = :image_id"),
+                {'image_id': image_id}
+            )
+            session.commit()
+        return True
+    except Exception as e:
+        logger.error(f"删除工单图片失败: {e}")
+        return False

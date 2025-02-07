@@ -1,0 +1,437 @@
+2025-02-06 15:35:31 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:35:31 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:35:31 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:35:31 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:35:31 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:35:31 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:35:31 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:15 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:21 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:32 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:36:36 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:37:04 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-06 15:37:10 | ERROR    | utils.db_operations:get_all_clean_teams:456 - 获取保洁组信息失败！错误信息：(MySQLdb.OperationalError) (1054, "Unknown column 'leader_name' in 'field list'")
+[SQL: 
+            SELECT id, team_name, leader_name, contact_number, team_size, 
+                   is_active, notes, created_at, updated_at 
+            FROM clean_teams 
+            ORDER BY is_active DESC, team_name ASC
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 15:43:12 | SUCCESS  | utils.db_operations:login_auth:47 - 用户 admin 登录成功！
+2025-02-06 15:43:12 | SUCCESS  | utils.db_operations:login_auth:47 - 用户 admin 登录成功！
+2025-02-06 15:43:12 | SUCCESS  | utils.db_operations:login_auth:47 - 用户 admin 登录成功！
+2025-02-06 15:43:12 | SUCCESS  | utils.db_operations:login_auth:47 - 用户 admin 登录成功！
+2025-02-06 15:44:03 | SUCCESS  | utils.db_operations:login_auth:47 - 用户 admin 登录成功！

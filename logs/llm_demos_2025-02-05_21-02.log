@@ -1,0 +1,494 @@
+2025-02-05 21:23:18 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:23:31 | ERROR    | utils.db_operations:update_payment_status:358 - 更新收款状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'payment_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET payment_received = TRUE,
+                        payment_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 21, 23, 31, 648254), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 21:24:44 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:24:44 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:26:46 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:26:46 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:26:46 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:27:12 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:27:12 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:27:12 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:27:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 11 收款状态更新成功
+2025-02-05 21:27:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 11 收款状态更新成功
+2025-02-05 21:27:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 11 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:45:21 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 10 收款状态更新成功
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:44 | SUCCESS  | utils.db_operations:login_auth:46 - 用户 admin 登录成功！
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 21:55:53 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 12 收款状态更新成功
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:11:00 | SUCCESS  | utils.db_operations:login_auth:48 - 用户 admin 登录成功！
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:29:56 | ERROR    | utils.db_operations:update_receipt_status:392 - 更新收据状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'receipt_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET receipt_sent = TRUE, receipt_date = %s
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 29, 56, 557315), 12)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:31:20 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 12 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:38:18 | SUCCESS  | utils.db_operations:update_receipt_status:387 - 工单 10 收据状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:39:10 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 4 收款状态更新成功
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:50:57 | ERROR    | utils.db_operations:update_invoice_status:440 - 更新发票状态失败：(MySQLdb.OperationalError) (1054, "Unknown column 'invoice_date' in 'field list'")
+[SQL: 
+                    UPDATE work_orders 
+                    SET invoice_sent = TRUE,
+                        invoice_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ]
+[parameters: (datetime.datetime(2025, 2, 5, 22, 50, 57, 147330), 11)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:07 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 11 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:52:16 | SUCCESS  | utils.db_operations:update_invoice_status:431 - 工单 4 发票状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功
+2025-02-05 22:55:22 | SUCCESS  | utils.db_operations:update_payment_status:352 - 工单 7 收款状态更新成功

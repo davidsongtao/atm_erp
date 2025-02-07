@@ -1,0 +1,46 @@
+2025-02-07 01:13:02 | SUCCESS  | utils.db_operations:login_auth:49 - 用户 admin 登录成功！
+2025-02-07 01:13:16 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 18 删除成功
+2025-02-07 01:23:52 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 17 删除成功
+2025-02-07 01:23:52 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 17 删除成功
+2025-02-07 01:23:52 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 17 删除成功
+2025-02-07 01:23:52 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 17 删除成功
+2025-02-07 01:23:52 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 17 删除成功
+2025-02-07 01:23:52 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 17 删除成功
+2025-02-07 01:25:06 | SUCCESS  | utils.db_operations:create_work_order:268 - 工单创建成功
+2025-02-07 01:25:06 | SUCCESS  | utils.db_operations:create_work_order:268 - 工单创建成功
+2025-02-07 01:25:06 | SUCCESS  | utils.db_operations:create_work_order:268 - 工单创建成功
+2025-02-07 01:25:06 | SUCCESS  | utils.db_operations:create_work_order:268 - 工单创建成功
+2025-02-07 01:25:06 | SUCCESS  | utils.db_operations:create_work_order:268 - 工单创建成功
+2025-02-07 01:25:06 | SUCCESS  | utils.db_operations:create_work_order:268 - 工单创建成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:35:23 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 19 派单成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功
+2025-02-07 01:37:11 | SUCCESS  | utils.db_operations:delete_work_order:677 - 工单 4 删除成功

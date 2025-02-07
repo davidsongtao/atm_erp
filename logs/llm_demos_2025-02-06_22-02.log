@@ -1,0 +1,120 @@
+2025-02-06 22:09:13 | SUCCESS  | utils.db_operations:login_auth:49 - 用户 admin 登录成功！
+2025-02-06 22:10:10 | SUCCESS  | utils.db_operations:login_auth:49 - 用户 admin 登录成功！
+2025-02-06 22:21:08 | SUCCESS  | utils.db_operations:login_auth:49 - 用户 admin 登录成功！
+2025-02-06 22:35:08 | SUCCESS  | utils.db_operations:login_auth:49 - 用户 admin 登录成功！
+2025-02-06 22:37:23 | ERROR    | utils.db_operations:cancel_assignment:951 - 撤销派单失败：(MySQLdb.OperationalError) (1054, "Unknown column 'completed_at' in 'field list'")
+[SQL: 
+                UPDATE work_orders 
+                SET assigned_cleaner = '暂未派单',
+                    work_date = NULL,
+                    work_time = NULL,
+                    cleaning_status = 0,
+                    completed_at = NULL
+                WHERE id = %s
+            ]
+[parameters: (11,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 22:37:23 | ERROR    | utils.db_operations:cancel_assignment:951 - 撤销派单失败：(MySQLdb.OperationalError) (1054, "Unknown column 'completed_at' in 'field list'")
+[SQL: 
+                UPDATE work_orders 
+                SET assigned_cleaner = '暂未派单',
+                    work_date = NULL,
+                    work_time = NULL,
+                    cleaning_status = 0,
+                    completed_at = NULL
+                WHERE id = %s
+            ]
+[parameters: (11,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 22:37:23 | ERROR    | utils.db_operations:cancel_assignment:951 - 撤销派单失败：(MySQLdb.OperationalError) (1054, "Unknown column 'completed_at' in 'field list'")
+[SQL: 
+                UPDATE work_orders 
+                SET assigned_cleaner = '暂未派单',
+                    work_date = NULL,
+                    work_time = NULL,
+                    cleaning_status = 0,
+                    completed_at = NULL
+                WHERE id = %s
+            ]
+[parameters: (11,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-02-06 22:46:11 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 22:46:11 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 22:46:11 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 22:46:11 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 22:46:11 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 22:46:11 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 22:46:11 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 22:46:34 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 22:46:34 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 22:46:34 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 22:46:34 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 22:46:34 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 22:46:34 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 22:46:34 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:16:16 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 13 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:18:48 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 4 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:21:58 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 16 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:31:49 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:46:32 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 11 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
+2025-02-06 23:47:30 | SUCCESS  | utils.db_operations:assign_work_order:614 - 工单 5 派单成功
