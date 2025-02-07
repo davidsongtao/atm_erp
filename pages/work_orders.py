@@ -186,8 +186,26 @@ def edit_order_dialog(order_data):
                 use_container_width=True,
                 type="primary"
         ):
-            # 将工单数据存储到 session state 中
-            st.session_state['edit_order_data'] = order_data.to_dict()
+            # 将工单数据转换为字典
+            order_dict = order_data.to_dict()
+
+            # 处理自定义项目数据
+            if 'custom_item' in order_dict and order_dict['custom_item']:
+                # 将字符串分割为列表
+                custom_items = order_dict['custom_item'].split('|')
+                order_dict['custom_items'] = custom_items
+            else:
+                order_dict['custom_items'] = []
+
+            # 处理其他服务项目数据
+            for field in ['basic_service', 'rooms', 'electricals', 'other_services']:
+                if field in order_dict and order_dict[field]:
+                    order_dict[field] = order_dict[field].split('|')
+                else:
+                    order_dict[field] = []
+
+            # 存储到 session state
+            st.session_state['edit_order_data'] = order_dict
             st.switch_page("pages/edit_orders.py")
 
     with col2:
@@ -479,14 +497,14 @@ def issue_receipt_dialog(order_data):
                 "收据已签发",
                 use_container_width=True,
                 type="primary",
-                disabled=not confirm_checkbox  # 根据checkbox状态禁用确认按钮
+                disabled=not confirm_checkbox
         ):
             # 更新数据库中的收据状态
             success, error = update_receipt_status(order_data['id'], datetime.now())
             if success:
                 st.success("收据状态已更新！", icon="✅")
-                time.sleep(2)  # 显示2秒成功消息
-                st.rerun()  # 重新加载页面
+                time.sleep(2)
+                st.rerun()
             else:
                 st.error(f"收据状态更新失败：{error}", icon="⚠️")
 
@@ -494,8 +512,13 @@ def issue_receipt_dialog(order_data):
         if st.button(
                 "前往创建收据页面",
                 use_container_width=True,
-                disabled=not confirm_checkbox  # 根据checkbox状态禁用按钮
+                disabled=not confirm_checkbox
         ):
+            # 预处理自定义项目数据
+            custom_items = []
+            if order_data['custom_item']:
+                custom_items = order_data['custom_item'].split('|')
+
             # 构建初始化数据
             receipt_data = {
                 "address": order_data['work_address'],
@@ -505,13 +528,13 @@ def issue_receipt_dialog(order_data):
                 "rooms": order_data['rooms'].split('|') if order_data['rooms'] else [],
                 "electrical": order_data['electricals'].split('|') if order_data['electricals'] else [],
                 "other": order_data['other_services'].split('|') if order_data['other_services'] else [],
-                "custom_notes": order_data['custom_item'].split('|') if order_data['custom_item'] else [],
-                "custom_notes_enabled": bool(order_data['custom_item']),
+                "custom_notes": custom_items,  # 存储自定义项目
+                "custom_notes_enabled": bool(custom_items),  # 如果有自定义项目则启用
                 "excluded_enabled": False,
                 "custom_excluded_enabled": False,
                 "manual_excluded_selection": [],
                 "custom_excluded_items": [],
-                "order_id": order_data['id']  # 保存工单ID以便后续更新状态
+                "order_id": order_data['id']
             }
 
             # 存储到session state

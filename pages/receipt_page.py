@@ -27,7 +27,27 @@ def initialize_receipt_data():
         if 'excluded_items' not in st.session_state and 'custom_excluded_items' in st.session_state['previous_form_data']:
             st.session_state['excluded_items'] = st.session_state['previous_form_data']['custom_excluded_items']
 
-        return st.session_state['previous_form_data']
+        # 确保返回完整的数据
+        form_data = st.session_state['previous_form_data']
+        return {
+            "selected_template": "手动版（手动选择excluded中的内容）",
+            "address": form_data.get("address", ""),
+            "selected_date": form_data.get("selected_date", date.today()),
+            "amount": form_data.get("amount", 0.0),
+            "basic_service": form_data.get("basic_service", []),
+            "electrical": form_data.get("electrical", []),
+            "rooms": form_data.get("rooms", []),
+            "other": form_data.get("other", []),
+            "custom_notes": form_data.get("custom_notes", []),
+            "custom_notes_enabled": form_data.get("custom_notes_enabled", False),
+            "excluded_enabled": form_data.get("excluded_enabled", False),
+            "custom_excluded_enabled": form_data.get("custom_excluded_enabled", False),
+            "manual_excluded_selection": form_data.get("manual_excluded_selection", []),
+            "custom_excluded_items": form_data.get("custom_excluded_items", []),
+            "output_doc": None,
+            "receipt_file_name": "",
+            "ready_doc": None
+        }
 
     return {
         "selected_template": "手动版（手动选择excluded中的内容）",
@@ -405,6 +425,13 @@ async def receipt_page():  # 继续 receipt_page 函数
 
     # 提交按钮
     submit = st.button("生成收据", use_container_width=True, type="primary")
+
+    if st.button("取消", use_container_width=True):
+        # 清除所有相关的session state
+        for key in ['edit_order_data', 'custom_items', 'current_editing_order_id']:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.switch_page("pages/work_orders.py")
 
     if submit:
         if not (address_valid and address and selected_date and

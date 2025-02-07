@@ -39,6 +39,14 @@ async def edit_work_order_page():
 
         order_data = st.session_state['edit_order_data']
 
+        # 重要：在页面初始化时，根据当前工单ID重置custom_items
+        current_order_id = order_data['id']
+        if 'current_editing_order_id' not in st.session_state or st.session_state.current_editing_order_id != current_order_id:
+            # 如果是新的工单，重置custom_items
+            if 'custom_items' in st.session_state:
+                del st.session_state.custom_items
+            st.session_state.current_editing_order_id = current_order_id
+
         # 初始化验证器相关的session state
         if 'validator' not in st.session_state:
             api_key = st.secrets["api_keys"]["openai_api_key"]
@@ -70,8 +78,6 @@ async def edit_work_order_page():
             help="请输入地址以开始验证"
         )
 
-        # 地址验证部分（与新建工单页面相同）
-
         st.divider()
 
         # 户型选择
@@ -84,7 +90,7 @@ async def edit_work_order_page():
             placeholder="请选择房间户型",
         )
 
-        # 服务选项（与新建工单页面相同）
+        # 服务选项
         service_options = {
             "basic_service": ["Steam clean of the carpet", "Steam clean of the mattress",
                               "Steam clean of the sofa", "Vacuum clean of carpet",
@@ -98,12 +104,24 @@ async def edit_work_order_page():
                                "Mould removal"]
         }
 
-        # 转换已选服务为列表
-        current_basic_services = order_data['basic_service'].split('|') if order_data['basic_service'] else []
-        current_room_services = order_data['rooms'].split('|') if order_data['rooms'] else []
-        current_electrical_services = order_data['electricals'].split('|') if order_data['electricals'] else []
-        current_other_services = order_data['other_services'].split('|') if order_data['other_services'] else []
+        # 修改服务数据的处理逻辑
+        current_basic_services = order_data.get('basic_service', [])
+        if isinstance(current_basic_services, str):
+            current_basic_services = current_basic_services.split('|') if current_basic_services else []
 
+        current_room_services = order_data.get('rooms', [])
+        if isinstance(current_room_services, str):
+            current_room_services = current_room_services.split('|') if current_room_services else []
+
+        current_electrical_services = order_data.get('electricals', [])
+        if isinstance(current_electrical_services, str):
+            current_electrical_services = current_electrical_services.split('|') if current_electrical_services else []
+
+        current_other_services = order_data.get('other_services', [])
+        if isinstance(current_other_services, str):
+            current_other_services = current_other_services.split('|') if current_other_services else []
+
+        # 服务选项的显示部分
         col1, col2 = st.columns(2)
         with col1:
             basic_services = st.multiselect(
@@ -135,12 +153,26 @@ async def edit_work_order_page():
                 placeholder="选择其他服务项目..."
             )
 
-        # 自定义服务项目
-        custom_service = st.checkbox("添加自定义服务项目")
+        # 自定义服务项目处理
+        custom_items = order_data.get('custom_items', [])
+        if isinstance(custom_items, str):
+            custom_items = custom_items.split('|') if custom_items else []
+
+        custom_service = st.checkbox(
+            "添加自定义服务项目",
+            value=bool(custom_items)
+        )
+
         if custom_service:
+            # 初始化自定义项目的session state
+            if 'custom_items' not in st.session_state:
+                st.session_state.custom_items = custom_items if custom_items else [""]
+
             custom_item = handle_custom_items()
         else:
             custom_item = []
+            if 'custom_items' in st.session_state:
+                del st.session_state.custom_items
 
         # 付款信息
         st.divider()
@@ -168,6 +200,7 @@ async def edit_work_order_page():
                 help="选择开具发票或收据",
                 index=0 if order_data['paperwork'] == 0 else 1
             )
+
         # 自动计算总金额
         total_amount = order_amount * 1.1 if payment_method == "transfer" else order_amount
         st.success(f"工单总金额：${total_amount:.2f} ({'含 GST' if payment_method == 'transfer' else '不含 GST'})")
@@ -182,15 +215,17 @@ async def edit_work_order_page():
 
         # 确认更新
         confirm_update = st.checkbox("我确认所有修改信息无误，立即更新工单！")
-        col1, col2 = st.columns(2)
 
-        with col1:
-            update_btn = st.button("更新工单", use_container_width=True, type="primary")
+        update_btn = st.button("更新工单", use_container_width=True, type="primary")
 
-        with col2:
-            if st.button("取消", use_container_width=True):
-                st.switch_page("pages/work_orders.py")
+        if st.button("取消", use_container_width=True):
+            # 清除所有相关的session state
+            for key in ['edit_order_data', 'custom_items', 'current_editing_order_id']:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.switch_page("pages/work_orders.py")
 
+        # 更新按钮处理
         if update_btn and confirm_update:
             if not all([
                 source,
@@ -215,17 +250,19 @@ async def edit_work_order_page():
                     'rooms': '|'.join(room_services) if room_services else None,
                     'electricals': '|'.join(electrical_services) if electrical_services else None,
                     'other_services': '|'.join(other_services) if other_services else None,
-                    'custom_item': '|'.join(custom_item) if custom_item else None,
+                    'custom_item': '|'.join([item for item in custom_item if item.strip()]) if custom_item else None,
                     'paperwork': paperwork
                 }
 
                 success, error = update_work_order(updated_data)
 
                 if success:
+                    # 清除所有相关的session state
+                    for key in ['edit_order_data', 'custom_items', 'current_editing_order_id']:
+                        if key in st.session_state:
+                            del st.session_state[key]
+
                     st.success("工单更新成功！3秒后返回工单列表...", icon="✅")
-                    # 清除session state中的编辑数据
-                    if 'edit_order_data' in st.session_state:
-                        del st.session_state['edit_order_data']
                     time.sleep(3)
                     st.switch_page("pages/work_orders.py")
                 else:
