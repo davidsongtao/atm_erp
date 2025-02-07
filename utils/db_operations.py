@@ -979,9 +979,9 @@ def get_order_images(order_id):
         return None
 
     try:
-        # 默认使用 work_address + 创建时间作为 image_name
+        # 查询包含缩略图数据
         query_result = conn.query("""
-            SELECT i.id, i.image_data, 
+            SELECT i.id, i.image_data, i.thumbnail_data,
                    CONCAT(wo.work_address, '_', DATE_FORMAT(i.created_at, '%Y%m%d%H%i%s')) as image_name
             FROM work_order_images i
             JOIN work_orders wo ON i.order_id = wo.id
@@ -993,7 +993,30 @@ def get_order_images(order_id):
         return None
 
 
+from PIL import Image
+import io
+
+
+def create_thumbnail(image_data, size=(140, 140)):
+    """创建缩略图"""
+    try:
+        # 将二进制数据转换为图片对象
+        image = Image.open(io.BytesIO(image_data))
+
+        # 创建缩略图
+        image.thumbnail(size, Image.Resampling.LANCZOS)
+
+        # 转换回二进制
+        thumb_io = io.BytesIO()
+        image.save(thumb_io, format=image.format, quality=70)
+        return thumb_io.getvalue()
+    except Exception as e:
+        logger.error(f"创建缩略图失败: {e}")
+        return None
+
+
 def upload_order_images(order_id, work_address, image_files):
+    """上传工单图片"""
     conn = connect_db()
     if not conn:
         return False
@@ -1001,20 +1024,25 @@ def upload_order_images(order_id, work_address, image_files):
     try:
         with conn.session as session:
             for idx, file in enumerate(image_files):
-                # 构建图片名称: 工单地址_序号
-                image_name = f"{work_address}_{idx + 1}"
+                # 读取原图数据
                 image_data = file.read()
+                # 创建缩略图
+                thumbnail_data = create_thumbnail(image_data)
+
+                # 构建图片名称
+                image_name = f"{work_address}_{idx + 1}"
 
                 session.execute(
                     text("""
                         INSERT INTO work_order_images 
-                        (order_id, image_name, image_data) 
-                        VALUES (:order_id, :image_name, :image_data)
+                        (order_id, image_name, image_data, thumbnail_data) 
+                        VALUES (:order_id, :image_name, :image_data, :thumbnail_data)
                     """),
                     {
                         'order_id': order_id,
                         'image_name': image_name,
-                        'image_data': image_data
+                        'image_data': image_data,
+                        'thumbnail_data': thumbnail_data
                     }
                 )
             session.commit()

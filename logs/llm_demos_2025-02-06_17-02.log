@@ -1,9 +1,0 @@
-2025-02-06 17:58:50 | SUCCESS  | utils.db_operations:login_auth:49 - 用户 admin 登录成功！
-2025-02-06 18:01:59 | SUCCESS  | utils.db_operations:create_work_order:263 - 工单创建成功
-2025-02-06 18:02:28 | SUCCESS  | utils.db_operations:assign_work_order:712 - 工单 13 派单成功
-2025-02-06 18:03:54 | SUCCESS  | utils.db_operations:create_work_order:263 - 工单创建成功
-2025-02-06 18:04:42 | SUCCESS  | utils.db_operations:assign_work_order:712 - 工单 14 派单成功
-2025-02-06 18:15:10 | SUCCESS  | utils.db_operations:create_work_order:263 - 工单创建成功
-2025-02-06 18:15:32 | SUCCESS  | utils.db_operations:update_remarks:747 - 工单 15 备注更新成功
-2025-02-06 18:15:51 | SUCCESS  | utils.db_operations:update_remarks:747 - 工单 15 备注更新成功
-2025-02-06 18:16:25 | SUCCESS  | utils.db_operations:update_remarks:747 - 工单 4 备注更新成功

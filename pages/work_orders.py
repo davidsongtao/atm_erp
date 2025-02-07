@@ -37,7 +37,7 @@ def view_images_dialog(order_data):
         st.info("该工单暂无图片")
         return
 
-    # CSS样式，使用config.toml中的主题色
+    # CSS样式
     st.markdown("""
        <style>
            div[data-testid="stImage"] img {
@@ -45,13 +45,8 @@ def view_images_dialog(order_data):
                height: 140px !important;
                object-fit: cover;
            }
-           .big-image img {
-               width: auto !important;
-               margin: 0 auto;
-               display: block;
-           }
            .download-button {
-               background-color: #229ffd !important;  /* 使用config.toml中的primaryColor */
+               background-color: #229ffd !important;
                color: white !important;
                padding: 4px 8px !important;
                border: none !important;
@@ -62,7 +57,7 @@ def view_images_dialog(order_data):
                transition: background-color 0.3s !important;
            }
            .download-button:hover {
-               background-color: #1e8fe3 !important;  /* 略微深一点的颜色用于hover效果 */
+               background-color: #1e8fe3 !important;
            }
        </style>
     """, unsafe_allow_html=True)
@@ -71,10 +66,13 @@ def view_images_dialog(order_data):
     cols = st.columns(3)
     for idx, image in enumerate(images):
         with cols[idx % 3]:
-            # 显示图片
-            st.image(image['image_data'])
+            # 显示图片，优先使用缩略图
+            if 'thumbnail_data' in image and image['thumbnail_data']:
+                st.image(image['thumbnail_data'])
+            else:
+                st.image(image['image_data'])
 
-            # 创建下载链接
+            # 创建下载链接（使用原图）
             img_bytes = base64.b64encode(image['image_data']).decode()
             file_name = f"{image['image_name']}.jpg"
 
@@ -91,55 +89,58 @@ def view_images_dialog(order_data):
 
 @st.dialog("上传图片")
 def upload_images_dialog(order_data):
-   st.write(f"📍 工单地址：{order_data['work_address']}")
-   st.write(f"👷 保洁小组：{order_data['assigned_cleaner']}")
-   col1, col2 = st.columns([1, 1])
-   with col1:
-       st.write(f"📆 保洁日期：{order_data['work_date'].strftime('%Y-%m-%d')}")
-   with col2:
-       st.write(f"🕒 保洁时间：{order_data['work_time']}")
+    st.write(f"📍 工单地址：{order_data['work_address']}")
+    st.write(f"👷 保洁小组：{order_data['assigned_cleaner']}")
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.write(f"📆 保洁日期：{order_data['work_date'].strftime('%Y-%m-%d')}")
+    with col2:
+        st.write(f"🕒 保洁时间：{order_data['work_time']}")
 
-   # CSS样式与查看图片保持一致
-   st.markdown("""
-      <style>
-          div[data-testid="stImage"] img {
-              width: 140px !important;
-              height: 140px !important;
-              object-fit: cover;
-          }
-      </style>
-   """, unsafe_allow_html=True)
+    # CSS样式
+    st.markdown("""
+       <style>
+           div[data-testid="stImage"] img {
+               width: 140px !important;
+               height: 140px !important;
+               object-fit: cover;
+           }
+       </style>
+    """, unsafe_allow_html=True)
 
-   uploaded_files = st.file_uploader("选择要上传的图片", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
+    uploaded_files = st.file_uploader("选择要上传的图片", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
 
-   if uploaded_files:
-       st.write(f"已选择 {len(uploaded_files)} 张图片")
+    if uploaded_files:
+        st.write(f"已选择 {len(uploaded_files)} 张图片")
 
-       cols = st.columns(3)
-       for idx, file in enumerate(uploaded_files):
-           with cols[idx % 3]:
-               st.image(file)
+        cols = st.columns(3)
+        for idx, file in enumerate(uploaded_files):
+            with cols[idx % 3]:
+                # 创建预览缩略图
+                preview_bytes = file.read()
+                st.image(preview_bytes)
+                file.seek(0)  # 重置文件指针，确保后续能够正确读取
 
-       confirm = st.checkbox("确认上传这些图片")
+        confirm = st.checkbox("确认上传这些图片")
 
-       col1, col2 = st.columns(2)
-       with col1:
-           if st.button("提交", disabled=not confirm, use_container_width=True, type="primary"):
-               success = upload_order_images(
-                   order_id=order_data['id'],
-                   work_address=order_data['work_address'],
-                   image_files=uploaded_files
-               )
-               if success:
-                   st.success("图片上传成功!")
-                   time.sleep(2)
-                   st.rerun()
-               else:
-                   st.error("图片上传失败")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("提交", disabled=not confirm, use_container_width=True, type="primary"):
+                success = upload_order_images(
+                    order_id=order_data['id'],
+                    work_address=order_data['work_address'],
+                    image_files=uploaded_files
+                )
+                if success:
+                    st.success("图片上传成功!")
+                    time.sleep(2)
+                    st.rerun()
+                else:
+                    st.error("图片上传失败")
 
-       with col2:
-           if st.button("取消", use_container_width=True):
-               st.rerun()
+        with col2:
+            if st.button("取消", use_container_width=True):
+                st.rerun()
 
 
 @st.dialog("删除图片")
@@ -160,21 +161,24 @@ def delete_images_dialog(order_data):
 
     # CSS样式
     st.markdown("""
-      <style>
-          div[data-testid="stImage"] img {
-              width: 140px !important;
-              height: 140px !important;
-              object-fit: cover;
-          }
-      </style>
-   """, unsafe_allow_html=True)
+       <style>
+           div[data-testid="stImage"] img {
+               width: 140px !important;
+               height: 140px !important;
+               object-fit: cover;
+           }
+       </style>
+    """, unsafe_allow_html=True)
 
     # 预览图区域
     cols = st.columns(3)
     for idx, image in enumerate(images):
         with cols[idx % 3]:
-            # 显示图片
-            st.image(image['image_data'])
+            # 显示缩略图
+            if image.get('thumbnail_data'):
+                st.image(image['thumbnail_data'])
+            else:
+                st.image(image['image_data'])
 
             # 删除按钮
             if st.button("删除图片", key=f"delete_{idx}", use_container_width=True, type="primary"):
