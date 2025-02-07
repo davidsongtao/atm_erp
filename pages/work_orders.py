@@ -87,6 +87,7 @@ def view_images_dialog(order_data):
             """
             st.markdown(download_link, unsafe_allow_html=True)
 
+
 @st.dialog("上传图片")
 def upload_images_dialog(order_data):
     st.write(f"📍 工单地址：{order_data['work_address']}")
@@ -365,8 +366,6 @@ def display_order_popover(order, tab_name):
 
         col6, col7, col8, col9, col10 = st.columns(5)
 
-
-
         with col6:
             # 查看图片
             has_images = check_order_has_images(order['id'])
@@ -378,10 +377,13 @@ def display_order_popover(order, tab_name):
                 view_images_dialog(order)
 
         with col7:
-            # 上传图片
+            # 上传图片 - 添加未派单状态检查
+            is_not_assigned = order['assigned_cleaner'] == '暂未派单'
             if st.button("上传图片",
                          use_container_width=True,
                          type="primary",
+                         disabled=is_not_assigned,  # 如果未派单则禁用按钮
+                         help="请先完成派单再上传图片" if is_not_assigned else "点击上传图片",  # 添加提示信息
                          key=f"{tab_name}_upload_images_{order['id']}"):
                 upload_images_dialog(order)
 
@@ -409,10 +411,6 @@ def display_order_popover(order, tab_name):
                 delete_order_dialog(order)
 
 
-
-
-# 在work_orders.py中添加修改工单对话框
-# 在 work_orders.py 中添加修改工单对话框
 @st.dialog("修改工单")
 def edit_order_dialog(order_data):
     """修改工单确认对话框
@@ -1065,7 +1063,6 @@ def work_orders():
         with col3:
             if st.button("月度结算", use_container_width=True, type="primary"):
                 st.switch_page("pages/monthly_review.py")
-        
 
         # 获取当前主题色
         theme_color = get_theme_color()
