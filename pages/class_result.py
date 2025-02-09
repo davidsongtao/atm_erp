@@ -119,7 +119,7 @@ def generate_summary(date_str, time_str, course_name, chapter_overview):
 
             except Exception as e:
                 if attempt < max_retries - 1:
-                    st.warning(f"API调用失败，正在进行第{attempt + 2}次尝试...")
+                    st.warning(f"DeepSeek API调用失败，该问题由近期DeepSeek所遭受的大规模网络攻击造成，与您无关。正在进行第{attempt + 2}次尝试...请耐心等待...")
                     time.sleep(retry_delay)
                 else:
                     raise Exception(f"多次尝试后API调用仍然失败：{str(e)}")
@@ -203,25 +203,31 @@ def process_documents(uploaded_files):
         last_message_time = time.time()
         message_index = 0
         waiting_messages = [
-            "正在处理文档，请耐心等待...",
-            "文档处理需要一些时间，请不要关闭页面...",
-            "正在调用AI生成课程总结，请稍候...",
-            "处理过程可能需要几分钟，请保持耐心..."
+            "正在分析课程内容，请稍候...",
+            "正在调用AI助手生成总结，请耐心等待...",
+            "正在整理课程要点，请稍等...",
+            "AI正在进行内容润色，马上就好..."
         ]
+
+        # 立即显示第一条消息
+        wait_message.info(
+            f"{waiting_messages[0]}\n"
+            f"当前处理进度：{processed_count + 1}/{total_files}"
+        )
 
         with st.spinner("正在处理文档..."):
             for uploaded_file in uploaded_files:
-                # 更新等待消息
-                current_time = time.time()
-                if current_time - last_message_time > 5:  # 每5秒更新一次消息
-                    wait_message.info(
-                        f"{waiting_messages[message_index % len(waiting_messages)]}\n"
-                        f"当前处理进度：{processed_count + 1}/{total_files}"
-                    )
-                    last_message_time = current_time
-                    message_index += 1
-
                 try:
+                    # 更新等待消息
+                    current_time = time.time()
+                    if current_time - last_message_time > 3:  # 改为每3秒更新一次
+                        wait_message.info(
+                            f"{waiting_messages[message_index % len(waiting_messages)]}\n"
+                            f"当前处理进度：{processed_count + 1}/{total_files}"
+                        )
+                        last_message_time = current_time
+                        message_index += 1
+
                     # 提取文档信息
                     doc = Document(uploaded_file)
                     doc_content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
