@@ -60,33 +60,16 @@ def extract_chapter_overview(doc_content):
         # 替换所有可能的换行符组合为统一的换行符
         doc_content = doc_content.replace('\r\n', '\n').replace('\r', '\n')
 
-        # 使用更宽松的正则表达式查找章节速览部分
-        pattern = r"章节速览[\s\n]*?((?:[\s\S]*?(?=-\s*\d{2}:\d{2})|[\s\S]*?(?=问答回顾)|[\s\S]*?$))"
-        match = re.search(pattern, doc_content, re.DOTALL)
+        # 使用更精确的正则表达式
+        pattern = r"章节速览[\s\n]*(.*?)(?=\s*(?:要点回顾|问答回顾))"
+        match = re.search(pattern, doc_content, re.DOTALL | re.MULTILINE | re.IGNORECASE)
 
         if match:
             # 提取匹配的内容并清理
             chapter_content = match.group(1).strip()
+            return chapter_content
 
-            # 使用新的正则表达式提取所有时间段内容
-            time_sections = re.findall(r'-\s*\d{2}:\d{2}.*?(?=(?:-\s*\d{2}:\d{2}|\s*$))', chapter_content, re.DOTALL)
-
-            if time_sections:
-                # 合并所有时间段内容
-                final_content = '\n'.join(section.strip() for section in time_sections)
-                return final_content
-
-            # 如果没有找到时间段，但内容不为空，返回清理后的内容
-            if chapter_content:
-                return chapter_content
-
-        st.warning("未找到标准格式的章节速览，尝试提取时间段内容...")
-
-        # 如果上述方法都失败，直接尝试提取所有时间段内容
-        time_sections = re.findall(r'-\s*\d{2}:\d{2}.*?(?=(?:-\s*\d{2}:\d{2}|\s*$))', doc_content, re.DOTALL)
-        if time_sections:
-            return '\n'.join(section.strip() for section in time_sections)
-
+        st.warning("未找到标准格式的章节速览")
         return None
     except Exception as e:
         st.error(f"提取章节速览时发生错误：{str(e)}")
