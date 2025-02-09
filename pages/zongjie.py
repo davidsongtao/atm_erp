@@ -60,32 +60,14 @@ def extract_chapter_overview(doc_content):
         # 替换所有可能的换行符组合为统一的换行符
         doc_content = doc_content.replace('\r\n', '\n').replace('\r', '\n')
 
-        # 使用更宽松的正则表达式查找章节速览部分
-        pattern = r"章节速览[\s\n]*?((?:[\s\S]*?(?=-\s*\d{2}:\d{2})|[\s\S]*?(?=问答回顾)|[\s\S]*?$))"
-        match = re.search(pattern, doc_content, re.DOTALL)
+        # 更精确的正则表达式，匹配"章节速览"到"问答回顾"或"要点回顾"之间的内容
+        pattern = r"章节速览\s*(.*?)\s*(?=问答回顾|要点回顾)"
+        match = re.search(pattern, doc_content, re.DOTALL | re.MULTILINE)
 
         if match:
             # 提取匹配的内容并清理
             chapter_content = match.group(1).strip()
-
-            # 使用新的正则表达式提取所有时间段内容
-            time_sections = re.findall(r'-\s*\d{2}:\d{2}.*?(?=(?:-\s*\d{2}:\d{2}|\s*$))', chapter_content, re.DOTALL)
-
-            if time_sections:
-                # 合并所有时间段内容
-                final_content = '\n'.join(section.strip() for section in time_sections)
-                return final_content
-
-            # 如果没有找到时间段，但内容不为空，返回清理后的内容
-            if chapter_content:
-                return chapter_content
-
-        st.warning("未找到标准格式的章节速览，尝试提取时间段内容...")
-
-        # 如果上述方法都失败，直接尝试提取所有时间段内容
-        time_sections = re.findall(r'-\s*\d{2}:\d{2}.*?(?=(?:-\s*\d{2}:\d{2}|\s*$))', doc_content, re.DOTALL)
-        if time_sections:
-            return '\n'.join(section.strip() for section in time_sections)
+            return chapter_content
 
         return None
     except Exception as e:
@@ -184,54 +166,68 @@ def create_summary_document(summary_text, original_filename):
 def process_documents(uploaded_files):
     """处理上传的文档"""
     try:
+        # 设置处理状态为True
+        st.session_state.processing = True
+
         # 用于收集所有生成的文档
         generated_docs = []
         failed_files = []
         total_files = len(uploaded_files)
         processed_count = 0
 
+        # 使用占位符显示处理进度
+        progress_text = st.empty()
+        progress_bar = st.progress(0)
+
         for uploaded_file in uploaded_files:
-            # 创建信息提示的占位符
-            info_placeholder = st.empty()
-            info_placeholder.info(f"正在处理：{uploaded_file.name} ({processed_count + 1}/{total_files})")
+            try:
+                # 更新进度
+                progress_text.text(f"正在处理：{uploaded_file.name} ({processed_count + 1}/{total_files})")
+                progress_bar.progress((processed_count + 1) / total_files)
 
-            # 提取文档信息
-            doc = Document(uploaded_file)
-            doc_content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
-            date_str, time_str, course_name = extract_course_info(uploaded_file.name)
-            chapter_overview = extract_chapter_overview(doc_content)
+                # 提取文档信息
+                doc = Document(uploaded_file)
+                doc_content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+                date_str, time_str, course_name = extract_course_info(uploaded_file.name)
+                chapter_overview = extract_chapter_overview(doc_content)
 
-            if not chapter_overview:
-                info_placeholder.empty()
-                failed_files.append((uploaded_file.name, "未找到章节速览部分"))
+                if not chapter_overview:
+                    failed_files.append((uploaded_file.name, "未找到章节速览部分"))
+                    processed_count += 1
+                    continue
+
+                # 生成总结
+                summary = generate_summary(date_str, time_str, course_name, chapter_overview)
+
+                if not summary:
+                    failed_files.append((uploaded_file.name, "生成总结失败"))
+                    processed_count += 1
+                    continue
+
+                # 创建文档
+                doc_binary = create_summary_document(summary, uploaded_file.name)
+
+                if not doc_binary:
+                    failed_files.append((uploaded_file.name, "创建文档失败"))
+                    processed_count += 1
+                    continue
+
+                # 保存生成的文档信息
+                output_filename = f"{date_str}_{course_name}_课程总结.docx"
+                generated_docs.append((output_filename, doc_binary))
+
+                processed_count += 1
+
+            except Exception as file_error:
+                st.error(f"处理文件 {uploaded_file.name} 时发生错误：{str(file_error)}")
+                logger.error(f"处理文件 {uploaded_file.name} 时发生错误：{str(file_error)}")
+                failed_files.append((uploaded_file.name, str(file_error)))
                 processed_count += 1
                 continue
 
-            # 生成总结
-            summary = generate_summary(date_str, time_str, course_name, chapter_overview)
-
-            if not summary:
-                info_placeholder.empty()
-                failed_files.append((uploaded_file.name, "生成总结失败"))
-                processed_count += 1
-                continue
-
-            # 创建文档
-            doc_binary = create_summary_document(summary, uploaded_file.name)
-
-            if not doc_binary:
-                info_placeholder.empty()
-                failed_files.append((uploaded_file.name, "创建文档失败"))
-                processed_count += 1
-                continue
-
-            # 保存生成的文档信息
-            output_filename = f"{date_str}_{course_name}_课程总结.docx"
-            generated_docs.append((output_filename, doc_binary))
-
-            # 清除处理中提示
-            info_placeholder.empty()
-            processed_count += 1
+        # 清除进度显示
+        progress_text.empty()
+        progress_bar.empty()
 
         # 处理完成后，显示结果
         if generated_docs:
@@ -273,8 +269,17 @@ def process_documents(uploaded_files):
             for filename, reason in failed_files:
                 st.write(f"- {filename}：{reason}")
 
+        # 返回处理结果
+        return generated_docs, failed_files
+
     except Exception as e:
-        st.error(f"处理文档时发生错误：{str(e)}")
+        st.error(f"处理文档时发生总体错误：{str(e)}")
+        logger.error(f"处理文档时发生总体错误：{str(e)}")
+        return [], []
+
+    finally:
+        # 恢复处理状态
+        st.session_state.processing = False
 
 
 def course_summary():
@@ -310,6 +315,10 @@ def course_summary():
             st.title("📚课程总结")
             st.divider()
 
+            # 初始化处理状态
+            if 'processing' not in st.session_state:
+                st.session_state.processing = False
+
             # 添加说明信息
             st.info("请上传您需要处理的记录文件，该文件应从通义听悟中直接导出，不要对导出文件进行任何修改。", icon="ℹ️")
 
@@ -322,7 +331,8 @@ def course_summary():
                 "选择要处理的Word文档",
                 type=['docx'],
                 accept_multiple_files=True,
-                key='file_uploader'
+                key='file_uploader',
+                disabled=st.session_state.processing  # 根据处理状态禁用上传
             )
 
             if uploaded_files:
@@ -335,11 +345,12 @@ def course_summary():
                         current_files.add(file.name)
                         valid_files.append(file)
 
-                if valid_files and st.button("开始处理", type="primary"):
-                    with st.spinner("正在处理文档..."):
-                        process_documents(valid_files)
-                        # 添加处理过的文件名到session state
-                        st.session_state.processed_files.update(current_files)
+                if valid_files and st.button("开始处理", type="primary", disabled=st.session_state.processing):
+                    # 直接调用处理函数
+                    generated_docs, failed_files = process_documents(valid_files)
+
+                    # 添加处理过的文件名到session state
+                    st.session_state.processed_files.update(current_files)
 
 
 if __name__ == '__main__':
