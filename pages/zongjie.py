@@ -21,7 +21,7 @@ def confirm_process_dialog(uploaded_files):
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("确认处理", type="primary", use_container_width=True):
+        if st.button("确认开始", type="primary", use_container_width=True):
             # 存储文件信息到session state
             st.session_state['files_to_process'] = uploaded_files
             # 跳转到处理页面
