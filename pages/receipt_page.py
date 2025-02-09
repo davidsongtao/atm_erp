@@ -17,6 +17,37 @@ from utils.validator import LLMAddressValidator, get_validator
 from utils.styles import apply_global_styles
 
 
+@st.dialog("取消确认")
+def cancel_confirm_dialog():
+    """取消确认对话框"""
+    st.warning("确定要取消当前操作吗？所有未保存的更改都将丢失！", icon="⚠️")
+
+    # 确认复选框
+    confirm_checkbox = st.checkbox(
+        "我已了解取消操作将丢失所有未保存的更改！",
+        key="confirm_cancel_checkbox"
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button(
+                "确认取消",
+                use_container_width=True,
+                type="primary",
+                disabled=not confirm_checkbox
+        ):
+            # 清除所有相关的session state
+            for key in ['edit_order_data', 'custom_items', 'current_editing_order_id', 'previous_form_data']:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.switch_page("pages/work_orders.py")
+
+    with col2:
+        if st.button("返回", use_container_width=True):
+            st.rerun()
+
+
 def initialize_receipt_data():
     """初始化收据数据"""
     if 'previous_form_data' in st.session_state:
@@ -426,12 +457,9 @@ async def receipt_page():  # 继续 receipt_page 函数
     # 提交按钮
     submit = st.button("生成收据", use_container_width=True, type="primary")
 
+    # 然后修改原有的取消按钮代码部分
     if st.button("取消", use_container_width=True):
-        # 清除所有相关的session state
-        for key in ['edit_order_data', 'custom_items', 'current_editing_order_id']:
-            if key in st.session_state:
-                del st.session_state[key]
-        st.switch_page("pages/work_orders.py")
+        cancel_confirm_dialog()
 
     if submit:
         if not (address_valid and address and selected_date and

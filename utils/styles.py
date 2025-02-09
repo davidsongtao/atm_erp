@@ -197,6 +197,53 @@ def apply_global_styles():
                 border-radius: 0px !important;
             }
             
+            /* 文件上传组件的样式 */
+            .stFileUploader {
+                border-radius: 0 !important;
+            }
             
+            /* 文件上传区域的容器 */
+            .stFileUploader > div {
+                border-radius: 0 !important;
+                background-color: transparent !important;
+            }
+            
+            /* 上传后的文件显示区域 */
+            .stFileUploader > div > div {
+                border-radius: 0 !important;
+                background-color: transparent !important;
+            }
+            
+            /* 拖拽区域 */
+            [data-testid="stFileUploader"] {
+                border-radius: 0 !important;
+            }
+            
+            /* 文件上传按钮 */
+            [data-testid="stFileUploader"] button {
+                border-radius: 0 !important;
+            }
+            
+            /* 上传文件后的文件卡片 */
+            [data-testid="stFileUploadDropzone"] {
+                border-radius: 0 !important;
+                background-color: transparent !important;
+            }
+            
+            /* 文件上传区域的所有子元素 */
+            [data-testid="stFileUploader"] * {
+                border-radius: 0 !important;
+            }
+            
+            /* emotion cache 相关样式 */
+            .st-emotion-cache-1erivf3 {
+                border-radius: 0 !important;
+            }
+            
+            .st-emotion-cache-1v0mbdj {
+                border-radius: 0 !important;
+                background-color: transparent !important;
+            }
+         
         </style>
     """, unsafe_allow_html=True)
