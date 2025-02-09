@@ -184,33 +184,31 @@ def confirm_logout():
 
 def navigation():
     # 导航模块
-    # st.sidebar.title("🏠ATM Cleaning Service")
     st.sidebar.image("images/logo.png")
-    # st.sidebar.divider()
+
     if st.sidebar.button("➕创建收据", key="open_receipt_button", use_container_width=True, type="primary"):
         clear_form_state()
         st.switch_page("pages/receipt_page.py")
+
     # 自动化报价
     if st.sidebar.button("🤖智能报价", key="auto_quote_button", use_container_width=True, type="primary"):
         st.switch_page("pages/pricing_page.py")
-        # st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+
     # 工单管理
     if st.sidebar.button("🔍工单管理", key="order_management", use_container_width=True, type="primary"):
-        st.switch_page("pages/work_orders.py")  # 保洁阿姨管理
-        # st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+        st.switch_page("pages/work_orders.py")
 
     if st.sidebar.button("👩‍👩‍👧‍👦月度结算", key="staff_management_button", use_container_width=True, type="primary"):
-        # st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
         st.switch_page("pages/monthly_review.py")
 
-    # 自动化报价
-    # if st.sidebar.button("🤖智能助理", key="ai_assistant", use_container_width=True, type="primary"):
-    #     # st.switch_page("pages/auto_quote_page.py")
-    #     st.sidebar.warning("该功能正在开发中，敬请期待！", icon="⚠️")
-    # 用户管理模块
+    # 人员管理模块
     if st.sidebar.button("👥人员管理", key="user_management_button", use_container_width=True, type="primary"):
         st.switch_page("pages/staff_acc.py")
-        # st.warning("该功能正在开发中，敬请期待！", icon="⚠️")
+
+    # 仅当登录用户为connie时显示课程总结按钮
+    if st.session_state.get("logged_in_username") == "connie":
+        if st.sidebar.button("📚课程总结", key="course_summary_button", use_container_width=True, type="primary"):
+            st.switch_page("pages/zongjie.py")
 
     st.sidebar.divider()
 
@@ -221,6 +219,7 @@ def navigation():
     # 个人设置
     if st.sidebar.button("⚙️系统设置", key="system_setting_button", use_container_width=True):
         st.switch_page("pages/system_setting.py")
+
     # 退出登录模块
     if st.sidebar.button("🛏️退出登录", key="logout_button", use_container_width=True):
         confirm_logout()
@@ -320,6 +319,78 @@ def get_response(prompt, memory):
     except Exception as e:
         logger.error(f"Error in get_response: {str(e)}")
         return f"抱歉，生成回复时出现错误：{str(e)}"
+
+
+def get_response_connie(prompt, memory):
+    """
+    获取AI响应的函数
+
+    Args:
+        prompt (str): 用户输入的提示词
+        memory (ConversationBufferMemory): 对话记忆对象
+
+    Returns:
+        str: AI的响应文本
+
+    Raises:
+        Exception: 当无法获取有效响应时抛出异常
+    """
+    from langchain.chat_models import ChatOpenAI
+    from langchain.chains import ConversationChain
+    import time
+
+    # 重试参数
+    max_retries = 3
+    retry_delay = 5  # 增加重试间隔
+    last_error = None
+
+    for attempt in range(max_retries):
+        try:
+            # 确保prompt是字符串
+            if not isinstance(prompt, str):
+                prompt = str(prompt)
+
+            # 从streamlit secrets中获取API配置
+            chat_model = ChatOpenAI(
+                model="deepseek-chat",
+                openai_api_key=st.secrets["api_keys"]["openai_api_key"],
+                openai_api_base=st.secrets["api_keys"]["openai_api_base"],
+                temperature=0.7,
+                request_timeout=600  # 设置超时时间为10分钟
+            )
+
+            # 构建对话链
+            chain = ConversationChain(
+                llm=chat_model,
+                memory=memory,
+                verbose=True
+            )
+
+            # 获取响应
+            response = chain.run(prompt)
+
+            # 验证响应
+            if not response or not isinstance(response, str) or len(response.strip()) == 0:
+                raise ValueError("API返回了空响应或无效响应")
+
+            # 验证响应中是否包含必要的关键词
+            required_keywords = ["课程总结", "课后建议"]
+            if not all(keyword in response for keyword in required_keywords):
+                raise ValueError("API响应缺少必要的内容结构")
+
+            return response
+
+        except Exception as e:
+            last_error = str(e)
+            logger.error(f"API调用失败 (尝试 {attempt + 1}/{max_retries}): {last_error}")
+
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                continue
+
+            # 所有重试都失败后，抛出异常
+            raise Exception(f"多次尝试后API调用仍然失败: {last_error}")
+
 
 
 def get_active_sessions():
