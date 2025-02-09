@@ -95,18 +95,23 @@ def course_summary():
                 key='file_uploader'
             )
 
+            # 检查文件名是否重复并获取有效文件
+            valid_files = []
             if uploaded_files:
-                # 检查文件名是否重复
                 current_files = set()
-                valid_files = []
-
                 for file in uploaded_files:
                     if file.name not in current_files:
                         current_files.add(file.name)
                         valid_files.append(file)
 
-                if valid_files and st.button("开始处理", type="primary", use_container_width=True):
-                    confirm_process_dialog(valid_files)
+            # 始终显示处理按钮，但根据是否有有效文件来决定是否禁用
+            if st.button("开始处理",
+                        type="primary",
+                        use_container_width=True,
+                        disabled=len(valid_files) == 0,  # 没有有效文件时禁用按钮
+                        help="请先上传文件" if len(valid_files) == 0 else "点击开始处理"  # 根据状态显示不同的提示
+                        ):
+                confirm_process_dialog(valid_files)
 
 
 if __name__ == '__main__':

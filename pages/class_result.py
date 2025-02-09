@@ -102,6 +102,9 @@ def generate_summary(date_str, time_str, course_name, chapter_overview):
         max_retries = 3
         retry_delay = 3  # 重试延迟时间（秒）
 
+        # 创建一个可重用的警告消息占位符
+        warning_placeholder = st.empty()
+
         for attempt in range(max_retries):
             try:
                 # 调用API获取响应
@@ -110,20 +113,27 @@ def generate_summary(date_str, time_str, course_name, chapter_overview):
                     # 验证响应是否包含必要的内容
                     required_keywords = ["课程总结", "课后建议"]
                     if all(keyword in response for keyword in required_keywords):
+                        # 清除警告消息
+                        warning_placeholder.empty()
                         return response
 
                 # 如果响应不符合要求，等待后重试
                 if attempt < max_retries - 1:
-                    st.warning(f"API响应不符合要求，正在进行第{attempt + 2}次尝试...")
+                    warning_placeholder.warning(f"API响应不符合要求，正在进行第{attempt + 2}次尝试...")
                     time.sleep(retry_delay)
 
             except Exception as e:
                 if attempt < max_retries - 1:
-                    st.warning(f"DeepSeek API调用失败，该问题由近期DeepSeek所遭受的大规模网络攻击造成，与您无关。正在进行第{attempt + 2}次尝试...请耐心等待...")
+                    warning_placeholder.warning(
+                        "DeepSeek API调用失败，该问题由近期DeepSeek所遭受的大规模网络攻击造成，与您无关。"
+                        f"正在进行第{attempt + 2}次尝试...请耐心等待..."
+                    )
                     time.sleep(retry_delay)
                 else:
+                    warning_placeholder.empty()
                     raise Exception(f"多次尝试后API调用仍然失败：{str(e)}")
 
+        warning_placeholder.empty()
         raise Exception("无法获取有效的API响应")
 
     except Exception as e:
@@ -168,12 +178,22 @@ def create_summary_document(summary_text, original_filename):
 @st.dialog("确认返回")
 def confirm_return_dialog():
     """确认返回的对话框"""
-    st.warning("确定要返回吗？", icon="⚠️")
-    st.info("返回后处理好的文件将被清除，如果需要请先下载。", icon="ℹ️")
+    st.write("您确定要返回吗？返回后处理好的文件将被清除，如果需要请先下载。")
+
+    # 添加确认复选框
+    confirm_checkbox = st.checkbox(
+        "我确认不需要下载或已完成下载",
+        key="confirm_return_checkbox"
+    )
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("确认返回", type="primary", use_container_width=True):
+        if st.button(
+                "确认返回",
+                type="primary",
+                use_container_width=True,
+                disabled=not confirm_checkbox  # 如果没有勾选确认框，禁用返回按钮
+        ):
             # 清除session state中的所有相关数据
             if 'files_to_process' in st.session_state:
                 del st.session_state['files_to_process']
