@@ -196,7 +196,7 @@ def navigation():
 
     # 工单管理
     if st.sidebar.button("🔍工单管理", key="order_management", use_container_width=True, type="primary"):
-        st.switch_page("pages/work_orders.py")
+        st.switch_page("pages/orders_show.py")
 
     if st.sidebar.button("👩‍👩‍👧‍👦月度结算", key="staff_management_button", use_container_width=True, type="primary"):
         st.switch_page("pages/monthly_review.py")

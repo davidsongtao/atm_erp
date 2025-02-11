@@ -66,7 +66,7 @@ def login_page():
         st.success("您已登录，无需重新登录！", icon="👋")
         if role == "admin":
             if st.button("跳转至管理员控制台", key="admin_button", use_container_width=True):
-                st.switch_page("pages/work_orders.py")
+                st.switch_page("pages/orders_show.py")
         elif role == "customer_service":
             if st.button("跳转至客服控制台", key="customer_service_button", use_container_width=True, type="primary"):
                 st.switch_page("pages/customer_service_page.py")
@@ -100,7 +100,7 @@ def login_page():
                     set_login_state(True, role, name)
 
                     if role == "admin":
-                        st.switch_page("pages/work_orders.py")
+                        st.switch_page("pages/orders_show.py")
                     elif role == "customer_service":
                         st.switch_page("pages/customer_service_page.py")
                 elif error_message == "用户名不存在":

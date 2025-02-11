@@ -20,6 +20,69 @@ import zipfile
 from configs.log_config import *
 
 
+def get_course_type_and_student(course_name):
+    """
+    判断课程类型(班课/一对一)并获取学生姓名
+
+    Args:
+        course_name: 课程名称
+
+    Returns:
+        tuple: (is_class_course, student_name)
+        is_class_course: bool, True表示班课,False表示一对一
+        student_name: str, 一对一课程时返回学生姓名,班课时返回None
+    """
+    # 班课关键词
+    class_keywords = ["新A", "新一A", "新B", "初三"]
+
+    # 检查是否为班课
+    for keyword in class_keywords:
+        if keyword in course_name:
+            return True, None
+
+    # 检查是否包含人名(假设课程名称中包含学生全名)
+    # 移除所有空格
+    course_name = course_name.replace(" ", "")
+
+    # 常见的中文姓氏
+    common_surnames = ["张", "王", "李", "孙", "方"]
+
+    for surname in common_surnames:
+        # 查找姓氏后紧跟2个字的情况
+        name_pattern = f"{surname}[\\u4e00-\\u9fa5]{{2}}"
+        match = re.search(name_pattern, course_name)
+        if match:
+            full_name = match.group()
+            # 返回(False,学生全名)
+            return False, full_name
+
+    # 如果无法判断,默认为班课
+    return True, None
+
+
+def replace_student_references(text, is_class_course, student_name=None):
+    """
+    替换文本中的学生相关称呼
+
+    Args:
+        text: 原文本
+        is_class_course: 是否是班课
+        student_name: 学生姓名(一对一课程时使用)
+
+    Returns:
+        str: 替换后的文本
+    """
+    if is_class_course:
+        # 班课: 将"学生"替换为"同学们"
+        return text.replace("学生", "同学们")
+    else:
+        # 一对一: 将"学生"替换为学生名字的后两个字
+        if student_name and len(student_name) >= 3:
+            given_name = student_name[-2:]
+            return text.replace("学生", given_name)
+    return text
+
+
 def extract_course_info(filename):
     """从文件名中提取日期时间和课程名称"""
     try:
@@ -80,16 +143,22 @@ def extract_chapter_overview(doc_content):
 def generate_summary(date_str, time_str, course_name, chapter_overview):
     """调用API生成课程总结"""
     try:
+        # 判断课程类型
+        is_class_course, student_name = get_course_type_and_student(course_name)
+
         # 构建prompt
-        prompt = f"""你现在是一个拥有三十年教学经验的初中英语老师，你刚刚完成一节英语课的授课，以下是记录的课堂授记录：
+        course_type = "班课" if is_class_course else "一对一"
+        student_info = "" if is_class_course else f"\n学生姓名：{student_name}"
+
+        prompt = f"""你现在是一个拥有三十年教学经验的初中英语老师，你刚刚完成一节英语{course_type}的授课，以下是记录的课堂授课记录：
 
 时间：{date_str} {time_str}
-名称：{course_name}
+名称：{course_name}{student_info}
 
 课章节速览：
 {chapter_overview}
 
-请帮我进行润色，丰富内容，按照指定格式撰写一篇专业的课堂总结。总结包括两部分主要内容：课程概述/对学生课下学习的建议。请按照1234等要点对课堂概述进行提炼。主要总结课堂上讲授了什么知识，其他无关紧要的不要总结。
+请帮我进行润色，丰富内容，按照指定格式撰写一篇专业的课堂总结。总结包括两部分主要内容：课程概述/对学生课下学习的建议。请按照1234等要点对课堂概述进行提炼。主要总结课堂上讲授了什么知识，其他无关紧要的不要总结。课后建议部分保持精炼，最多生成3条课后建议。
 
 总结不要分太多级。指定格式：
 授课时间：{date_str}
@@ -100,9 +169,8 @@ def generate_summary(date_str, time_str, course_name, chapter_overview):
         # 创建对话记忆对象
         memory = ConversationBufferMemory()
         max_retries = 3
-        retry_delay = 3  # 重试延迟时间（秒）
+        retry_delay = 3
 
-        # 创建一个可重用的警告消息占位符
         warning_placeholder = st.empty()
 
         for attempt in range(max_retries):
@@ -115,9 +183,10 @@ def generate_summary(date_str, time_str, course_name, chapter_overview):
                     if all(keyword in response for keyword in required_keywords):
                         # 清除警告消息
                         warning_placeholder.empty()
+                        # 根据课程类型替换学生称呼
+                        response = replace_student_references(response, is_class_course, student_name)
                         return response
 
-                # 如果响应不符合要求，等待后重试
                 if attempt < max_retries - 1:
                     warning_placeholder.warning(f"API响应不符合要求，正在进行第{attempt + 2}次尝试...")
                     time.sleep(retry_delay)
