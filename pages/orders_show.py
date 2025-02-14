@@ -523,7 +523,7 @@ def work_order_statistics():
         st.divider()
 
         # 获取初始数据
-        default_time_range = st.session_state.get('time_range', 'year')
+        default_time_range = st.session_state.get('time_range', 'month')
         orders_df, error = get_work_orders(default_time_range)
 
         if error:
