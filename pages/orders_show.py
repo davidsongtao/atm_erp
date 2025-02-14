@@ -81,25 +81,6 @@ def select_and_delete_order_dialog():
                 st.rerun()
 
 
-def generate_time_options():
-    """生成时间选项列表，每15分钟一个间隔，从早上6点开始"""
-    time_options = []
-
-    # 上午时间选项 (6:00 - 11:45)
-    for hour in range(6, 12):
-        for minute in range(0, 60, 15):
-            time_str = f"上午 {hour:02d}:{minute:02d}"
-            time_options.append(time_str)
-
-    # 下午时间选项 (12:00 - 21:45)
-    for hour in range(12, 22):
-        for minute in range(0, 60, 15):
-            time_str = f"下午 {hour:02d}:{minute:02d}"
-            time_options.append(time_str)
-
-    return time_options
-
-
 def init_session_state():
     """初始化session state变量"""
     if 'needs_reset' not in st.session_state:
@@ -297,14 +278,14 @@ def show_work_orders_table(df):
 
     # 移除所有数值列中的'None'字符串
     for col in ['income1', 'income2', 'subsidy', 'total_amount']:
-        display_df[col] = display_df[col].replace({'None': '', 'nan': '', '0': ''})
+        display_df[col] = display_df[col].replace({'None': '0', 'nan': '', '0': ''})
         display_df[col] = display_df[col].apply(lambda x: '' if x in [None, 'None', 'nan', '0', 0] else x)
 
-    # 处理发票状态显示
+    # 修改发票状态显示函数
     def get_invoice_status_display(row):
-        if row['paperwork'] == 0:  # 需要开发票
-            return '已开发票' if row['invoice_sent'] else '未开发票'
-        return '-'  # 不需要开发票或需要开收据
+        if row['paperwork'] == 0 and row['invoice_sent']:  # 只有当需要开发票且已开时显示
+            return '已开发票'
+        return '-'  # 其他情况都显示空白
 
     display_df['invoice_status'] = filtered_df.apply(get_invoice_status_display, axis=1)
 
@@ -405,9 +386,9 @@ def show_work_orders_table(df):
         "invoice_status": st.column_config.SelectboxColumn(
             "发票",
             width="small",
-            options=['已开发票', '未开发票', '-'],
+            options=['已开发票', ''],  # 只提供"已开发票"和空白两个选项
             help="需要开发票时可修改状态"
-        ),
+    ),
         "created_by": st.column_config.SelectboxColumn(
             "创建人",
             width="small",

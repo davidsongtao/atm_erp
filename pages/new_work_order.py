@@ -15,22 +15,6 @@ from utils.styles import apply_global_styles
 from utils.validator import get_validator
 
 
-def generate_time_options():
-    """生成时间选项列表，每15分钟一个间隔"""
-    time_options = []
-    # 上午时间选项 (8:00 - 11:45)
-    for hour in range(8, 12):
-        for minute in range(0, 60, 15):
-            time_str = f"上午 {hour:02d}:{minute:02d}"
-            time_options.append(time_str)
-    # 下午时间选项 (12:00 - 21:45)
-    for hour in range(12, 22):
-        for minute in range(0, 60, 15):
-            time_str = f"下午 {hour:02d}:{minute:02d}"
-            time_options.append(time_str)
-    return time_options
-
-
 def handle_custom_items():
     """处理自定义项目的添加和删除"""
     # 添加自定义 CSS 来隐藏特定文本输入框的标签
@@ -94,6 +78,22 @@ def get_users():
     return []
 
 
+def generate_time_options():
+    """生成时间选项列表，每15分钟一个间隔，从上午6点开始"""
+    time_options = []
+    # 上午时间选项 (6:00 - 11:45)
+    for hour in range(6, 12):
+        for minute in range(0, 60, 15):
+            time_str = f"上午 {hour:02d}:{minute:02d}"
+            time_options.append(time_str)
+    # 下午时间选项 (12:00 - 21:45)
+    for hour in range(12, 22):
+        for minute in range(0, 60, 15):
+            time_str = f"下午 {hour:02d}:{minute:02d}"
+            time_options.append(time_str)
+    return time_options
+
+
 async def create_work_order_page():
     """创建新工单页面"""
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
@@ -118,20 +118,17 @@ async def create_work_order_page():
                 "登记日期",
                 value=date.today(),
                 help="创建工单的日期",
-                disabled=True
+                disabled=False
             )
 
         with col2:
-            # 可选的工作日期
             work_date = st.date_input(
                 "保洁日期",
                 value=None,
-                help="实际上门服务的日期（可选）",
-                min_value=date.today()
+                help="实际上门服务的日期（可选）"
             )
 
         with col3:
-            # 可选的工作时间
             work_time = st.selectbox(
                 "保洁时间",
                 options=[""] + generate_time_options(),
@@ -140,7 +137,7 @@ async def create_work_order_page():
             )
 
         # 分配信息
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             # 获取所有用户列表
             users = get_users()
@@ -155,6 +152,23 @@ async def create_work_order_page():
 
         with col2:
             source = st.text_input("工单来源", placeholder="请输入客户来源")
+
+        with col3:
+            # 获取所有活跃的保洁组
+            conn = connect_db()
+            cleaner_options = [""] + conn.query("""
+                SELECT team_name
+                FROM clean_teams
+                WHERE team_name != '暂未派单' AND is_active = 1
+                ORDER BY team_name
+            """, ttl=0)['team_name'].tolist()
+
+            assigned_cleaner = st.selectbox(
+                "保洁小组",
+                options=cleaner_options,
+                index=0,
+                help="选择保洁小组（可选）"
+            )
 
         # 地址信息处理
         work_address = st.text_input(
@@ -355,10 +369,9 @@ async def create_work_order_page():
         with col1:
             paperwork = st.selectbox(
                 "开票方式",
-                options=[0, 1],
-                format_func=lambda x: "开发票" if x == 0 else "开收据",
-                index=None,
-                placeholder="请选择...",
+                options=[None, 0, 1],
+                format_func=lambda x: "请选择..." if x is None else "开发票" if x == 0 else "开收据",
+                index=0,
                 help="选择开具发票或收据（可选）",
                 key="paperwork_type"
             )
@@ -398,23 +411,34 @@ async def create_work_order_page():
                 st.warning("请确认工单信息无误，并勾选确认按钮！", icon="⚠️")
             elif not work_address.strip():
                 st.error("工作地址不能为空！", icon="⚠️")
-            elif not address_valid:
-                st.error("请先验证地址的正确性！", icon="⚠️")
             else:
                 # 设置支付方式和订单金额
-                payment_method = None
-                order_amount = 0.0
-                total_amount = 0.0
-
-                if income1 > 0:
+                if income1 == 0 and income2 == 0:
+                    # 两个收入都为0
+                    payment_method = 'blank'
+                    order_amount = 0
+                    total_amount = 0
+                elif income1 > 0 and income2 == 0:
+                    # 只有现金收入
                     payment_method = 'cash'
                     order_amount = income1
                     total_amount = income1
-                elif income2 > 0:
+                elif income1 == 0 and income2 > 0:
+                    # 只有转账收入
                     payment_method = 'transfer'
-                    order_amount = income2 / 1.1  # 去除GST
-                    total_amount = income2
+                    order_amount = income2
+                    total_amount = round(income2 * 1.1, 2)  # 加上10% GST
+                else:
+                    # 同时有现金和转账收入
+                    payment_method = 'both'
+                    order_amount = income1 + income2
+                    total_amount = income1 + round(income2 * 1.1, 2)  # 现金 + (转账 + GST)
 
+                # 修改后的代码:
+                final_assigned_cleaner = (
+                    assigned_cleaner if assigned_cleaner
+                    else "暂未派单"  # 如果没有选择保洁组，设置为"暂未派单"
+                )
                 success, error = create_work_order(
                     order_date=order_date,
                     work_date=work_date if work_date else None,
@@ -422,18 +446,12 @@ async def create_work_order_page():
                     created_by=created_by,
                     source=source,
                     work_address=work_address,
-                    room_type=room_type,
-                    assigned_cleaner=assigned_cleaner,
+                    assigned_cleaner="暂未派单" if not assigned_cleaner else assigned_cleaner,
                     payment_method=payment_method,
                     order_amount=order_amount,
                     total_amount=total_amount,
                     subsidy=subsidy if subsidy > 0 else None,
                     remarks=remarks,
-                    basic_service=basic_services,
-                    rooms=room_services,
-                    electricals=electrical_services,
-                    other_services=other_services,
-                    custom_item=custom_item,
                     paperwork=paperwork,
                     invoice_sent=invoice_sent if paperwork == 0 else False,
                     receipt_sent=receipt_sent if paperwork == 1 else False
