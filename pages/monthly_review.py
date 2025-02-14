@@ -99,26 +99,32 @@ def show_team_monthly_stats(team, selected_year, selected_month):
     # 新的计算逻辑：保洁组总收入 = 收入1*0.7 + 补贴 + 收入2*0.7
     team_total_income = income1 * 0.7 + subsidy + income2 * 0.7
 
-    # 保洁组应缴和ATM待支付的计算保持不变
+    # 保洁组待缴计算
     team_payment = income1 * 0.3 - subsidy
-    atm_pending = income2 * 0.7
+
+    # 处理负数情况
+    if team_payment < 0:
+        atm_pending = income2 * 0.7 + abs(team_payment)
+        team_payment = 0
+    else:
+        atm_pending = income2 * 0.7
 
     # 显示统计信息
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("收入1合计", f"${income1:.2f}", help="统计月所有现金收入工单总金额")
+        st.metric("收入1合计", f"${income1:.2f}", help="统计月所有工单收入1总金额")
     with col2:
-        st.metric("收入2合计", f"${income2:.2f}", help="统计月所有转账收入工单总金额")
+        st.metric("收入2合计", f"${income2:.2f}", help="统计月所有工单收入2总金额")
     with col3:
-        st.metric("补贴总额", f"${subsidy:.2f}", help="统计月补贴总金额")
+        st.metric("补贴总额", f"${subsidy:.2f}", help="统计月所有补贴总金额")
 
     col4, col5, col6 = st.columns(3)
     with col4:
         st.metric("保洁组总佣金", f"${team_total_income:.2f}", help="计算公式：收入1 × 70% + 补贴 + 收入2 × 70%")
     with col5:
-        st.metric("保洁组待缴", f"${team_payment:.2f}", help="计算公式：现金收入 × 30% - 补贴")
+        st.metric("保洁组待缴", f"${team_payment:.2f}", help="计算公式：收入1 × 30% - 补贴")
     with col6:
-        st.metric("ATM待付保洁组", f"${atm_pending:.2f}", help="计算公式：转账收入 × 70%")
+        st.metric("ATM待付保洁组", f"${atm_pending:.2f}", help="计算公式：收入2 × 70%")
 
     # 创建包含统计信息的CSV字符串
     csv_data = display_df.to_csv(index=False)
@@ -127,8 +133,8 @@ def show_team_monthly_stats(team, selected_year, selected_month):
     csv_data += f"转账收入,${income2:.2f}\n"
     csv_data += f"补贴总额,${subsidy:.2f}\n"
     csv_data += f"保洁组总收入,${team_total_income:.2f}\n"
-    csv_data += f"保洁组应缴,${team_payment:.2f}\n"
-    csv_data += f"ATM待支付,${atm_pending:.2f}\n"
+    csv_data += f"保洁组待缴,${team_payment:.2f}\n"
+    csv_data += f"ATM待付保洁组,${atm_pending:.2f}\n"
 
     # 添加月度报表下载按钮
     st.download_button(
