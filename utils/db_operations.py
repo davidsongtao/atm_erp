@@ -211,66 +211,35 @@ def delete_account(username):
 
 
 def create_work_order(
-    order_date, created_by, source, work_address,
-    room_type=None, work_date=None, work_time=None,
-    assigned_cleaner="暂未派单", payment_method=None,
-    order_amount=0, total_amount=0, subsidy=None,
-    remarks=None, basic_service=None, rooms=None,
-    electricals=None, other_services=None, custom_item=None,
-    paperwork=None, invoice_sent=False, receipt_sent=False
+        order_date, created_by, source, work_address,
+        income1=0, income2=0,  # 修改为收入1和收入2参数
+        work_date=None, work_time=None,
+        assigned_cleaner="暂未派单",
+        subsidy=None, remarks=None,
+        paperwork=None, invoice_sent=False, receipt_sent=False
 ):
-    """创建新工单
-    Args:
-        order_date: 创建日期
-        created_by: 创建人
-        source: 来源
-        work_address: 工作地址
-        room_type: 房型
-        work_date: 保洁日期（可选）
-        work_time: 保洁时间（可选）
-        assigned_cleaner: 保洁小组（可选）
-        payment_method: 支付方式（可选）
-        order_amount: 订单金额（可选）
-        total_amount: 总金额（可选）
-        subsidy: 补贴金额（可选）
-        remarks: 备注（可选）
-        basic_service: 基础服务列表（可选）
-        rooms: 房间服务列表（可选）
-        electricals: 电器服务列表（可选）
-        other_services: 其他服务列表（可选）
-        custom_item: 自定义项目列表（可选）
-        paperwork: 开票方式（可选）
-        invoice_sent: 发票状态（可选）
-        receipt_sent: 收据状态（可选）
-    Returns:
-        tuple: (success, error_message)
-    """
+    """创建新工单"""
     try:
+        # 计算订单金额和总金额
+        order_amount, total_amount, payment_method = calculate_order_amounts(
+            income1, income2, assigned_cleaner
+        )
+
         conn = connect_db()
-
-        # 将列表转换为字符串存储
-        basic_service_str = "|".join(basic_service) if basic_service else ""
-        rooms_str = "|".join(rooms) if rooms else ""
-        electricals_str = "|".join(electricals) if electricals else ""
-        other_services_str = "|".join(other_services) if other_services else ""
-        custom_items_str = "|".join(custom_item) if custom_item else ""
-
         with conn.session as session:
             session.execute(
                 text("""
                 INSERT INTO work_orders (
                     order_date, work_date, work_time, created_by, source,
-                    work_address, room_type, assigned_cleaner, payment_method,
-                    order_amount, total_amount, subsidy, remarks, basic_service,
-                    rooms, electricals, other_services, custom_item, paperwork,
-                    invoice_sent, receipt_sent
+                    work_address, assigned_cleaner, payment_method,
+                    order_amount, total_amount, subsidy, remarks,
+                    paperwork, invoice_sent, receipt_sent
                 )
                 VALUES (
                     :order_date, :work_date, :work_time, :created_by, :source,
-                    :work_address, :room_type, :assigned_cleaner, :payment_method,
-                    :order_amount, :total_amount, :subsidy, :remarks, :basic_service,
-                    :rooms, :electricals, :other_services, :custom_item, :paperwork,
-                    :invoice_sent, :receipt_sent
+                    :work_address, :assigned_cleaner, :payment_method,
+                    :order_amount, :total_amount, :subsidy, :remarks,
+                    :paperwork, :invoice_sent, :receipt_sent
                 )
                 """),
                 params={
@@ -280,18 +249,12 @@ def create_work_order(
                     'created_by': created_by,
                     'source': source,
                     'work_address': work_address,
-                    'room_type': room_type,
                     'assigned_cleaner': assigned_cleaner,
                     'payment_method': payment_method,
                     'order_amount': order_amount,
                     'total_amount': total_amount,
                     'subsidy': subsidy,
                     'remarks': remarks,
-                    'basic_service': basic_service_str,
-                    'rooms': rooms_str,
-                    'electricals': electricals_str,
-                    'other_services': other_services_str,
-                    'custom_item': custom_items_str,
                     'paperwork': paperwork,
                     'invoice_sent': invoice_sent,
                     'receipt_sent': receipt_sent
@@ -303,6 +266,49 @@ def create_work_order(
         return True, None
     except Exception as e:
         logger.error(f"创建工单失败：{e}")
+        return False, str(e)
+
+
+def update_work_order_amounts(order_id: int, income1: float, income2: float):
+    """更新工单金额信息"""
+    try:
+        conn = connect_db()
+
+        # 获取工单信息
+        order_info = conn.query(
+            "SELECT assigned_cleaner FROM work_orders WHERE id = :order_id",
+            params={'order_id': order_id},
+            ttl=0
+        ).iloc[0]
+
+        # 计算新的金额
+        order_amount, total_amount, payment_method = calculate_order_amounts(
+            income1, income2, order_info['assigned_cleaner']
+        )
+
+        # 更新工单
+        with conn.session as session:
+            session.execute(
+                text("""
+                    UPDATE work_orders 
+                    SET order_amount = :order_amount,
+                        total_amount = :total_amount,
+                        payment_method = :payment_method
+                    WHERE id = :order_id
+                """),
+                params={
+                    'order_id': order_id,
+                    'order_amount': order_amount,
+                    'total_amount': total_amount,
+                    'payment_method': payment_method
+                }
+            )
+            session.commit()
+
+        return True, None
+
+    except Exception as e:
+        logger.error(f"更新工单金额失败：{e}")
         return False, str(e)
 
 
@@ -369,15 +375,10 @@ def get_work_orders_by_date_range(start_date, end_date):
 
 
 def get_all_clean_teams():
-    """获取所有保洁组信息
-
-    Returns:
-        tuple: (DataFrame or None, error_message)
-    """
+    """获取所有保洁组信息,包含ABN状态"""
     try:
         conn = connect_db()
 
-        # 使用 conn.query 替代 read_sql，同时修改SQL查询
         df = conn.query("""
             SELECT 
                 id, 
@@ -387,13 +388,14 @@ def get_all_clean_teams():
                     WHEN is_active = 1 THEN '在职'
                     ELSE '离职'
                 END AS '是否在职',
+                has_abn,  -- 直接获取has_abn列
                 notes AS '备注',
                 created_at AS '创建时间',
                 updated_at AS '更新时间'
             FROM clean_teams 
             WHERE team_name != '暂未派单'
             ORDER BY is_active DESC, team_name ASC
-        """, ttl=0)  # 禁用缓存
+        """, ttl=0)
 
         return df, None
 
@@ -402,7 +404,8 @@ def get_all_clean_teams():
         return None, str(e)
 
 
-def create_clean_team(team_name: str, contact_number: str, notes: str = None) -> tuple[bool, str]:
+def create_clean_team(team_name: str, contact_number: str, has_abn: bool = False, notes: str = None) -> tuple[bool, str]:
+    """创建新保洁组"""
     try:
         conn = connect_db()
 
@@ -420,12 +423,13 @@ def create_clean_team(team_name: str, contact_number: str, notes: str = None) ->
         with conn.session as session:
             session.execute(
                 text("""
-                INSERT INTO clean_teams (team_name, contact_number, notes)
-                VALUES (:team_name, :contact_number, :notes)
+                INSERT INTO clean_teams (team_name, contact_number, has_abn, notes)
+                VALUES (:team_name, :contact_number, :has_abn, :notes)
                 """),
                 params={
                     'team_name': team_name,
                     'contact_number': contact_number,
+                    'has_abn': 1 if has_abn else 0,  # 转换为整数
                     'notes': notes
                 }
             )
@@ -437,19 +441,127 @@ def create_clean_team(team_name: str, contact_number: str, notes: str = None) ->
         return False, str(e)
 
 
-def update_clean_team(team_id: int, team_name: str, contact_number: str, is_active: bool = True, notes: str = None) -> tuple[bool, str]:
-    """更新保洁组信息
+def calculate_total_amount(order_amount: float, payment_method: str, has_abn: bool) -> float:
+    """计算订单总金额（含GST）"""
+    if not order_amount or payment_method == 'blank':
+        return 0
+
+    if payment_method == 'cash':
+        return order_amount
+
+    if has_abn:
+        return order_amount
+
+    # 对于没有ABN的保洁组，转账部分需要加上GST
+    if payment_method == 'transfer':
+        return round(order_amount * 1.1, 2)
+
+    if payment_method == 'both':
+        # 假设order_amount已经是现金和转账的总和
+        # 需要将转账部分加上GST
+        # 这里需要从原始的income1和income2重新计算
+        raise ValueError("both类型的支付需要提供现金和转账的具体金额")
+
+    return order_amount  # 默认返回原始金额
+
+
+def calculate_order_amounts(income1: float, income2: float, assigned_cleaner: str) -> tuple[float, float, str]:
+    """
+    计算订单金额、总金额和支付方式
 
     Args:
-        team_id (int): 保洁组ID
-        team_name (str): 保洁组名称
-        contact_number (str): 联系电话
-        is_active (bool): 是否在职
-        notes (str, optional): 备注信息
+        income1: 现金收入
+        income2: 转账收入
+        assigned_cleaner: 保洁组名称
 
     Returns:
-        tuple[bool, str]: (是否成功, 错误信息)
+        tuple: (order_amount, total_amount, payment_method)
     """
+    try:
+        conn = connect_db()
+
+        # 获取保洁组的ABN状态
+        has_abn = False
+        if assigned_cleaner and assigned_cleaner != "暂未派单":
+            result = conn.query(
+                "SELECT has_abn FROM clean_teams WHERE team_name = :team_name",
+                params={'team_name': assigned_cleaner},
+                ttl=0
+            )
+            if not result.empty:
+                has_abn = bool(result.iloc[0]['has_abn'])
+
+        # 根据不同情况计算金额
+        if income1 == 0 and income2 == 0:
+            return 0, 0, 'blank'
+
+        if income1 > 0 and income2 == 0:
+            return income1, income1, 'cash'
+
+        if income1 == 0 and income2 > 0:
+            if has_abn:
+                return income2, income2, 'transfer'
+            else:
+                return income2, round(income2 * 1.1, 2), 'transfer'
+
+        if income1 > 0 and income2 > 0:
+            if has_abn:
+                order_amount = income1 + income2
+                return order_amount, order_amount, 'both'
+            else:
+                order_amount = income1 + income2
+                total_amount = income1 + round(income2 * 1.1, 2)
+                return order_amount, total_amount, 'both'
+
+        return 0, 0, 'blank'
+
+    except Exception as e:
+        logger.error(f"计算订单金额失败：{e}")
+        raise e
+
+
+def update_orders_for_team(session, team_name: str, has_abn: bool):
+    """更新指定保洁组的所有工单金额"""
+    try:
+        # 获取该保洁组的所有工单
+        orders = session.execute(
+            text("""
+                SELECT id, payment_method, order_amount
+                FROM work_orders
+                WHERE assigned_cleaner = :team_name
+                AND payment_method IN ('transfer', 'both')
+            """),
+            {'team_name': team_name}
+        ).fetchall()
+
+        for order in orders:
+            total_amount = order.order_amount
+            if not has_abn and order.payment_method in ('transfer', 'both'):
+                # 如果保洁组未注册ABN，需要加上GST
+                total_amount = calculate_total_amount(
+                    order.order_amount,
+                    order.payment_method,
+                    False  # has_abn为False
+                )
+
+            session.execute(
+                text("""
+                    UPDATE work_orders
+                    SET total_amount = :total_amount
+                    WHERE id = :order_id
+                """),
+                {
+                    'total_amount': total_amount,
+                    'order_id': order.id
+                }
+            )
+
+    except Exception as e:
+        logger.error(f"更新工单金额失败：{e}")
+        raise e
+
+
+def update_clean_team(team_id: int, team_name: str, contact_number: str, has_abn: bool, is_active: bool = True, notes: str = None) -> tuple[bool, str]:
     try:
         conn = connect_db()
 
@@ -469,6 +581,13 @@ def update_clean_team(team_id: int, team_name: str, contact_number: str, is_acti
         if not check_result.empty:
             return False, "保洁组名称已存在"
 
+        # 获取旧的ABN状态
+        old_abn_status = conn.query(
+            "SELECT has_abn FROM clean_teams WHERE id = :team_id",
+            params={'team_id': team_id},
+            ttl=0
+        ).iloc[0]['has_abn']
+
         # 更新保洁组信息
         with conn.session as session:
             session.execute(
@@ -476,6 +595,7 @@ def update_clean_team(team_id: int, team_name: str, contact_number: str, is_acti
                 UPDATE clean_teams 
                 SET team_name = :team_name,
                     contact_number = :contact_number,
+                    has_abn = :has_abn,
                     is_active = :is_active,
                     notes = :notes,
                     updated_at = NOW()
@@ -484,11 +604,17 @@ def update_clean_team(team_id: int, team_name: str, contact_number: str, is_acti
                 params={
                     'team_name': team_name,
                     'contact_number': contact_number,
-                    'is_active': is_active,
+                    'has_abn': 1 if has_abn else 0,  # 转换为整数
+                    'is_active': 1 if is_active else 0,  # 转换为整数
                     'notes': notes,
                     'team_id': team_id
                 }
             )
+
+            # 如果ABN状态发生变化，更新相关工单的total_amount
+            if old_abn_status != has_abn:
+                update_orders_for_team(session, team_name, has_abn)
+
             session.commit()
 
         return True, ""
@@ -737,8 +863,6 @@ def delete_work_order(order_id: int) -> tuple[bool, str]:
 
 def update_work_order(data):
     """更新工单信息
-    如果清除了保洁日期、时间、保洁小组中的任何一个，
-    其他相关字段也会被一起清除
 
     Args:
         data (dict): 工单更新数据
@@ -747,26 +871,6 @@ def update_work_order(data):
     """
     try:
         conn = connect_db()
-
-        # 检查是否涉及清除保洁相关信息
-        cleaning_fields = {'work_date', 'work_time', 'assigned_cleaner'}
-        updated_fields = set(data.keys()) & cleaning_fields
-
-        if updated_fields:
-            # 检查是否有任何一个字段被清空
-            has_empty = any(
-                data.get(field, '') == '' or data.get(field) is None
-                for field in updated_fields
-            )
-
-            # 如果有任何一个字段被清空，就清空所有相关字段
-            if has_empty:
-                data['work_date'] = None
-                data['work_time'] = None
-                data['assigned_cleaner'] = '暂未派单'
-                # 同时重置清洁状态
-                data['cleaning_status'] = 0
-                data['cleaning_completed_at'] = None
 
         # 构建 UPDATE 语句
         update_fields = []
@@ -780,7 +884,7 @@ def update_work_order(data):
                         update_fields.append(f"{key} = NULL")
                         continue
 
-                # 其他字段的正常处理
+                # 常规字段处理
                 update_fields.append(f"{key} = :{key}")
                 params[key] = value
 
@@ -1174,3 +1278,346 @@ def delete_order_image(image_id):
     except Exception as e:
         logger.error(f"删除工单图片失败: {e}")
         return False
+
+
+def handle_order_amounts(income1: float, income2: float, assigned_cleaner: str) -> dict:
+    """
+    处理工单金额逻辑
+
+    Args:
+        income1: 现金收入
+        income2: 转账收入
+        assigned_cleaner: 保洁组名称
+
+    Returns:
+        dict: 包含order_amount, total_amount和payment_method的字典
+    """
+    try:
+        # 先获取保洁组的ABN状态
+        conn = connect_db()
+        has_abn = False
+
+        if assigned_cleaner and assigned_cleaner != "暂未派单":
+            result = conn.query(
+                "SELECT has_abn FROM clean_teams WHERE team_name = :team_name",
+                params={'team_name': assigned_cleaner},
+                ttl=0
+            )
+            if not result.empty:
+                has_abn = bool(result.iloc[0]['has_abn'])
+
+        # 处理不同的收入情况
+        order_amount = 0
+        total_amount = 0
+        payment_method = 'blank'
+
+        if income1 == 0 and income2 == 0:
+            return {
+                'order_amount': 0,
+                'total_amount': 0,
+                'payment_method': 'blank'
+            }
+
+        if income1 > 0 and income2 == 0:
+            # 只有现金收入
+            return {
+                'order_amount': income1,
+                'total_amount': income1,
+                'payment_method': 'cash'
+            }
+
+        if income1 == 0 and income2 > 0:
+            # 只有转账收入
+            if has_abn:
+                # 有ABN，不需要加GST
+                return {
+                    'order_amount': income2,
+                    'total_amount': income2,
+                    'payment_method': 'transfer'
+                }
+            else:
+                # 无ABN，需要加GST
+                return {
+                    'order_amount': income2,
+                    'total_amount': round(income2 * 1.1, 2),
+                    'payment_method': 'transfer'
+                }
+
+        if income1 > 0 and income2 > 0:
+            # 同时有现金和转账收入
+            if has_abn:
+                # 有ABN，直接相加
+                order_amount = income1 + income2
+                return {
+                    'order_amount': order_amount,
+                    'total_amount': order_amount,
+                    'payment_method': 'both'
+                }
+            else:
+                # 无ABN，转账部分需要加GST
+                order_amount = income1 + income2
+                total_amount = income1 + round(income2 * 1.1, 2)
+                return {
+                    'order_amount': order_amount,
+                    'total_amount': total_amount,
+                    'payment_method': 'both'
+                }
+
+    except Exception as e:
+        logger.error(f"处理工单金额失败：{e}")
+        raise e
+
+
+def update_order_total_amount(order_id: int):
+    """
+    更新工单的total_amount
+    当保洁组的ABN状态改变时调用此函数
+    """
+    try:
+        conn = connect_db()
+
+        # 获取工单信息
+        order_info = conn.query("""
+            SELECT wo.id, wo.order_amount, wo.payment_method, 
+                   wo.assigned_cleaner, ct.has_abn
+            FROM work_orders wo
+            LEFT JOIN clean_teams ct ON wo.assigned_cleaner = ct.team_name
+            WHERE wo.id = :order_id
+        """, params={'order_id': order_id}, ttl=0).iloc[0]
+
+        # 如果是转账或混合支付，且保洁组没有ABN，需要计算GST
+        if order_info['payment_method'] in ('transfer', 'both') and not order_info['has_abn']:
+            total_amount = round(order_info['order_amount'] * 1.1, 2)
+        else:
+            total_amount = order_info['order_amount']
+
+        # 更新工单
+        with conn.session as session:
+            session.execute(
+                text("""
+                    UPDATE work_orders 
+                    SET total_amount = :total_amount
+                    WHERE id = :order_id
+                """),
+                {
+                    'order_id': order_id,
+                    'total_amount': total_amount
+                }
+            )
+            session.commit()
+
+        return True, None
+
+    except Exception as e:
+        logger.error(f"更新工单总金额失败：{e}")
+        return False, str(e)
+
+
+def extract_income_values(payment_method: str, order_amount: float) -> tuple[float, float]:
+    """
+    从支付方式和订单金额中提取现金和转账收入
+    """
+    if payment_method == 'cash':
+        return order_amount, 0
+    elif payment_method == 'transfer':
+        return 0, order_amount
+    elif payment_method == 'both':
+        # 这里需要从数据库中获取原始的income1和income2
+        # 暂时简单处理，假设对半分（实际应该从数据库获取原始值）
+        return order_amount / 2, order_amount / 2
+    else:
+        return 0, 0
+
+
+def get_income_values(order_id: int, conn) -> tuple[float, float]:
+    """
+    从数据库获取工单的收入信息
+    """
+    try:
+        result = conn.query("""
+            SELECT payment_method, order_amount
+            FROM work_orders 
+            WHERE id = :order_id
+        """, params={'order_id': order_id}, ttl=0)
+
+        if result.empty:
+            return 0, 0
+
+        payment_method = result.iloc[0]['payment_method']
+        order_amount = float(result.iloc[0]['order_amount'] or 0)
+
+        if payment_method == 'cash':
+            return order_amount, 0
+        elif payment_method == 'transfer':
+            return 0, order_amount
+        elif payment_method == 'both':
+            # 由于both类型的收入已经合并，这里需要获取原始的income1和income2
+            income_result = conn.query("""
+                SELECT income1, income2
+                FROM work_orders 
+                WHERE id = :order_id
+            """, params={'order_id': order_id}, ttl=0)
+
+            if not income_result.empty:
+                income1 = float(income_result.iloc[0].get('income1', 0) or 0)
+                income2 = float(income_result.iloc[0].get('income2', 0) or 0)
+                return income1, income2
+
+            # 如果无法获取具体值，假设平分
+            return order_amount / 2, order_amount / 2
+
+        return 0, 0
+
+    except Exception as e:
+        logger.error(f"获取收入信息失败：{e}")
+        return 0, 0
+
+
+def get_payment_info(order_id: int, conn) -> tuple[float, float, str]:
+    """
+    从数据库获取工单的支付信息
+    """
+    try:
+        result = conn.query("""
+            SELECT payment_method, order_amount
+            FROM work_orders 
+            WHERE id = :order_id
+        """, params={'order_id': order_id}, ttl=0)
+
+        if result.empty:
+            return 0, 0, 'blank'
+
+        payment_method = result.iloc[0]['payment_method']
+        order_amount = float(result.iloc[0]['order_amount'] or 0)
+
+        if payment_method == 'cash':
+            return order_amount, 0, payment_method
+        elif payment_method == 'transfer':
+            return 0, order_amount, payment_method
+        elif payment_method == 'both':
+            # 如果是both类型，假设现金和转账各占一半
+            # 实际应用中可能需要更复杂的逻辑
+            half_amount = order_amount / 2
+            return half_amount, half_amount, payment_method
+
+        return 0, 0, 'blank'
+
+    except Exception as e:
+        logger.error(f"获取支付信息失败：{e}")
+        return 0, 0, 'blank'
+
+
+def get_payment_info(order_id: int, conn) -> tuple[float, float, str]:
+    """
+    从数据库获取工单的支付信息
+    """
+    try:
+        result = conn.query("""
+            SELECT payment_method, order_amount
+            FROM work_orders 
+            WHERE id = :order_id
+        """, params={'order_id': order_id}, ttl=0)
+
+        if result.empty:
+            return 0, 0, 'blank'
+
+        payment_method = result.iloc[0]['payment_method']
+        order_amount = float(result.iloc[0]['order_amount'] or 0)
+
+        if payment_method == 'cash':
+            return order_amount, 0, payment_method
+        elif payment_method == 'transfer':
+            return 0, order_amount, payment_method
+        elif payment_method == 'both':
+            # 如果是both类型，假设现金和转账各占一半
+            # 实际应用中可能需要更复杂的逻辑
+            half_amount = order_amount / 2
+            return half_amount, half_amount, payment_method
+
+        return 0, 0, 'blank'
+
+    except Exception as e:
+        logger.error(f"获取支付信息失败：{e}")
+        return 0, 0, 'blank'
+
+
+def update_order_amounts_for_cleaner_change(order_id: int, new_cleaner: str) -> tuple[bool, str]:
+    """
+    当保洁组变更时重新计算订单金额
+
+    Args:
+        order_id: 工单ID
+        new_cleaner: 新的保洁组名称（空值时会设为"暂未派单"）
+    """
+    try:
+        conn = connect_db()
+
+        # 处理空值情况
+        if not new_cleaner or new_cleaner.strip() == '':
+            new_cleaner = "暂未派单"
+
+        # 获取原始支付数据
+        cash_amount, transfer_amount, current_payment_method = get_payment_info(order_id, conn)
+
+        # 获取保洁组的ABN状态
+        has_abn = False
+        if new_cleaner != "暂未派单":
+            result = conn.query(
+                "SELECT has_abn FROM clean_teams WHERE team_name = :team_name",
+                params={'team_name': new_cleaner},
+                ttl=0
+            )
+            if not result.empty:
+                has_abn = bool(result.iloc[0]['has_abn'])
+
+        # 计算新的金额
+        if cash_amount == 0 and transfer_amount == 0:
+            order_amount = 0
+            total_amount = 0
+            payment_method = 'blank'
+        elif cash_amount > 0 and transfer_amount == 0:
+            order_amount = cash_amount
+            total_amount = cash_amount
+            payment_method = 'cash'
+        elif cash_amount == 0 and transfer_amount > 0:
+            order_amount = transfer_amount
+            if has_abn:
+                total_amount = transfer_amount  # 有ABN时不加GST
+            else:
+                total_amount = round(transfer_amount * 1.1, 2)  # 无ABN时加10% GST
+            payment_method = 'transfer'
+        else:  # cash_amount > 0 and transfer_amount > 0
+            order_amount = cash_amount + transfer_amount
+            if has_abn:
+                total_amount = order_amount  # 有ABN时不加GST
+            else:
+                total_amount = cash_amount + round(transfer_amount * 1.1, 2)  # 只对转账部分加GST
+            payment_method = 'both'
+
+        # 更新工单
+        with conn.session as session:
+            session.execute(
+                text("""
+                    UPDATE work_orders 
+                    SET assigned_cleaner = :assigned_cleaner,
+                        order_amount = :order_amount,
+                        total_amount = :total_amount,
+                        payment_method = :payment_method,
+                        updated_at = NOW()
+                    WHERE id = :order_id
+                """),
+                {
+                    'order_id': order_id,
+                    'assigned_cleaner': new_cleaner,
+                    'order_amount': order_amount,
+                    'total_amount': total_amount,
+                    'payment_method': payment_method
+                }
+            )
+            session.commit()
+
+        return True, None
+
+    except Exception as e:
+        logger.error(f"更新工单金额失败：{e}")
+        return False, str(e)

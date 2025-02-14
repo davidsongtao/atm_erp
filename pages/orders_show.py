@@ -2,7 +2,7 @@ import time
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_work_order, connect_db, delete_work_order
+from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_work_order, connect_db, delete_work_order, update_order_amounts_for_cleaner_change, extract_income_values
 from utils.utils import navigation, check_login_state
 from utils.styles import apply_global_styles
 
@@ -209,8 +209,15 @@ def show_work_orders_table(df):
     # 将所有的 NaN 和 None 值替换为空字符串
     filtered_df = filtered_df.fillna('')
 
-    # 按日期升序排序
-    filtered_df = filtered_df.sort_values(by='work_date', ascending=True)
+    # 正确处理日期排序：保持work_date为日期类型，将空值替换为NaT
+    filtered_df['work_date'] = pd.to_datetime(filtered_df['work_date'], errors='coerce')
+
+    # 按日期升序排序，将NaT值排在最后
+    filtered_df = filtered_df.sort_values(
+        by='work_date',
+        ascending=True,
+        na_position='last'  # 将NaT值排在最后
+    )
 
     # 获取当前可用的保洁小组选项
     conn = connect_db()
@@ -336,7 +343,7 @@ def show_work_orders_table(df):
             disabled=False,
             max_chars=200,
             help="点击单元格编辑地址",
-            width="small"
+            width="medium"
         ),
         "assigned_cleaner": st.column_config.SelectboxColumn(
             "保洁员",
@@ -388,7 +395,7 @@ def show_work_orders_table(df):
             width="small",
             options=['已开发票', ''],  # 只提供"已开发票"和空白两个选项
             help="需要开发票时可修改状态"
-    ),
+        ),
         "created_by": st.column_config.SelectboxColumn(
             "创建人",
             width="small",
@@ -454,6 +461,7 @@ def show_work_orders_table(df):
             has_changes = False
             update_data = {'id': order_id}
 
+            # 处理所有变更的列
             for col in changed_columns:
                 # 处理空值比较
                 original_value = str(original_row[col]) if pd.notna(original_row[col]) else ''
@@ -461,40 +469,52 @@ def show_work_orders_table(df):
 
                 # 对于数值型列的特殊处理
                 if col in ['income1', 'income2', 'subsidy']:
-                    # 转换空字符串为0
                     original_num = float(original_value) if original_value.strip() != '' else 0
                     new_num = float(new_value) if new_value.strip() != '' else 0
 
-                    if abs(original_num - new_num) > 0.01:  # 使用小数比较
+                    if abs(original_num - new_num) > 0.01:
                         has_changes = True
-                        # 特殊处理收入字段
-                        if col in ['income1', 'income2'] and new_num > 0:
-                            if col == 'income1':
-                                update_data['payment_method'] = 'cash'
-                                update_data['order_amount'] = new_num
-                                update_data['total_amount'] = new_num
-                            else:
-                                update_data['payment_method'] = 'transfer'
-                                base_amount = new_num  # 这里是不含GST的金额
-                                update_data['order_amount'] = base_amount
-                                update_data['total_amount'] = round(base_amount * 1.1, 2)  # 加上10% GST
+                        if col in ['income1', 'income2']:
+                            # 获取当前的保洁组
+                            current_cleaner = filtered_df_reset.loc[idx, 'assigned_cleaner']
+                            # 更新金额和支付方式
+                            success, error = update_order_amounts_for_cleaner_change(
+                                order_id,
+                                current_cleaner,
+                                float(edited_df_reset.loc[idx, 'income1'] or 0),
+                                float(edited_df_reset.loc[idx, 'income2'] or 0)
+                            )
+                            if not success:
+                                st.error(f"更新金额失败: {error}")
                         else:
                             update_data[col] = new_num
 
-                # 特殊处理发票状态
-                elif col == 'invoice_status':
-                    if filtered_df_reset.loc[idx, 'paperwork'] == 0:
-                        new_status = (new_value == '已开发票')
-                        if new_status != (original_value == '已开发票'):
-                            has_changes = True
-                            update_data['invoice_sent'] = new_status
+                # 处理特殊列
+                elif col == 'assigned_cleaner':
+                    if original_value != new_value:
+                        has_changes = True
+                        # 处理空值情况
+                        new_cleaner = new_value if new_value and new_value.strip() else "暂未派单"
+                        # 更新保洁组并重新计算金额
+                        success, error = update_order_amounts_for_cleaner_change(order_id, new_cleaner)
+                        if not success:
+                            st.error(f"更新保洁组失败: {error}")
+                            continue
+
+                # 处理日期和时间字段
+                elif col in ['work_date', 'work_time']:
+                    if original_value != new_value:
+                        has_changes = True
+                        update_data[col] = new_value if new_value.strip() else None
+
                 # 处理其他列
-                elif original_value != new_value:
-                    has_changes = True
-                    update_data[col] = new_value
+                else:
+                    if original_value != new_value:
+                        has_changes = True
+                        update_data[col] = new_value
 
             # 只有在有实际变化时才更新
-            if has_changes:
+            if has_changes and len(update_data) > 1:  # 大于1是因为update_data总是包含id
                 success, error = update_work_order(update_data)
                 if success:
                     st.success(f"工单信息已成功更新", icon="✅")

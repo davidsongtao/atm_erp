@@ -412,33 +412,6 @@ async def create_work_order_page():
             elif not work_address.strip():
                 st.error("工作地址不能为空！", icon="⚠️")
             else:
-                # 设置支付方式和订单金额
-                if income1 == 0 and income2 == 0:
-                    # 两个收入都为0
-                    payment_method = 'blank'
-                    order_amount = 0
-                    total_amount = 0
-                elif income1 > 0 and income2 == 0:
-                    # 只有现金收入
-                    payment_method = 'cash'
-                    order_amount = income1
-                    total_amount = income1
-                elif income1 == 0 and income2 > 0:
-                    # 只有转账收入
-                    payment_method = 'transfer'
-                    order_amount = income2
-                    total_amount = round(income2 * 1.1, 2)  # 加上10% GST
-                else:
-                    # 同时有现金和转账收入
-                    payment_method = 'both'
-                    order_amount = income1 + income2
-                    total_amount = income1 + round(income2 * 1.1, 2)  # 现金 + (转账 + GST)
-
-                # 修改后的代码:
-                final_assigned_cleaner = (
-                    assigned_cleaner if assigned_cleaner
-                    else "暂未派单"  # 如果没有选择保洁组，设置为"暂未派单"
-                )
                 success, error = create_work_order(
                     order_date=order_date,
                     work_date=work_date if work_date else None,
@@ -446,10 +419,9 @@ async def create_work_order_page():
                     created_by=created_by,
                     source=source,
                     work_address=work_address,
-                    assigned_cleaner="暂未派单" if not assigned_cleaner else assigned_cleaner,
-                    payment_method=payment_method,
-                    order_amount=order_amount,
-                    total_amount=total_amount,
+                    assigned_cleaner=assigned_cleaner if assigned_cleaner else "暂未派单",
+                    income1=income1,  # 现金收入
+                    income2=income2,  # 转账收入
                     subsidy=subsidy if subsidy > 0 else None,
                     remarks=remarks,
                     paperwork=paperwork,

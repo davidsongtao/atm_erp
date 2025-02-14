@@ -132,7 +132,8 @@ def show_clean_team_update_dialog():
 
         with st.form("update_clean_team_form", border=False):
             team_name = st.text_input("保洁组名称", value=selected_team_data['保洁组名称'])
-            contact_number = st.text_input("联系电话", value=selected_team_data['联系电话'])
+            contact_number = st.text_input("联系电话（选填）", value=selected_team_data['联系电话'])
+            has_abn = st.checkbox("是否注册ABN", value=bool(selected_team_data.get('has_abn', False)))
             is_active = st.checkbox("是否在职", value=True if selected_team_data['是否在职'] == '在职' else False)
             notes = st.text_area("备注", value=selected_team_data['备注'] if pd.notna(selected_team_data['备注']) else "")
 
@@ -148,12 +149,17 @@ def show_clean_team_update_dialog():
                     st.rerun()
 
             if submitted:
-                if not all([team_name, contact_number]):
-                    st.error("请填写所有必填信息！", icon="⚠️")
+                if not team_name:
+                    st.error("请填写保洁组名称！", icon="⚠️")
                     return
 
                 success, error = update_clean_team(
-                    selected_team_data['id'], team_name, contact_number, is_active, notes
+                    selected_team_data['id'],
+                    team_name,
+                    contact_number or "",  # 如果为空则传入空字符串
+                    has_abn,
+                    is_active,
+                    notes
                 )
 
                 if success:
@@ -167,7 +173,6 @@ def show_clean_team_update_dialog():
 @st.dialog("创建新保洁组")
 def show_clean_team_creation_dialog():
     """创建保洁组的对话框"""
-    # 添加自定义CSS去除dialog边框
     st.markdown("""
         <style>
             .stDialog > div {
@@ -184,7 +189,8 @@ def show_clean_team_creation_dialog():
 
     with st.form("create_clean_team_form", border=False):
         team_name = st.text_input("保洁组名称", placeholder="请输入保洁组名称")
-        contact_number = st.text_input("联系电话", placeholder="请输入联系电话")
+        contact_number = st.text_input("联系电话（选填）", placeholder="请输入联系电话")
+        has_abn = st.checkbox("是否注册ABN", value=False)
         notes = st.text_area("备注", placeholder="请输入备注信息（选填）")
 
         col1, col2 = st.columns(2)
@@ -201,7 +207,8 @@ def show_clean_team_creation_dialog():
 
             success, error = create_clean_team(
                 team_name=team_name,
-                contact_number=contact_number or "",  # 如果contact_number为空，传入空字符串
+                contact_number=contact_number or "",  # 如果为空则传入空字符串
+                has_abn=has_abn,
                 notes=notes
             )
 
@@ -339,14 +346,22 @@ def show_monthly_settlement():
 
 
 def show_clean_teams_table(clean_teams_data):
-    """显示保洁组列表，隐藏指定列"""
+    """显示保洁组列表，包含ABN状态"""
     # 需要显示的列
     display_columns = [
-        '保洁组名称', '联系电话', '是否在职', '备注'
+        '保洁组名称', '联系电话', '是否在职', '是否注册ABN', '备注'
     ]
 
+    # 准备显示数据
+    display_df = clean_teams_data.copy()
+
+    # 添加ABN状态列
+    display_df['是否注册ABN'] = display_df['has_abn'].apply(
+        lambda x: '已注册' if x == 1 else '未注册'
+    )
+
     # 筛选需要显示的列
-    filtered_data = clean_teams_data[display_columns]
+    filtered_data = display_df[display_columns]
 
     # 显示处理后的数据
     st.dataframe(
