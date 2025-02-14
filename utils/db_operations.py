@@ -535,14 +535,21 @@ def update_orders_for_team(session, team_name: str, has_abn: bool):
         ).fetchall()
 
         for order in orders:
-            total_amount = order.order_amount
+            # 确保转换为浮点数
+            order_amount = float(order.order_amount or 0)
+            total_amount = order_amount
+
+            # 如果未注册ABN且付款方式为转账或混合，需要加GST
             if not has_abn and order.payment_method in ('transfer', 'both'):
-                # 如果保洁组未注册ABN，需要加上GST
-                total_amount = calculate_total_amount(
-                    order.order_amount,
-                    order.payment_method,
-                    False  # has_abn为False
-                )
+                # 对于转账或混合付款方式，加10% GST
+                if order.payment_method == 'transfer':
+                    total_amount = round(order_amount * 1.1, 2)
+                elif order.payment_method == 'both':
+                    # 假设 order_amount 已经包含现金部分
+                    # 只对转账部分加GST
+                    cash_part = order_amount / 2  # 简单地平分
+                    transfer_part = order_amount / 2
+                    total_amount = cash_part + round(transfer_part * 1.1, 2)
 
             session.execute(
                 text("""
@@ -604,15 +611,15 @@ def update_clean_team(team_id: int, team_name: str, contact_number: str, has_abn
                 params={
                     'team_name': team_name,
                     'contact_number': contact_number,
-                    'has_abn': 1 if has_abn else 0,  # 转换为整数
-                    'is_active': 1 if is_active else 0,  # 转换为整数
+                    'has_abn': 1 if has_abn else 0,  # 确保转换为整数
+                    'is_active': 1 if is_active else 0,  # 确保转换为整数
                     'notes': notes,
                     'team_id': team_id
                 }
             )
 
             # 如果ABN状态发生变化，更新相关工单的total_amount
-            if old_abn_status != has_abn:
+            if old_abn_status != (1 if has_abn else 0):
                 update_orders_for_team(session, team_name, has_abn)
 
             session.commit()
