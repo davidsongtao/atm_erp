@@ -209,7 +209,7 @@ def show_work_orders_table(df):
     # 将所有的 NaN 和 None 值替换为空字符串
     filtered_df = filtered_df.fillna('')
 
-    # 正确处理日期排序：保持work_date为日期类型，将空值替换为NaT
+    # 处理日期排序：保持work_date为日期类型，将空值替换为NaT
     filtered_df['work_date'] = pd.to_datetime(filtered_df['work_date'], errors='coerce')
 
     # 按日期升序排序，将NaT值排在最后
@@ -442,6 +442,8 @@ def show_work_orders_table(df):
 
     # 检测并处理数据更改
     if not pre_edit_df.equals(edited_df):
+        needs_refresh = False  # 添加标志来追踪是否需要刷新页面数据
+
         # 找出实际发生变化的列
         changed_columns = []
         for col in edited_df.columns:
@@ -457,71 +459,51 @@ def show_work_orders_table(df):
             order_id = filtered_df_reset.loc[idx, 'id']
             original_row = pre_edit_df.iloc[idx]
 
-            # 检查这一行是否有实际变化
+            # 检查是否有变化
             has_changes = False
             update_data = {'id': order_id}
 
-            # 处理所有变更的列
+            # 处理特殊列
+            if 'assigned_cleaner' in changed_columns and original_row['assigned_cleaner'] != row['assigned_cleaner']:
+                has_changes = True
+                new_cleaner = row['assigned_cleaner'] if row['assigned_cleaner'].strip() else "暂未派单"
+                success, error = update_order_amounts_for_cleaner_change(order_id, new_cleaner)
+                if success:
+                    st.success(f"工单信息已成功更新", icon="✅")
+                    needs_refresh = True  # 标记需要刷新
+                    time.sleep(1)
+                else:
+                    st.error(f"更新保洁组失败: {error}")
+                continue
+
+            # 处理其他列的变更
             for col in changed_columns:
-                # 处理空值比较
+                if col == 'assigned_cleaner':
+                    continue  # 已经处理过了
+
                 original_value = str(original_row[col]) if pd.notna(original_row[col]) else ''
                 new_value = str(row[col]) if pd.notna(row[col]) else ''
 
-                # 对于数值型列的特殊处理
-                if col in ['income1', 'income2', 'subsidy']:
-                    original_num = float(original_value) if original_value.strip() != '' else 0
-                    new_num = float(new_value) if new_value.strip() != '' else 0
-
-                    if abs(original_num - new_num) > 0.01:
-                        has_changes = True
-                        if col in ['income1', 'income2']:
-                            # 获取当前的保洁组
-                            current_cleaner = filtered_df_reset.loc[idx, 'assigned_cleaner']
-                            # 更新金额和支付方式
-                            success, error = update_order_amounts_for_cleaner_change(
-                                order_id,
-                                current_cleaner,
-                                float(edited_df_reset.loc[idx, 'income1'] or 0),
-                                float(edited_df_reset.loc[idx, 'income2'] or 0)
-                            )
-                            if not success:
-                                st.error(f"更新金额失败: {error}")
-                        else:
-                            update_data[col] = new_num
-
-                # 处理特殊列
-                elif col == 'assigned_cleaner':
-                    if original_value != new_value:
-                        has_changes = True
-                        # 处理空值情况
-                        new_cleaner = new_value if new_value and new_value.strip() else "暂未派单"
-                        # 更新保洁组并重新计算金额
-                        success, error = update_order_amounts_for_cleaner_change(order_id, new_cleaner)
-                        if not success:
-                            st.error(f"更新保洁组失败: {error}")
-                            continue
-
-                # 处理日期和时间字段
-                elif col in ['work_date', 'work_time']:
-                    if original_value != new_value:
-                        has_changes = True
+                if original_value != new_value:
+                    has_changes = True
+                    if col in ['work_date', 'work_time']:
                         update_data[col] = new_value if new_value.strip() else None
-
-                # 处理其他列
-                else:
-                    if original_value != new_value:
-                        has_changes = True
+                    else:
                         update_data[col] = new_value
 
-            # 只有在有实际变化时才更新
-            if has_changes and len(update_data) > 1:  # 大于1是因为update_data总是包含id
+            # 只有在有其他实际变化时才更新
+            if has_changes and len(update_data) > 1:
                 success, error = update_work_order(update_data)
                 if success:
                     st.success(f"工单信息已成功更新", icon="✅")
-                    st.session_state.table_updated = True
+                    needs_refresh = True  # 标记需要刷新
                     time.sleep(1)
                 else:
                     st.error(f"更新工单失败: {error}")
+
+        # 如果有任何更新，重新加载数据
+        if needs_refresh:
+            st.rerun()  # 强制页面重新加载
 
     return edited_df
 
@@ -567,12 +549,6 @@ def work_order_statistics():
         if orders_df is not None and not orders_df.empty:
             # 显示工单详情
             edited_df = show_work_orders_table(orders_df)
-
-            # 检查是否发生了更新
-            if 'table_updated' in st.session_state and st.session_state.table_updated:
-                # 清除更新标志
-                st.session_state.table_updated = False
-                st.rerun()
         else:
             st.info("暂无工单数据")
 
