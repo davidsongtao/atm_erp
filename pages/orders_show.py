@@ -82,11 +82,11 @@ def select_and_delete_order_dialog():
 
 
 def generate_time_options():
-    """生成时间选项列表，每15分钟一个间隔"""
+    """生成时间选项列表，每15分钟一个间隔，从早上6点开始"""
     time_options = []
 
-    # 上午时间选项 (8:00 - 11:45)
-    for hour in range(8, 12):
+    # 上午时间选项 (6:00 - 11:45)
+    for hour in range(6, 12):
         for minute in range(0, 60, 15):
             time_str = f"上午 {hour:02d}:{minute:02d}"
             time_options.append(time_str)
@@ -105,12 +105,13 @@ def init_session_state():
     if 'needs_reset' not in st.session_state:
         st.session_state.needs_reset = False
 
-    # 强制设置默认时间范围为本月
-    st.session_state.time_range = 'month'
+    # 只在首次加载时设置默认值
+    if 'default_time_range' not in st.session_state:
+        st.session_state.default_time_range = 'month'
 
     if st.session_state.needs_reset:
-        if 'time_range' in st.session_state:
-            del st.session_state.time_range
+        # 不直接修改 time_range，而是设置一个标记
+        st.session_state.default_time_range = 'month'
         if 'cleaner_filter' in st.session_state:
             del st.session_state.cleaner_filter
         if 'creator_filter' in st.session_state:
@@ -135,10 +136,25 @@ def show_filters(df=None):
     # 第一行筛选条件
     col1, col2, col3, col4 = st.columns(4)
 
+    # 处理清空筛选条件
+    def clear_filters():
+        # 直接设置时间范围为本月
+        st.session_state.time_range = 'month'
+        # 删除其他筛选条件
+        if 'cleaner_filter' in st.session_state:
+            del st.session_state['cleaner_filter']
+        if 'creator_filter' in st.session_state:
+            del st.session_state['creator_filter']
+        if 'invoice_status_filter' in st.session_state:
+            del st.session_state['invoice_status_filter']
+        return True
+
     with col1:
+        options = ["year", "quarter", "month", "week", "day"]
+        default_index = options.index('month')
         time_range = st.selectbox(
             "时间范围",
-            options=["year", "quarter", "month", "week", "day"],
+            options=options,
             format_func=lambda x: {
                 "day": "今日",
                 "week": "本周",
@@ -146,7 +162,8 @@ def show_filters(df=None):
                 "quarter": "本季度",
                 "year": "今年"
             }[x],
-            key='time_range'
+            key='time_range',
+            index=default_index
         )
 
     with col2:
@@ -156,16 +173,6 @@ def show_filters(df=None):
                 cleaner for cleaner in df['assigned_cleaner'].unique()
                 if cleaner != '暂未派单' and pd.notna(cleaner)
             ])
-
-        # 仅在选项发生变化时更新 session state
-        if 'cleaner_filter' not in st.session_state:
-            st.session_state.cleaner_filter = []
-
-        # 验证现有的过滤器值是否在选项中
-        st.session_state.cleaner_filter = [
-            x for x in st.session_state.cleaner_filter
-            if x in cleaner_options
-        ]
 
         cleaner_filter = st.multiselect(
             "保洁小组",
@@ -178,16 +185,6 @@ def show_filters(df=None):
         creator_options = []
         if df is not None and not df.empty:
             creator_options = sorted(df['created_by'].unique().tolist())
-
-        # 仅在选项发生变化时更新 session state
-        if 'creator_filter' not in st.session_state:
-            st.session_state.creator_filter = []
-
-        # 验证现有的过滤器值是否在选项中
-        st.session_state.creator_filter = [
-            x for x in st.session_state.creator_filter
-            if x in creator_options
-        ]
 
         creator_filter = st.multiselect(
             "创建人",
@@ -206,8 +203,7 @@ def show_filters(df=None):
         )
 
     # 清空筛选按钮
-    if st.button("清空筛选条件", type="primary"):
-        st.session_state.needs_reset = True
+    if st.button("清空筛选条件", type="primary", on_click=clear_filters):
         st.rerun()
 
     # 操作按钮
@@ -232,6 +228,9 @@ def show_work_orders_table(df):
     # 将所有的 NaN 和 None 值替换为空字符串
     filtered_df = filtered_df.fillna('')
 
+    # 按日期升序排序
+    filtered_df = filtered_df.sort_values(by='work_date', ascending=True)
+
     # 获取当前可用的保洁小组选项
     conn = connect_db()
     cleaner_options = conn.query("""
@@ -252,11 +251,14 @@ def show_work_orders_table(df):
 
     # 处理收入1和收入2
     def calculate_income(row):
-        if row['payment_method'] == 'cash':
-            return str(row['order_amount']) if row['order_amount'] != 0 else "", ""
-        elif row['payment_method'] == 'transfer':
-            return "", str(row['total_amount']) if row['total_amount'] != 0 else ""
-        return "", ""
+        income1 = ""
+        income2 = ""
+        if pd.notna(row['payment_method']):
+            if row['payment_method'] == 'cash' and row['order_amount'] != 0:
+                income1 = str(row['order_amount'])
+            elif row['payment_method'] == 'transfer' and row['order_amount'] != 0:
+                income2 = str(row['order_amount'])
+        return income1, income2
 
     # 应用过滤器
     cleaner_filter = st.session_state.get('cleaner_filter', [])
@@ -290,11 +292,11 @@ def show_work_orders_table(df):
     for col in ['subsidy', 'order_amount', 'total_amount']:
         display_df[col] = display_df[col].apply(lambda x: "" if pd.isna(x) or x == 0 else str(x))
 
-    # 添加收入1和收入2列
+    # 添加收入1、收入2和总金额列
     display_df[['income1', 'income2']] = display_df.apply(calculate_income, axis=1, result_type='expand')
 
     # 移除所有数值列中的'None'字符串
-    for col in ['income1', 'income2', 'subsidy']:
+    for col in ['income1', 'income2', 'subsidy', 'total_amount']:
         display_df[col] = display_df[col].replace({'None': '', 'nan': '', '0': ''})
         display_df[col] = display_df[col].apply(lambda x: '' if x in [None, 'None', 'nan', '0', 0] else x)
 
@@ -312,20 +314,21 @@ def show_work_orders_table(df):
         'work_time',  # 保洁时间
         'work_address',  # 工作地址
         'assigned_cleaner',  # 保洁小组
+        'total_amount',  # 总金额
         'income1',  # 收入1（现金）
         'income2',  # 收入2（转账）
+        'remarks',  # 备注
         'subsidy',  # 补贴
-        'invoice_status',  # 发票状态
         'created_by',  # 创建人
         'source',  # 来源
-        'remarks'  # 备注
+        'invoice_status',  # 发票状态
     ]
 
     display_df = display_df[columns_to_display].copy()
 
-    # 生成时间选项
+    # 生成时间选项 (6:00 - 21:45)
     time_options = []
-    for hour in range(8, 22):
+    for hour in range(6, 22):
         for minute in range(0, 60, 15):
             period = "上午" if hour < 12 else "下午"
             time_str = f"{period} {hour:02d}:{minute:02d}"
@@ -334,31 +337,41 @@ def show_work_orders_table(df):
     # 设置列的编辑配置
     column_config = {
         "work_date": st.column_config.DateColumn(
-            "保洁日期",
+            "日期",
             format="YYYY-MM-DD",
             width="small",
-            min_value=datetime(2020, 1, 1),  # 设置最小日期
-            max_value=datetime(2030, 12, 31),  # 设置最大日期
-            default=None,  # 允许空值
-            required=False,  # 设置为非必填
+            min_value=datetime(2020, 1, 1),
+            max_value=datetime(2030, 12, 31),
+            default=None,
+            required=False,
         ),
         "work_time": st.column_config.SelectboxColumn(
-            "保洁时间",
+            "时间",
             width="small",
             options=[""] + time_options,
         ),
         "work_address": st.column_config.TextColumn(
-            "工作地址",
+            "地址",
             disabled=False,
             max_chars=200,
             help="点击单元格编辑地址",
             width="small"
         ),
         "assigned_cleaner": st.column_config.SelectboxColumn(
-            "保洁小组",
+            "保洁员",
             width="small",
             options=cleaner_options,
             required=False,
+        ),
+        "total_amount": st.column_config.NumberColumn(
+            "总金额",
+            help="订单总金额(含GST)",
+            format="%.2f",
+            width="small",
+            min_value=0,
+            step=0.01,
+            default=None,
+            required=False
         ),
         "income1": st.column_config.NumberColumn(
             "收入1",
@@ -381,7 +394,7 @@ def show_work_orders_table(df):
             required=False
         ),
         "subsidy": st.column_config.NumberColumn(
-            "补贴金额",
+            "补贴",
             format="%.2f",
             width="small",
             min_value=0,
@@ -390,7 +403,7 @@ def show_work_orders_table(df):
             required=False
         ),
         "invoice_status": st.column_config.SelectboxColumn(
-            "发票状态",
+            "发票",
             width="small",
             options=['已开发票', '未开发票', '-'],
             help="需要开发票时可修改状态"
@@ -424,6 +437,9 @@ def show_work_orders_table(df):
     # 保存编辑前的数据副本，用于比较
     pre_edit_df = display_df.copy()
 
+    # 计算合适的表格高度：每行35像素 + 表头40像素
+    table_height = len(display_df) * 35 + 40
+
     # 使用 st.data_editor 显示可编辑的数据表格
     edited_df = st.data_editor(
         display_df,
@@ -431,7 +447,9 @@ def show_work_orders_table(df):
         hide_index=True,
         use_container_width=True,
         key="orders_table",
-        disabled=editor_disabled
+        disabled=editor_disabled,
+        num_rows="fixed",
+        height=table_height  # 根据实际数据行数设置高度
     )
 
     # 检测并处理数据更改
@@ -476,9 +494,9 @@ def show_work_orders_table(df):
                                 update_data['total_amount'] = new_num
                             else:
                                 update_data['payment_method'] = 'transfer'
-                                base_amount = new_num / 1.1  # 去除10% GST
+                                base_amount = new_num  # 这里是不含GST的金额
                                 update_data['order_amount'] = base_amount
-                                update_data['total_amount'] = new_num
+                                update_data['total_amount'] = round(base_amount * 1.1, 2)  # 加上10% GST
                         else:
                             update_data[col] = new_num
 

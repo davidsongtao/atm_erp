@@ -195,13 +195,13 @@ def show_clean_team_creation_dialog():
                 st.rerun()
 
         if submitted:
-            if not all([team_name, contact_number]):
-                st.error("请填写所有必填信息！", icon="⚠️")
+            if not team_name:
+                st.error("请填写保洁组名称！", icon="⚠️")
                 return
 
             success, error = create_clean_team(
                 team_name=team_name,
-                contact_number=contact_number,
+                contact_number=contact_number or "",  # 如果contact_number为空，传入空字符串
                 notes=notes
             )
 
