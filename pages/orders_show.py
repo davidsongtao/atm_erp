@@ -105,6 +105,9 @@ def init_session_state():
     if 'needs_reset' not in st.session_state:
         st.session_state.needs_reset = False
 
+    # 强制设置默认时间范围为本月
+    st.session_state.time_range = 'month'
+
     if st.session_state.needs_reset:
         if 'time_range' in st.session_state:
             del st.session_state.time_range
