@@ -2,18 +2,109 @@ import time
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_work_order
+from utils.db_operations import get_work_orders, get_work_orders_by_date_range, update_work_order, connect_db, delete_work_order
 from utils.utils import navigation, check_login_state
 from utils.styles import apply_global_styles
 
 
+@st.dialog("删除工单")
+def select_and_delete_order_dialog():
+    """选择并删除工单的对话框"""
+    # 获取所有工单
+    orders_df, error = get_work_orders('year')  # 默认显示本年的工单
+
+    if error:
+        st.error(f"获取工单列表失败：{error}")
+        return
+
+    if orders_df is None or orders_df.empty:
+        st.info("暂无可删除的工单")
+        return
+
+    # 创建工单选择列表
+    order_options = []
+    order_map = {}  # 用于存储地址到工单ID的映射
+
+    for _, order in orders_df.iterrows():
+        # 创建显示文本，包含地址和日期
+        display_text = f"{order['work_address']} ({order['order_date'].strftime('%Y-%m-%d')})"
+        order_options.append(display_text)
+        order_map[display_text] = order
+
+    # 工单选择下拉框
+    selected_order_text = st.selectbox(
+        "选择要删除的工单",
+        options=order_options,
+        format_func=lambda x: x,
+        index=None,
+        placeholder="请选择要删除的工单..."
+    )
+
+    if selected_order_text:
+        selected_order = order_map[selected_order_text]
+
+        # 显示选中工单的详细信息
+        st.write(f"📍 工作地址：{selected_order['work_address']}")
+        st.write(f"📅 创建日期：{selected_order['order_date'].strftime('%Y-%m-%d')}")
+        if selected_order['assigned_cleaner'] != '暂未派单':
+            st.write(f"👷 保洁小组：{selected_order['assigned_cleaner']}")
+        if selected_order['work_date'] is not None:
+            st.write(f"🕒 保洁时间：{selected_order['work_date'].strftime('%Y-%m-%d')} {selected_order['work_time']}")
+
+        st.warning("确定要删除此工单吗？此操作不可恢复！", icon="⚠️")
+
+        # 确认复选框
+        confirm_checkbox = st.checkbox(
+            "我已了解删除操作不可恢复，并确认删除此工单！",
+            key=f"confirm_delete_checkbox_{selected_order['id']}"
+        )
+
+        # 操作按钮
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button(
+                    "确认删除",
+                    use_container_width=True,
+                    type="primary",
+                    disabled=not confirm_checkbox
+            ):
+                success, error = delete_work_order(selected_order['id'])
+                if success:
+                    st.success("工单已成功删除！", icon="✅")
+                    time.sleep(2)
+                    st.rerun()
+                else:
+                    st.error(f"删除失败：{error}", icon="⚠️")
+
+        with col2:
+            if st.button("取消", use_container_width=True):
+                st.rerun()
+
+
+def generate_time_options():
+    """生成时间选项列表，每15分钟一个间隔"""
+    time_options = []
+
+    # 上午时间选项 (8:00 - 11:45)
+    for hour in range(8, 12):
+        for minute in range(0, 60, 15):
+            time_str = f"上午 {hour:02d}:{minute:02d}"
+            time_options.append(time_str)
+
+    # 下午时间选项 (12:00 - 21:45)
+    for hour in range(12, 22):
+        for minute in range(0, 60, 15):
+            time_str = f"下午 {hour:02d}:{minute:02d}"
+            time_options.append(time_str)
+
+    return time_options
+
+
 def init_session_state():
     """初始化session state变量"""
-    # 初始化重置标志
     if 'needs_reset' not in st.session_state:
         st.session_state.needs_reset = False
 
-    # 如果需要重置，设置所有值为默认值
     if st.session_state.needs_reset:
         if 'time_range' in st.session_state:
             del st.session_state.time_range
@@ -39,7 +130,7 @@ def get_status_display(value, is_required):
 def show_filters(df=None):
     """显示筛选条件，即使没有数据也显示基本的筛选选项"""
     # 第一行筛选条件
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         time_range = st.selectbox(
@@ -52,12 +143,10 @@ def show_filters(df=None):
                 "quarter": "本季度",
                 "year": "今年"
             }[x],
-            key='time_range',
-            index=0  # 设置默认选项为第一个（即"year"）
+            key='time_range'
         )
 
     with col2:
-        # 如果有数据，显示保洁员选项，否则显示空列表
         cleaner_options = []
         if df is not None and not df.empty:
             cleaner_options = sorted([
@@ -65,225 +154,272 @@ def show_filters(df=None):
                 if cleaner != '暂未派单' and pd.notna(cleaner)
             ])
 
+        # 仅在选项发生变化时更新 session state
+        if 'cleaner_filter' not in st.session_state:
+            st.session_state.cleaner_filter = []
+
+        # 验证现有的过滤器值是否在选项中
+        st.session_state.cleaner_filter = [
+            x for x in st.session_state.cleaner_filter
+            if x in cleaner_options
+        ]
+
         cleaner_filter = st.multiselect(
-            "保洁小组筛选",
+            "保洁小组",
             options=cleaner_options,
-            default=[],
-            key='cleaner_filter'
+            key='cleaner_filter',
+            placeholder="请选择..."
         )
 
     with col3:
-        # 如果有数据，显示创建人选项，否则显示空列表
         creator_options = []
         if df is not None and not df.empty:
             creator_options = sorted(df['created_by'].unique().tolist())
 
-        creator_filter = st.multiselect(
-            "创建人筛选",
-            options=creator_options,
-            default=[],
-            key='creator_filter'
-        )
+        # 仅在选项发生变化时更新 session state
+        if 'creator_filter' not in st.session_state:
+            st.session_state.creator_filter = []
 
-    # 第二行筛选条件
-    col4, col5, col6 = st.columns(3)
+        # 验证现有的过滤器值是否在选项中
+        st.session_state.creator_filter = [
+            x for x in st.session_state.creator_filter
+            if x in creator_options
+        ]
+
+        creator_filter = st.multiselect(
+            "创建人",
+            options=creator_options,
+            key='creator_filter',
+            placeholder="请选择..."
+        )
 
     with col4:
-        payment_status_filter = st.selectbox(
-            "收款状态",
-            options=["全部", "已收款", "未收款"],
-            key='payment_status_filter'
+        invoice_status = st.selectbox(
+            "发票状态",
+            options=["未开发票", "已开发票"],
+            key='invoice_status_filter',
+            index=None,
+            placeholder="请选择..."
         )
 
-    with col5:
-        invoice_status_filter = st.selectbox(
-            "开票状态",
-            options=["全部", "已开票", "未开票"],
-            key='invoice_status_filter'
-        )
-
-    with col6:
-        receipt_status_filter = st.selectbox(
-            "收据状态",
-            options=["全部", "已开收据", "未开收据"],
-            key='receipt_status_filter'
-        )
-
-    # 创建一个清空按钮，放在所有筛选条件下方
+    # 清空筛选按钮
     if st.button("清空筛选条件", type="primary"):
         st.session_state.needs_reset = True
         st.rerun()
+
+    # 操作按钮
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        if st.button("新建工单", use_container_width=True, type="primary"):
+            st.switch_page("pages/new_work_order.py")
+    with col2:
+        if st.button("删除工单", use_container_width=True, type="primary"):
+            select_and_delete_order_dialog()
+    with col3:
+        if st.button("月度结算", use_container_width=True, type="primary"):
+            st.switch_page("pages/monthly_review.py")
 
     return time_range
 
 
 def show_work_orders_table(df):
     """显示工单详情表格"""
-    # 预处理数据类型
     filtered_df = df.copy()
 
-    # 保存原始数据的副本，用于检测更改
-    original_df = filtered_df.copy()
+    # 将所有的 NaN 和 None 值替换为空字符串
+    filtered_df = filtered_df.fillna('')
 
-    # 将paperwork转换为整数类型
-    filtered_df['paperwork'] = pd.to_numeric(filtered_df['paperwork'], errors='coerce').fillna(0).astype(int)
+    # 获取当前可用的保洁小组选项
+    conn = connect_db()
+    cleaner_options = conn.query("""
+            SELECT team_name 
+            FROM clean_teams 
+            WHERE team_name != '暂未派单' AND is_active = 1
+            ORDER BY team_name
+        """, ttl=0)
+    cleaner_options = cleaner_options['team_name'].tolist()
 
-    # 处理布尔值列
-    bool_columns = ['payment_received', 'invoice_sent', 'receipt_sent']
-    for col in bool_columns:
-        filtered_df[col] = pd.to_numeric(filtered_df[col], errors='coerce').fillna(0).astype(bool)
+    # 获取所有用户名作为创建人选项
+    creator_options = conn.query("""
+        SELECT name 
+        FROM users 
+        ORDER BY name
+    """, ttl=0)
+    creator_options = creator_options['name'].tolist()
 
-    # 应用保洁员筛选
+    # 处理收入1和收入2
+    def calculate_income(row):
+        if row['payment_method'] == 'cash':
+            return str(row['order_amount']) if row['order_amount'] != 0 else "", ""
+        elif row['payment_method'] == 'transfer':
+            return "", str(row['total_amount']) if row['total_amount'] != 0 else ""
+        return "", ""
+
+    # 应用过滤器
     cleaner_filter = st.session_state.get('cleaner_filter', [])
     if cleaner_filter:
         filtered_df = filtered_df[filtered_df['assigned_cleaner'].isin(cleaner_filter)]
 
-    # 应用创建人筛选
     creator_filter = st.session_state.get('creator_filter', [])
     if creator_filter:
         filtered_df = filtered_df[filtered_df['created_by'].isin(creator_filter)]
 
-    # 应用收款状态筛选
-    if st.session_state.payment_status_filter != "全部":
-        is_paid = st.session_state.payment_status_filter == "已收款"
-        filtered_df = filtered_df[filtered_df['payment_received'] == is_paid]
-
-    # 发票状态筛选逻辑
-    if st.session_state.invoice_status_filter != "全部":
-        filtered_df = filtered_df[filtered_df['paperwork'] == 0]
-        if st.session_state.invoice_status_filter == "已开票":
-            filtered_df = filtered_df[filtered_df['invoice_sent']]
-        else:
-            filtered_df = filtered_df[~filtered_df['invoice_sent']]
-
-    # 收据状态筛选逻辑
-    if st.session_state.receipt_status_filter != "全部":
-        filtered_df = filtered_df[filtered_df['paperwork'] == 1]
-        if st.session_state.receipt_status_filter == "已开收据":
-            filtered_df = filtered_df[filtered_df['receipt_sent']]
-        else:
-            filtered_df = filtered_df[~filtered_df['receipt_sent']]
-
-    # 格式化日期时间列
-    for col in ['order_date', 'work_date']:
-        if col in filtered_df.columns:
-            filtered_df[col] = pd.to_datetime(filtered_df[col]).dt.strftime('%Y-%m-%d')
+    # 应用发票状态筛选
+    invoice_status_filter = st.session_state.get('invoice_status_filter')
+    if invoice_status_filter:
+        if invoice_status_filter == "未开发票":
+            filtered_df = filtered_df[
+                (filtered_df['paperwork'] == 0) & (filtered_df['invoice_sent'] == False)
+                ]
+        elif invoice_status_filter == "已开发票":
+            filtered_df = filtered_df[
+                (filtered_df['paperwork'] == 0) & (filtered_df['invoice_sent'] == True)
+                ]
 
     display_df = filtered_df.copy()
 
-    # 合并工作日期和时间
-    display_df['work_datetime'] = display_df['work_date'] + ' ' + display_df['work_time']
+    # 特殊处理 work_date 列，确保它是正确的日期格式或 None
+    display_df['work_date'] = display_df['work_date'].apply(
+        lambda x: pd.NaT if x == '' or pd.isna(x) else x
+    )
 
-    # 创建服务内容列
-    def combine_services(row):
-        services = []
-        if pd.notna(row.get('basic_service')): services.append(str(row['basic_service']))
-        if pd.notna(row.get('rooms')): services.append(str(row['rooms']))
-        if pd.notna(row.get('electricals')): services.append(str(row['electricals']))
-        if pd.notna(row.get('other_services')): services.append(str(row['other_services']))
-        if pd.notna(row.get('cuistom_item')): services.append(str(row['cuistom_item']))
-        return ' ; '.join(filter(None, services))
+    # 处理金额列的空值显示
+    for col in ['subsidy', 'order_amount', 'total_amount']:
+        display_df[col] = display_df[col].apply(lambda x: "" if pd.isna(x) or x == 0 else str(x))
 
-    # 添加服务内容列
-    display_df['service_content'] = display_df.apply(combine_services, axis=1)
+    # 添加收入1和收入2列
+    display_df[['income1', 'income2']] = display_df.apply(calculate_income, axis=1, result_type='expand')
 
-    # 获取发票和收据的需求状态
-    display_df['needs_invoice'] = display_df['paperwork'] == 0
-    display_df['needs_receipt'] = display_df['paperwork'] == 1
-
-    # 处理支付状态显示
-    display_df['payment_received'] = display_df['payment_received'].map({
-        True: '🟢',
-        False: '🔴'
-    }).fillna('❓')
+    # 移除所有数值列中的'None'字符串
+    for col in ['income1', 'income2', 'subsidy']:
+        display_df[col] = display_df[col].replace({'None': '', 'nan': '', '0': ''})
+        display_df[col] = display_df[col].apply(lambda x: '' if x in [None, 'None', 'nan', '0', 0] else x)
 
     # 处理发票状态显示
-    display_df['invoice_sent'] = display_df.apply(
-        lambda row: get_status_display(row['invoice_sent'], row['needs_invoice']),
-        axis=1
-    )
+    def get_invoice_status_display(row):
+        if row['paperwork'] == 0:  # 需要开发票
+            return '已开发票' if row['invoice_sent'] else '未开发票'
+        return '-'  # 不需要开发票或需要开收据
 
-    # 处理收据状态显示
-    display_df['receipt_sent'] = display_df.apply(
-        lambda row: get_status_display(row['receipt_sent'], row['needs_receipt']),
-        axis=1
-    )
+    display_df['invoice_status'] = filtered_df.apply(get_invoice_status_display, axis=1)
 
     # 选择要显示的列并重新排序
     columns_to_display = [
-        'id',  # 添加ID列用于数据更新
-        'work_datetime',
-        'work_address',
-        'order_amount',
-        'total_amount',
-        'assigned_cleaner',
-        'payment_received',
-        'invoice_sent',
-        'receipt_sent',
-        'created_by',
-        'source',
-        'service_content'
+        'work_date',  # 保洁日期
+        'work_time',  # 保洁时间
+        'work_address',  # 工作地址
+        'assigned_cleaner',  # 保洁小组
+        'income1',  # 收入1（现金）
+        'income2',  # 收入2（转账）
+        'subsidy',  # 补贴
+        'invoice_status',  # 发票状态
+        'created_by',  # 创建人
+        'source',  # 来源
+        'remarks'  # 备注
     ]
 
-    display_df = display_df[columns_to_display]
+    display_df = display_df[columns_to_display].copy()
+
+    # 生成时间选项
+    time_options = []
+    for hour in range(8, 22):
+        for minute in range(0, 60, 15):
+            period = "上午" if hour < 12 else "下午"
+            time_str = f"{period} {hour:02d}:{minute:02d}"
+            time_options.append(time_str)
 
     # 设置列的编辑配置
     column_config = {
-        "id": st.column_config.NumberColumn(
-            "ID",
-            disabled=True,
-            help="工单ID"
+        "work_date": st.column_config.DateColumn(
+            "保洁日期",
+            format="YYYY-MM-DD",
+            width="small",
+            min_value=datetime(2020, 1, 1),  # 设置最小日期
+            max_value=datetime(2030, 12, 31),  # 设置最大日期
+            default=None,  # 允许空值
+            required=False,  # 设置为非必填
         ),
-        "work_datetime": st.column_config.TextColumn(
-            "工作日期时间",
-            disabled=True,
+        "work_time": st.column_config.SelectboxColumn(
+            "保洁时间",
+            width="small",
+            options=[""] + time_options,
         ),
         "work_address": st.column_config.TextColumn(
             "工作地址",
-            disabled=False,  # 允许编辑
+            disabled=False,
             max_chars=200,
-            help="点击单元格编辑地址"
+            help="点击单元格编辑地址",
+            width="small"
         ),
-        "order_amount": st.column_config.NumberColumn(
-            "订单金额",
-            disabled=True,
-            format="%.2f",
-        ),
-        "total_amount": st.column_config.NumberColumn(
-            "总金额",
-            disabled=True,
-            format="%.2f",
-        ),
-        "assigned_cleaner": st.column_config.TextColumn(
+        "assigned_cleaner": st.column_config.SelectboxColumn(
             "保洁小组",
-            disabled=True,
+            width="small",
+            options=cleaner_options,
+            required=False,
         ),
-        "payment_received": st.column_config.TextColumn(
-            "收款情况",
-            disabled=True,
+        "income1": st.column_config.NumberColumn(
+            "收入1",
+            help="现金收入",
+            format="%.2f",
+            width="small",
+            min_value=0,
+            step=0.01,
+            default=None,
+            required=False
         ),
-        "invoice_sent": st.column_config.TextColumn(
-            "已开发票",
-            disabled=True,
+        "income2": st.column_config.NumberColumn(
+            "收入2",
+            help="转账收入",
+            format="%.2f",
+            width="small",
+            min_value=0,
+            step=0.01,
+            default=None,
+            required=False
         ),
-        "receipt_sent": st.column_config.TextColumn(
-            "已开收据",
-            disabled=True,
+        "subsidy": st.column_config.NumberColumn(
+            "补贴金额",
+            format="%.2f",
+            width="small",
+            min_value=0,
+            step=0.01,
+            default=None,
+            required=False
         ),
-        "created_by": st.column_config.TextColumn(
+        "invoice_status": st.column_config.SelectboxColumn(
+            "发票状态",
+            width="small",
+            options=['已开发票', '未开发票', '-'],
+            help="需要开发票时可修改状态"
+        ),
+        "created_by": st.column_config.SelectboxColumn(
             "创建人",
-            disabled=True,
+            width="small",
+            options=creator_options,
+            required=True,
         ),
         "source": st.column_config.TextColumn(
             "来源",
-            disabled=True,
+            width="small"
         ),
-        "service_content": st.column_config.TextColumn(
-            "服务内容",
-            disabled=True,
-            width="large",
-        ),
+        "remarks": st.column_config.TextColumn(
+            "备注",
+            width="medium",
+            help="点击单元格编辑备注信息",
+            max_chars=500,
+        )
     }
+
+    # 创建编辑器配置
+    editor_disabled = {}
+    for idx in display_df.index:
+        if filtered_df.loc[idx, 'paperwork'] != 0:  # 如果不需要开发票
+            if 'invoice_status' not in editor_disabled:
+                editor_disabled['invoice_status'] = set()
+            editor_disabled['invoice_status'].add(idx)
+
+    # 保存编辑前的数据副本，用于比较
+    pre_edit_df = display_df.copy()
 
     # 使用 st.data_editor 显示可编辑的数据表格
     edited_df = st.data_editor(
@@ -291,56 +427,81 @@ def show_work_orders_table(df):
         column_config=column_config,
         hide_index=True,
         use_container_width=True,
-        disabled=["id"],  # 禁用 ID 列编辑
-        key="orders_table"
+        key="orders_table",
+        disabled=editor_disabled
     )
 
     # 检测并处理数据更改
-    if not display_df.equals(edited_df):
-        # 找出发生更改的行
-        changed_mask = display_df != edited_df
-        changed_rows_idx = changed_mask.any(axis=1)
+    if not pre_edit_df.equals(edited_df):
+        # 找出实际发生变化的列
+        changed_columns = []
+        for col in edited_df.columns:
+            if not (pre_edit_df[col].fillna('') == edited_df[col].fillna('')).all():
+                changed_columns.append(col)
 
-        # 获取发生变化的行
-        original_rows = display_df[changed_rows_idx]
-        edited_rows = edited_df[changed_rows_idx]
+        # 重置索引，确保正确对应
+        filtered_df_reset = filtered_df.reset_index(drop=True)
+        edited_df_reset = edited_df.reset_index(drop=True)
 
-        # 逐行处理更改
-        for idx in original_rows.index:
-            # 确保 ID 是有效的数字
-            order_id = original_rows.loc[idx, 'id']
-            if pd.isna(order_id):
-                st.error(f"无效的工单ID：{order_id}")
-                continue
+        # 检查每一行是否有变化
+        for idx, row in edited_df_reset.iterrows():
+            order_id = filtered_df_reset.loc[idx, 'id']
+            original_row = pre_edit_df.iloc[idx]
 
-            # 转换 ID 为整数
-            try:
-                order_id = int(order_id)
-            except (ValueError, TypeError):
-                st.error(f"无效的工单ID格式：{order_id}")
-                continue
+            # 检查这一行是否有实际变化
+            has_changes = False
+            update_data = {'id': order_id}
 
-            # 获取新的地址值
-            new_address = edited_rows.loc[idx, 'work_address']
-            if pd.isna(new_address):
-                st.error("地址不能为空")
-                continue
+            for col in changed_columns:
+                # 处理空值比较
+                original_value = str(original_row[col]) if pd.notna(original_row[col]) else ''
+                new_value = str(row[col]) if pd.notna(row[col]) else ''
 
-            # 构造更新数据
-            update_data = {
-                'id': order_id,
-                'work_address': str(new_address).strip()  # 确保地址是字符串类型
-            }
+                # 对于数值型列的特殊处理
+                if col in ['income1', 'income2', 'subsidy']:
+                    # 转换空字符串为0
+                    original_num = float(original_value) if original_value.strip() != '' else 0
+                    new_num = float(new_value) if new_value.strip() != '' else 0
 
-            # 调用更新函数
-            success, error = update_work_order(update_data)
+                    if abs(original_num - new_num) > 0.01:  # 使用小数比较
+                        has_changes = True
+                        # 特殊处理收入字段
+                        if col in ['income1', 'income2'] and new_num > 0:
+                            if col == 'income1':
+                                update_data['payment_method'] = 'cash'
+                                update_data['order_amount'] = new_num
+                                update_data['total_amount'] = new_num
+                            else:
+                                update_data['payment_method'] = 'transfer'
+                                base_amount = new_num / 1.1  # 去除10% GST
+                                update_data['order_amount'] = base_amount
+                                update_data['total_amount'] = new_num
+                        else:
+                            update_data[col] = new_num
 
-            if success:
-                st.success(f"成功更新工单 {order_id} 的地址信息")
-            else:
-                st.error(f"更新工单 {order_id} 失败: {error}")
+                # 特殊处理发票状态
+                elif col == 'invoice_status':
+                    if filtered_df_reset.loc[idx, 'paperwork'] == 0:
+                        new_status = (new_value == '已开发票')
+                        if new_status != (original_value == '已开发票'):
+                            has_changes = True
+                            update_data['invoice_sent'] = new_status
+                # 处理其他列
+                elif original_value != new_value:
+                    has_changes = True
+                    update_data[col] = new_value
 
-    return edited_df  # 返回编辑后的数据框
+            # 只有在有实际变化时才更新
+            if has_changes:
+                success, error = update_work_order(update_data)
+                if success:
+                    st.success(f"工单信息已成功更新", icon="✅")
+                    st.session_state.table_updated = True
+                    time.sleep(1)
+                else:
+                    st.error(f"更新工单失败: {error}")
+
+    return edited_df
 
 
 def work_order_statistics():
@@ -358,11 +519,10 @@ def work_order_statistics():
         # 显示导航栏
         navigation()
 
-        st.title("📊 工单统计")
+        st.title("📊 工单管理")
         st.divider()
-        st.subheader("工单详情")
 
-        # 获取数据
+        # 获取初始数据
         default_time_range = st.session_state.get('time_range', 'year')
         orders_df, error = get_work_orders(default_time_range)
 
@@ -370,24 +530,30 @@ def work_order_statistics():
             st.error(f"获取数据失败：{error}")
             return
 
+        # 显示筛选条件
+        selected_time_range = show_filters(orders_df)
+
+        # 只有当时间范围发生变化时才重新获取数据
+        if selected_time_range != default_time_range:
+            new_orders_df, error = get_work_orders(selected_time_range)
+            if error:
+                st.error(f"获取数据失败：{error}")
+                return
+            orders_df = new_orders_df
+
+        # 检查是否有数据需要显示
         if orders_df is not None and not orders_df.empty:
-            # 显示筛选条件
-            selected_time_range = show_filters(orders_df)
-
-            # 如果时间范围发生变化，重新获取数据
-            if selected_time_range != default_time_range:
-                orders_df, error = get_work_orders(selected_time_range)
-                if error:
-                    st.error(f"获取数据失败：{error}")
-                    return
-
             # 显示工单详情
-            if orders_df is not None and not orders_df.empty:
-                show_work_orders_table(orders_df)
-            else:
-                st.info("暂无工单数据")
+            edited_df = show_work_orders_table(orders_df)
+
+            # 检查是否发生了更新
+            if 'table_updated' in st.session_state and st.session_state.table_updated:
+                # 清除更新标志
+                st.session_state.table_updated = False
+                st.rerun()
         else:
             st.info("暂无工单数据")
+
     else:
         # 未登录状态处理
         error = st.error("您还没有登录！3秒后跳转至登录页面...", icon="⚠️")

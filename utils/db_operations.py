@@ -210,18 +210,43 @@ def delete_account(username):
         return False, str(e)
 
 
-def create_work_order(order_date, created_by, source, work_address, room_type, payment_method,
-                      order_amount, remarks, basic_service, rooms, electricals, other_services,
-                      custom_item, paperwork):
+def create_work_order(
+    order_date, created_by, source, work_address,
+    room_type=None, work_date=None, work_time=None,
+    assigned_cleaner="暂未派单", payment_method=None,
+    order_amount=0, total_amount=0, subsidy=None,
+    remarks=None, basic_service=None, rooms=None,
+    electricals=None, other_services=None, custom_item=None,
+    paperwork=None, invoice_sent=False, receipt_sent=False
+):
     """创建新工单
     Args:
-        ...新增room_type和remarks参数...
+        order_date: 创建日期
+        created_by: 创建人
+        source: 来源
+        work_address: 工作地址
+        room_type: 房型
+        work_date: 保洁日期（可选）
+        work_time: 保洁时间（可选）
+        assigned_cleaner: 保洁小组（可选）
+        payment_method: 支付方式（可选）
+        order_amount: 订单金额（可选）
+        total_amount: 总金额（可选）
+        subsidy: 补贴金额（可选）
+        remarks: 备注（可选）
+        basic_service: 基础服务列表（可选）
+        rooms: 房间服务列表（可选）
+        electricals: 电器服务列表（可选）
+        other_services: 其他服务列表（可选）
+        custom_item: 自定义项目列表（可选）
+        paperwork: 开票方式（可选）
+        invoice_sent: 发票状态（可选）
+        receipt_sent: 收据状态（可选）
+    Returns:
+        tuple: (success, error_message)
     """
     try:
         conn = connect_db()
-
-        # 计算总金额
-        total_amount = order_amount * 1.1 if payment_method == 'transfer' else order_amount
 
         # 将列表转换为字符串存储
         basic_service_str = "|".join(basic_service) if basic_service else ""
@@ -233,34 +258,43 @@ def create_work_order(order_date, created_by, source, work_address, room_type, p
         with conn.session as session:
             session.execute(
                 text("""
-                INSERT INTO work_orders 
-                (order_date, work_date, work_time, created_by, source, work_address, 
-                room_type, payment_method, order_amount, total_amount, remarks, 
-                basic_service, rooms, electricals, other_services, custom_item, 
-                assigned_cleaner, cleaning_status, payment_received, invoice_sent, 
-                receipt_sent, paperwork)
-                VALUES 
-                (:order_date, NULL, NULL, :created_by, :source, :work_address,
-                :room_type, :payment_method, :order_amount, :total_amount, :remarks,
-                :basic_service, :rooms, :electricals, :other_services, :custom_item,
-                '暂未派单', 0, FALSE, FALSE, FALSE, :paperwork)
+                INSERT INTO work_orders (
+                    order_date, work_date, work_time, created_by, source,
+                    work_address, room_type, assigned_cleaner, payment_method,
+                    order_amount, total_amount, subsidy, remarks, basic_service,
+                    rooms, electricals, other_services, custom_item, paperwork,
+                    invoice_sent, receipt_sent
+                )
+                VALUES (
+                    :order_date, :work_date, :work_time, :created_by, :source,
+                    :work_address, :room_type, :assigned_cleaner, :payment_method,
+                    :order_amount, :total_amount, :subsidy, :remarks, :basic_service,
+                    :rooms, :electricals, :other_services, :custom_item, :paperwork,
+                    :invoice_sent, :receipt_sent
+                )
                 """),
                 params={
                     'order_date': order_date,
+                    'work_date': work_date,
+                    'work_time': work_time,
                     'created_by': created_by,
                     'source': source,
                     'work_address': work_address,
                     'room_type': room_type,
+                    'assigned_cleaner': assigned_cleaner,
                     'payment_method': payment_method,
                     'order_amount': order_amount,
                     'total_amount': total_amount,
+                    'subsidy': subsidy,
                     'remarks': remarks,
                     'basic_service': basic_service_str,
                     'rooms': rooms_str,
                     'electricals': electricals_str,
                     'other_services': other_services_str,
                     'custom_item': custom_items_str,
-                    'paperwork': paperwork
+                    'paperwork': paperwork,
+                    'invoice_sent': invoice_sent,
+                    'receipt_sent': receipt_sent
                 }
             )
             session.commit()
@@ -292,8 +326,8 @@ def get_work_orders(time_range='week'):
             SELECT * FROM work_orders 
             WHERE {time_filter}
             ORDER BY 
-                CASE WHEN work_date IS NULL THEN 0 ELSE 1 END,  -- NULL值排在前面
-                order_date DESC,  -- 未派单的按创建日期倒序排
+                order_date DESC,
+                CASE WHEN work_date IS NULL THEN 1 ELSE 0 END,
                 work_date ASC,
                 CASE WHEN work_time IS NULL THEN 1 ELSE 0 END,
                 work_time ASC
@@ -316,8 +350,8 @@ def get_work_orders_by_date_range(start_date, end_date):
             WHERE work_date BETWEEN :start_date AND :end_date
                OR work_date IS NULL
             ORDER BY 
-                CASE WHEN work_date IS NULL THEN 0 ELSE 1 END,  -- NULL值排在前面
-                order_date DESC,  -- 未派单的按创建日期倒序排
+                order_date DESC,
+                CASE WHEN work_date IS NULL THEN 1 ELSE 0 END,
                 work_date ASC,
                 CASE WHEN work_time IS NULL THEN 1 ELSE 0 END,
                 work_time ASC
@@ -553,7 +587,8 @@ def get_team_monthly_orders(team_id, year, month):
                 wo.work_address,
                 wo.order_amount,
                 wo.total_amount,
-                wo.payment_method
+                wo.payment_method,
+                wo.subsidy  # 添加这一行
             FROM work_orders wo
             WHERE wo.assigned_cleaner = (
                 SELECT team_name 
@@ -702,6 +737,9 @@ def delete_work_order(order_id: int) -> tuple[bool, str]:
 
 def update_work_order(data):
     """更新工单信息
+    如果清除了保洁日期、时间、保洁小组中的任何一个，
+    其他相关字段也会被一起清除
+
     Args:
         data (dict): 工单更新数据
     Returns:
@@ -710,14 +748,45 @@ def update_work_order(data):
     try:
         conn = connect_db()
 
+        # 检查是否涉及清除保洁相关信息
+        cleaning_fields = {'work_date', 'work_time', 'assigned_cleaner'}
+        updated_fields = set(data.keys()) & cleaning_fields
+
+        if updated_fields:
+            # 检查是否有任何一个字段被清空
+            has_empty = any(
+                data.get(field, '') == '' or data.get(field) is None
+                for field in updated_fields
+            )
+
+            # 如果有任何一个字段被清空，就清空所有相关字段
+            if has_empty:
+                data['work_date'] = None
+                data['work_time'] = None
+                data['assigned_cleaner'] = '暂未派单'
+                # 同时重置清洁状态
+                data['cleaning_status'] = 0
+                data['cleaning_completed_at'] = None
+
         # 构建 UPDATE 语句
         update_fields = []
         params = {'order_id': data['id']}
 
         for key, value in data.items():
             if key != 'id':  # 排除id字段
+                # 处理日期和时间字段
+                if key in ['work_date', 'work_time', 'cleaning_completed_at']:
+                    if value == '' or value is None:
+                        update_fields.append(f"{key} = NULL")
+                        continue
+
+                # 其他字段的正常处理
                 update_fields.append(f"{key} = :{key}")
                 params[key] = value
+
+        # 如果没有需要更新的字段，返回成功
+        if not update_fields:
+            return True, None
 
         query = text(f"""
             UPDATE work_orders 
@@ -735,6 +804,7 @@ def update_work_order(data):
         return success, error
 
     except Exception as e:
+        logger.error(f"更新工单失败：{str(e)}")
         return False, str(e)
 
 

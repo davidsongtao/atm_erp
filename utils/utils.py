@@ -190,9 +190,9 @@ def navigation():
         clear_form_state()
         st.switch_page("pages/receipt_page.py")
 
-    # 自动化报价
-    if st.sidebar.button("🤖智能报价", key="auto_quote_button", use_container_width=True, type="primary"):
-        st.switch_page("pages/pricing_page.py")
+    # # 自动化报价
+    # if st.sidebar.button("🤖智能报价", key="auto_quote_button", use_container_width=True, type="primary"):
+    #     st.switch_page("pages/pricing_page.py")
 
     # 工单管理
     if st.sidebar.button("🔍工单管理", key="order_management", use_container_width=True, type="primary"):

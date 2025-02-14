@@ -1,20 +1,32 @@
 """
-Description: 
-    
+Description: 新版工单创建实现
+
 -*- Encoding: UTF-8 -*-
-@File     ：new_work_order.py
-@Author   ：King Songtao
-@Time     ：2025/1/8 下午5:42
-@Contact  ：king.songtao@gmail.com
+@Author   ：Claude
+@Time     ：2025/2/14
 """
 import time
-import asyncio
 import streamlit as st
 from datetime import datetime, date
 from utils.utils import navigation, check_login_state
-from utils.validator import get_validator
-from utils.db_operations import create_work_order
+from utils.db_operations import create_work_order, connect_db
 from utils.styles import apply_global_styles
+
+
+def generate_time_options():
+    """生成时间选项列表，每15分钟一个间隔"""
+    time_options = []
+    # 上午时间选项 (8:00 - 11:45)
+    for hour in range(8, 12):
+        for minute in range(0, 60, 15):
+            time_str = f"上午 {hour:02d}:{minute:02d}"
+            time_options.append(time_str)
+    # 下午时间选项 (12:00 - 21:45)
+    for hour in range(12, 22):
+        for minute in range(0, 60, 15):
+            time_str = f"下午 {hour:02d}:{minute:02d}"
+            time_options.append(time_str)
+    return time_options
 
 
 def handle_custom_items():
@@ -22,14 +34,12 @@ def handle_custom_items():
     # 添加自定义 CSS 来隐藏特定文本输入框的标签
     st.markdown("""
         <style>
-            /* 隐藏所有自定义项目的label */
             .custom-item-input label {
                 display: none !important;
                 height: 0px !important;
                 margin: 0px !important;
                 padding: 0px !important;
             }
-            /* 移除label占用的空间 */
             .custom-item-input .st-emotion-cache-1umgz6j {
                 margin-top: 0px !important;
             }
@@ -52,11 +62,11 @@ def handle_custom_items():
 
         with col1:
             new_value = st.text_input(
-                " ",  # 使用空格作为label而不是空字符串
+                " ",
                 value=item,
                 key=f"custom_item_{idx}",
                 placeholder=f"请输入第{idx + 1}个自定义项目内容...",
-                label_visibility="collapsed",  # 这里添加了 label_visibility="collapsed"
+                label_visibility="collapsed",
             )
             updated_items.append(new_value)
 
@@ -66,10 +76,24 @@ def handle_custom_items():
                 st.rerun()
 
     st.session_state.custom_items = updated_items
-    return updated_items
+    return [item for item in updated_items if item.strip()]
 
 
-async def create_work_order_page():
+def get_users():
+    """获取所有用户名"""
+    conn = connect_db()
+    if conn:
+        try:
+            result = conn.query("SELECT name FROM users ORDER BY name", ttl=0)
+            return result['name'].tolist()
+        except Exception as e:
+            st.error(f"获取用户列表失败：{e}")
+            return []
+    return []
+
+
+def create_work_order_page():
+    """创建新工单页面"""
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     apply_global_styles()
     login_state, role = check_login_state()
@@ -79,20 +103,8 @@ async def create_work_order_page():
         st.title("➕创建新工单")
         st.divider()
 
-        # 初始化验证器相关的session state
-        # 修改验证器初始化部分
-        if 'validator' not in st.session_state:
-            api_key = st.secrets["api_keys"]["openai_api_key"]
-            st.session_state.validator = get_validator(api_key)
-
-        # 初始化时间选择相关的session state
-        if 'am_pm' not in st.session_state:
-            st.session_state.am_pm = "AM"
-        if 'hour' not in st.session_state:
-            st.session_state.hour = "09:00"
-
         # 基础信息
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             order_date = st.date_input(
                 "登记日期",
@@ -100,119 +112,78 @@ async def create_work_order_page():
                 help="创建工单的日期",
                 disabled=True
             )
-            # work_date = st.date_input(
-            #     "工作日期",
-            #     value=date.today(),
-            #     help="实际上门服务的日期",
-            #     min_value=date.today()
-            # )
 
         with col2:
-            # 分配人（自动获取当前登录用户的name）
-            current_username = st.session_state.get("logged_in_username")
-            current_user = st.session_state.get("name")  # 使用session中存储的name
-            st.text_input("工单所有人", value=current_user, disabled=True)
-        source = st.text_input("工单来源", placeholder="请输入客户来源")
+            # 可选的工作日期
+            work_date = st.date_input(
+                "保洁日期",
+                value=None,
+                help="实际上门服务的日期（可选）",
+                min_value=date.today()
+            )
 
-        # 修改地址输入部分
+        with col3:
+            # 可选的工作时间
+            work_time = st.selectbox(
+                "保洁时间",
+                options=[""] + generate_time_options(),
+                index=0,
+                help="选择保洁时间（可选）"
+            )
+
+        # 分配信息
+        col1, col2 = st.columns(2)
+        with col1:
+            # 获取所有用户列表
+            users = get_users()
+            current_user = st.session_state.get("name")
+            # 设置当前用户为默认选项
+            default_index = users.index(current_user) if current_user in users else 0
+            created_by = st.selectbox(
+                "工单所有人",
+                options=users,
+                index=default_index
+            )
+
+        with col2:
+            source = st.text_input("工单来源", placeholder="请输入客户来源")
+
+        # 地址信息
         work_address = st.text_input(
             "工作地址",
             value=st.session_state.get("current_address", ""),
             key="address_input",
-            placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000",
-            help="请输入地址以开始验证"
+            placeholder="客户地址。例如：1202/157 A'Beckett St, Melbourne VIC 3000"
         )
 
-        # 检查地址是否为空
-        is_address_empty = not work_address.strip()
+        # 房型和保洁组信息
+        col1, col2 = st.columns(2)
+        with col1:
+            room_type = st.selectbox(
+                "清洁房间户型",
+                options=["1b1b", "2b1b", "2b2b", "3b2b"],
+                index=None,
+                placeholder="请选择房间户型",
+            )
 
-        # 验证按钮 - 当地址为空时禁用
-        validate_btn = st.button(
-            "自动化验证地址",
-            use_container_width=True,
-            key="validate-address-btn",
-            type="primary",
-            disabled=is_address_empty,
-        )
+        with col2:
+            # 获取所有活跃的保洁组
+            conn = connect_db()
+            cleaner_options = [""] + conn.query("""
+                SELECT team_name 
+                FROM clean_teams 
+                WHERE team_name != '暂未派单' AND is_active = 1
+                ORDER BY team_name
+            """, ttl=0)['team_name'].tolist()
 
-        # Google搜索按钮 - 当地址为空时禁用
-        search_query = work_address.replace(' ', '+')
-        search_url = f"https://www.google.com/search?q={search_query}+Australia"
-        st.link_button(
-            "🔍 在Google中搜索此地址",
-            search_url,
-            use_container_width=True,
-            disabled=is_address_empty
-        )
+            assigned_cleaner = st.selectbox(
+                "保洁小组",
+                options=cleaner_options,
+                index=0,
+                help="选择保洁小组（可选）"
+            )
 
-        # 修改地址验证处理部分
-        address_valid = True
-        if validate_btn and work_address.strip():
-            try:
-                with st.spinner("验证地址中，请勿进行其他操作。地址验证有可能耗时较长，请耐心等待..."):
-                    matches = await st.session_state.validator.validate_address(work_address)
-
-                    if matches:
-                        # 根据验证来源显示不同的提示
-                        if matches[0].validation_source == 'llm':
-                            st.success("✅ 找到以下地址匹配：")
-                        elif matches[0].validation_source == 'fallback':
-                            st.warning("ℹ️ DeepSeek API暂时不可用，当前使用本地验证模式，请仔细核对地址：")
-                        else:
-                            st.warning("⚠️ 无法完全验证地址，请确保地址准确：")
-
-                        # 显示匹配结果
-                        for i, match in enumerate(matches):
-                            col1, col2, col3 = st.columns([6, 2, 1])
-                            with col1:
-                                st.write(f"🏠 {match.formatted_address}")
-                            with col2:
-                                st.write(f"匹配度: {match.confidence_score:.2f}")
-                            with col3:
-                                # 使用回调函数处理选择
-                                def select_address():
-                                    st.session_state.current_address = match.formatted_address
-
-                                st.button(
-                                    "选择",
-                                    key=f"select_{i}",
-                                    on_click=select_address,
-                                    use_container_width=True,
-                                    type="primary"
-                                )
-
-                        # 如果是LLM验证失败或本地验证，显示Google搜索选项
-                        if matches[0].validation_source != 'llm':
-                            st.info("如果不确定地址是否正确，建议在Google中搜索确认：", icon="ℹ️")
-                            search_query = work_address.replace(' ', '+')
-                            search_url = f"https://www.google.com/search?q={search_query}+Australia"
-                            st.link_button(
-                                "🔍 在Google中搜索此地址",
-                                search_url,
-                                use_container_width=True,
-                                type="primary"
-                            )
-                    else:
-                        st.warning("⚠️ 无法验证此地址，请检查输入是否正确。")
-                        st.info("您可以：\n1. 检查地址拼写\n2. 确保包含门牌号和街道名\n3. 添加州名和邮编")
-                        address_valid = False
-
-            except Exception:
-                st.error("地址验证服务暂时不可用")
-                st.info("您可以继续填写其他信息，稍后再尝试验证地址。")
-                address_valid = True  # 允许用户继续，但显示警告
-            finally:
-                await st.session_state.validator.close_session()
-
-        st.divider()
-
-        room_type = st.selectbox(
-            "清洁房间户型",
-            options=["1b1b", "2b1b", "2b2b", "3b2b"],
-            index=None,
-            placeholder="请选择房间户型",
-        )
-
+        # 服务项目
         service_options = {
             "basic_service": ["Steam clean of the carpet", "Steam clean of the mattress",
                               "Steam clean of the sofa", "Vacuum clean of carpet",
@@ -233,20 +204,17 @@ async def create_work_order_page():
                 options=service_options["basic_service"],
                 placeholder="选择基础服务项目..."
             )
-
             electrical_services = st.multiselect(
                 "电器服务",
                 options=service_options["electricals"],
                 placeholder="选择电器服务项目..."
             )
-
         with col2:
             room_services = st.multiselect(
                 "房间服务",
                 options=service_options["rooms"],
                 placeholder="选择房间服务项目..."
             )
-
             other_services = st.multiselect(
                 "其他服务",
                 options=service_options["other_services"],
@@ -260,82 +228,132 @@ async def create_work_order_page():
         else:
             custom_item = []
 
-        # 在付款信息部分添加开票选择
         st.divider()
+
+        # 收款信息
         col1, col2, col3 = st.columns(3)
         with col1:
-            payment_method = st.selectbox(
-                "付款方式",
-                options=["transfer", "cash"],
-                format_func=lambda x: "转账(+10% GST)" if x == "transfer" else "现金",
-                index=None,
-                placeholder="请选择付款方式..."
-            )
-        with col2:
-            order_amount = st.number_input(
-                "工单金额",
+            income1 = st.number_input(
+                "收入1（现金）",
                 min_value=0.0,
-                format="%.2f"
+                value=0.0,
+                format="%.2f",
+                help="现金收入金额（可选）"
             )
+
+        with col2:
+            income2 = st.number_input(
+                "收入2（转账）",
+                min_value=0.0,
+                value=0.0,
+                format="%.2f",
+                help="转账收入金额（可选）"
+            )
+
         with col3:
-            # 添加开票方式选择
+            subsidy = st.number_input(
+                "补贴金额",
+                min_value=0.0,
+                value=0.0,
+                format="%.2f",
+                help="工单补贴金额（可选）"
+            )
+
+        # 开票信息
+        col1, col2, col3 = st.columns(3)
+        with col1:
             paperwork = st.selectbox(
                 "开票方式",
                 options=[0, 1],
                 format_func=lambda x: "开发票" if x == 0 else "开收据",
-                help="选择开具发票或收据",
                 index=None,
-                placeholder="请选择开票方式..."
+                placeholder="请选择...",
+                help="选择开具发票或收据（可选）",
+                key="paperwork_type"
             )
 
-        # 自动计算总金额
-        total_amount = order_amount * 1.1 if payment_method == "transfer" else order_amount
-        st.success(f"工单总金额：${total_amount:.2f} ({'含 GST' if payment_method == 'transfer' else '不含 GST'})")
-        st.divider()
+        with col2:
+            invoice_sent = st.selectbox(
+                "发票状态",
+                options=[False, True],
+                format_func=lambda x: "未开发票" if not x else "已开发票",
+                disabled=paperwork != 0,
+                help="选择发票开具状态",
+                key="invoice_status"
+            )
 
+        with col3:
+            receipt_sent = st.selectbox(
+                "收据状态",
+                options=[False, True],
+                format_func=lambda x: "未开收据" if not x else "已开收据",
+                disabled=paperwork != 1,
+                help="选择收据开具状态",
+                key="receipt_status"
+            )
+        # 备注信息
         remarks = st.text_area(
             "备注信息",
-            placeholder="请输入备注信息(选填)"
+            placeholder="请输入备注信息（可选）"
         )
 
+        # 确认创建
         confirm_create = st.checkbox("我确认所有工单信息录入无误，立即创建工单！")
         create_btn = st.button("创建工单", use_container_width=True, type="primary")
 
-        # 确认和取消按钮
-        if create_btn and confirm_create:
-            if not all([
-                # ... 其他验证条件
-            ]):
-                st.error("请填写所有必填项！", icon="⚠️")
+        if create_btn:
+            if not confirm_create:
+                st.warning("请确认工单信息无误，并勾选确认按钮！", icon="⚠️")
+            elif not work_address.strip():
+                st.error("工作地址不能为空！", icon="⚠️")
             else:
+                # 设置支付方式和订单金额
+                payment_method = None
+                order_amount = 0.0
+                total_amount = 0.0
+
+                if income1 > 0:
+                    payment_method = 'cash'
+                    order_amount = income1
+                    total_amount = income1
+                elif income2 > 0:
+                    payment_method = 'transfer'
+                    order_amount = income2 / 1.1  # 去除GST
+                    total_amount = income2
+
                 success, error = create_work_order(
                     order_date=order_date,
-                    created_by=current_user,
+                    work_date=work_date if work_date else None,
+                    work_time=work_time if work_time.strip() else None,
+                    created_by=created_by,
                     source=source,
-                    work_address=st.session_state.get("current_address", ""),
-                    room_type=room_type,  # 新增房间户型参数
+                    work_address=work_address,
+                    room_type=room_type,
+                    assigned_cleaner=assigned_cleaner if assigned_cleaner else "暂未派单",
                     payment_method=payment_method,
                     order_amount=order_amount,
-                    remarks=remarks,  # 新增备注参数
+                    total_amount=total_amount,
+                    subsidy=subsidy if subsidy > 0 else None,
+                    remarks=remarks,
                     basic_service=basic_services,
                     rooms=room_services,
                     electricals=electrical_services,
                     other_services=other_services,
+                    custom_item=custom_item,
                     paperwork=paperwork,
-                    custom_item=custom_item  # 将自定义项目传递给create_work_order函数
+                    invoice_sent=invoice_sent if paperwork == 0 else False,
+                    receipt_sent=receipt_sent if paperwork == 1 else False
                 )
 
                 if success:
                     st.success("工单创建成功！3秒后返回工单列表...", icon="✅")
                     time.sleep(3)
-                    st.switch_page("pages/work_orders.py")
+                    st.switch_page("pages/orders_show.py")
                 else:
                     st.error(f"工单创建失败：{error}", icon="⚠️")
-        elif create_btn and not confirm_create:
-            st.warning("请确认工单总金额无误，并勾选确认按钮！", icon="⚠️")
 
         if st.button("取消", use_container_width=True, type="secondary"):
-            st.switch_page("pages/work_orders.py")
+            st.switch_page("pages/orders_show.py")
 
     else:
         error = st.error("您还没有登录！3秒后跳转至登录页面...", icon="⚠️")
@@ -350,4 +368,4 @@ async def create_work_order_page():
 
 
 if __name__ == "__main__":
-    asyncio.run(create_work_order_page())
+    create_work_order_page()
