@@ -95,11 +95,15 @@ def show_filters(df=None):
 
     # 清空筛选按钮
     def clear_filters():
+        # 设置重置标志
+        st.session_state.reset_filters = True
         # 清除筛选器的状态
         if 'cleaner_filter' in st.session_state:
             del st.session_state['cleaner_filter']
         if 'creator_filter' in st.session_state:
             del st.session_state['creator_filter']
+        if 'time_range' in st.session_state:
+            del st.session_state['time_range']
 
     if st.button("清空筛选条件", type="primary"):
         clear_filters()
