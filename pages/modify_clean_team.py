@@ -121,7 +121,7 @@ def modify_clean_team():
 
         else:
             if st.button("取消", use_container_width=True, type="secondary"):
-                st.switch_page("pages/staff_acc.py")
+                st.switch_page("pages/orders_statistics.py")
 
     else:
         error = st.error("您没有权限访问该页面！3秒后跳转至登录页...", icon="⚠️")

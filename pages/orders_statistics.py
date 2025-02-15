@@ -54,8 +54,7 @@ def show_filters(df=None):
                 "quarter": "本季度",
                 "year": "今年"
             }[x],
-            key='time_range',
-            index=default_index
+            key='time_range'
         )
 
     with col2:
