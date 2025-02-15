@@ -15,7 +15,7 @@ from datetime import datetime
 from pages.work_orders import get_theme_color
 from utils.styles import apply_global_styles
 from utils.utils import check_login_state, navigation
-from utils.db_operations import get_active_clean_teams, get_team_monthly_orders
+from utils.db_operations_v2 import get_active_clean_teams, get_team_monthly_orders
 
 
 def process_orders_data(orders_df):
@@ -34,13 +34,13 @@ def process_orders_data(orders_df):
 
     # 处理收入列
     def calculate_incomes(row):
-        income1 = row.get('order_amount', 0) if row.get('payment_method') == 'cash' else 0
-        income2 = row.get('total_amount', 0) if row.get('payment_method') == 'transfer' else 0
-        subsidy = row.get('subsidy', 0) or 0  # 处理 None 值
+        income1 = float(row.get('income1', 0) or 0)  # 现金收入
+        income2 = float(row.get('income2', 0) or 0)  # 转账收入
+        subsidy = float(row.get('subsidy', 0) or 0)  # 补贴
 
         return pd.Series({
-            '收入1': f"${income1:.2f}" if income1 > 0 else '',
-            '收入2': f"${income2:.2f}" if income2 > 0 else '',
+            '现金收入': f"${income1:.2f}" if income1 > 0 else '',
+            '转账收入': f"${income2:.2f}" if income2 > 0 else '',
             '补贴': f"${subsidy:.2f}" if subsidy > 0 else ''
         })
 
@@ -54,7 +54,7 @@ def process_orders_data(orders_df):
     # 选择要显示的列
     display_columns = [
         '工作日期', '工作时间', '工作地址',
-        '收入1', '收入2', '补贴'
+        '现金收入', '转账收入', '补贴'
     ]
 
     return df[display_columns]
@@ -92,39 +92,45 @@ def show_team_monthly_stats(team, selected_year, selected_month):
     st.divider()
 
     # 计算统计信息
-    income1 = orders[orders['payment_method'] == 'cash']['order_amount'].sum()
-    income2 = orders[orders['payment_method'] == 'transfer']['total_amount'].sum()
-    subsidy = orders['subsidy'].fillna(0).sum()
+    income1 = pd.to_numeric(orders['income1'], errors='coerce').fillna(0).sum()  # 现金收入
+    income2 = pd.to_numeric(orders['income2'], errors='coerce').fillna(0).sum()  # 转账收入
+    total_amount = pd.to_numeric(orders['total_amount'], errors='coerce').fillna(0).sum()  # 总金额(含GST)
+    subsidy = pd.to_numeric(orders['subsidy'], errors='coerce').fillna(0).sum()  # 补贴
 
-    # 新的计算逻辑：保洁组总收入 = 收入1*0.7 + 补贴 + 收入2*0.7
-    team_total_income = income1 * 0.7 + subsidy + income2 * 0.7
+    # 计算逻辑：
+    # 1. 保洁组总佣金 = 现金收入×70% + 转账收入×70% + 补贴
+    team_total_income = income1 * 0.7 + income2 * 0.7 + subsidy
 
-    # 保洁组待缴计算
-    team_payment = income1 * 0.3 - subsidy
+    # 2. 保洁组待缴 = 现金收入×30% - 补贴（如果为负数则为0）
+    team_payment = max(0, income1 * 0.3 - subsidy)
 
-    # 处理负数情况
-    if team_payment < 0:
-        atm_pending = income2 * 0.7 + abs(team_payment)
-        team_payment = 0
+    # 3. ATM待付保洁组 =
+    #    如果保洁组待缴为0: 转账收入×70% + abs(现金收入×30% - 补贴)
+    #    否则: 转账收入×70%
+    if team_payment == 0:
+        atm_pending = income2 * 0.7 + abs(income1 * 0.3 - subsidy)
     else:
         atm_pending = income2 * 0.7
 
     # 显示统计信息
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("收入1合计", f"${income1:.2f}", help="统计月所有工单收入1总金额")
+        st.metric("现金收入合计", f"${income1:.2f}", help="统计月所有工单现金收入总额")
     with col2:
-        st.metric("收入2合计", f"${income2:.2f}", help="统计月所有工单收入2总金额")
+        st.metric("转账收入合计", f"${income2:.2f}", help="统计月所有工单转账收入总额(不含GST)")
     with col3:
-        st.metric("补贴总额", f"${subsidy:.2f}", help="统计月所有补贴总金额")
+        st.metric("补贴总额", f"${subsidy:.2f}", help="统计月所有补贴总额")
 
     col4, col5, col6 = st.columns(3)
     with col4:
-        st.metric("保洁组总佣金", f"${team_total_income:.2f}", help="计算公式：收入1 × 70% + 补贴 + 收入2 × 70%")
+        st.metric("保洁组总佣金", f"${team_total_income:.2f}",
+                  help="计算公式：现金收入×70% + 转账收入×70% + 补贴")
     with col5:
-        st.metric("保洁组待缴", f"${team_payment:.2f}", help="计算公式：收入1 × 30% - 补贴")
+        st.metric("保洁组待缴", f"${team_payment:.2f}",
+                  help="计算公式：现金收入×30% - 补贴（如果为负数则为0）")
     with col6:
-        st.metric("ATM待付保洁组", f"${atm_pending:.2f}", help="计算公式：收入2 × 70%")
+        st.metric("ATM待付保洁组", f"${atm_pending:.2f}",
+                  help="计算公式：\n如果保洁组待缴为0:\n  转账收入×70% + abs(现金收入×30% - 补贴)\n否则:\n  转账收入×70%")
 
     # 创建包含统计信息的CSV字符串
     csv_data = display_df.to_csv(index=False)
@@ -132,7 +138,8 @@ def show_team_monthly_stats(team, selected_year, selected_month):
     csv_data += f"现金收入,${income1:.2f}\n"
     csv_data += f"转账收入,${income2:.2f}\n"
     csv_data += f"补贴总额,${subsidy:.2f}\n"
-    csv_data += f"保洁组总收入,${team_total_income:.2f}\n"
+    csv_data += f"总金额(含GST),${total_amount:.2f}\n"
+    csv_data += f"保洁组总佣金,${team_total_income:.2f}\n"
     csv_data += f"保洁组待缴,${team_payment:.2f}\n"
     csv_data += f"ATM待付保洁组,${atm_pending:.2f}\n"
 
@@ -149,6 +156,7 @@ def show_team_monthly_stats(team, selected_year, selected_month):
 
 
 def monthly_review():
+    """月度结算主页面"""
     st.set_page_config(page_title='ATM-Cleaning', page_icon='images/favicon.png')
     apply_global_styles()
 
@@ -180,22 +188,19 @@ def monthly_review():
         st.title("📊 月度结算")
         st.divider()
 
-        # 获取当前年月
-        current_date = datetime.now()
-
         # 年月选择
         col1, col2 = st.columns(2)
         with col1:
             selected_year = st.selectbox(
                 "选择年份",
-                options=range(2024, current_date.year + 1),
-                index=current_date.year - 2024
+                options=range(2024, datetime.now().year + 1),
+                index=datetime.now().year - 2024
             )
         with col2:
             selected_month = st.selectbox(
                 "选择月份",
                 options=range(1, 13),
-                index=current_date.month - 1
+                index=datetime.now().month - 1
             )
 
         # 获取所有在职保洁组

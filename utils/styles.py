@@ -7,11 +7,11 @@ Description:
 @Time     ：2025/2/5 下午12:46
 @Contact  ：king.songtao@gmail.com
 """
+import streamlit as st
 
 
 def apply_global_styles():
     """应用全局样式"""
-    import streamlit as st
 
     st.markdown("""
         <style>

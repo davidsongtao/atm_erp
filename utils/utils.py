@@ -192,11 +192,11 @@ def navigation():
 
     # 自动化报价
     if st.sidebar.button("➕创建工单", key="auto_quote_button", use_container_width=True, type="primary"):
-        st.switch_page("pages/new_work_order.py")
+        st.switch_page("pages/new_work_order_v2.py")
 
     # 工单管理
     if st.sidebar.button("🔍工单管理", key="order_management", use_container_width=True, type="primary"):
-        st.switch_page("pages/orders_show.py")
+        st.switch_page("pages/orders_statistics.py")
 
     if st.sidebar.button("👩‍👩‍👧‍👦月度结算", key="staff_management_button", use_container_width=True, type="primary"):
         st.switch_page("pages/monthly_review.py")
@@ -214,7 +214,7 @@ def navigation():
 
     # 控制台
     if st.sidebar.button("📊回控制台", key="admin_page_button", use_container_width=True):
-        st.switch_page("pages/work_orders.py")
+        st.switch_page("pages/orders_statistics.py")
 
     # 个人设置
     if st.sidebar.button("⚙️系统设置", key="system_setting_button", use_container_width=True):

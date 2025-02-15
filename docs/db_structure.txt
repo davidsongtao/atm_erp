@@ -1,0 +1,130 @@
+-- auto-generated definition
+create table work_orders
+(
+    id                    int auto_increment
+        primary key,
+    order_date            date                                       not null,
+    work_date             date                                       null,
+    created_by            varchar(50)                                not null,
+    source                varchar(255)                               null,
+    work_time             varchar(20)                                null,
+    cleaning_status       tinyint(1)  default 0                      null comment '清洁状态:0=未开始,1=进行中,2=已完成',
+    cleaning_completed_at datetime                                   null comment '清洁完成时间',
+    work_address          text                                       not null,
+    room_type             varchar(10)                                null comment '房间户型',
+    assigned_cleaner      varchar(50) default '暂未派单'             null,
+    payment_method        enum ('cash', 'transfer', 'blank', 'both') not null,
+    order_amount          decimal(10, 2)                             null,
+    total_amount          decimal(10, 2)                             null,
+    remarks               text                                       null comment '备注信息',
+    payment_received      tinyint(1)  default 0                      null,
+    payment_time          datetime                                   null,
+    invoice_sent          tinyint(1)  default 0                      null,
+    receipt_sent          tinyint(1)  default 0                      null,
+    receipt_date          datetime                                   null,
+    created_at            timestamp   default CURRENT_TIMESTAMP      not null,
+    rooms                 varchar(200)                               null,
+    electricals           varchar(200)                               null,
+    other_services        varchar(300)                               null,
+    custom_item           varchar(200)                               null,
+    basic_service         varchar(200)                               null,
+    paperwork             tinyint(1)  default 0                      null,
+    invoice_date          datetime                                   null,
+    updated_at            timestamp   default CURRENT_TIMESTAMP      not null on update CURRENT_TIMESTAMP,
+    subsidy               decimal(10, 2)                             null,
+    income1               int                                        null,
+    income2               int                                        null,
+    constraint fk_assigned_cleaner
+        foreign key (assigned_cleaner) references clean_teams (team_name)
+            on update cascade
+);
+
+create index work_orders_created_by_fk
+    on work_orders (created_by);
+
+
+-- auto-generated definition
+create table work_order_images
+(
+    id             int auto_increment
+        primary key,
+    order_id       int                                 not null,
+    image_name     varchar(255)                        not null,
+    image_data     longblob                            not null,
+    thumbnail_data longblob                            null,
+    created_at     timestamp default CURRENT_TIMESTAMP not null,
+    constraint work_order_images_ibfk_1
+        foreign key (order_id) references work_orders (id)
+            on delete cascade
+);
+
+create index order_id
+    on work_order_images (order_id);
+
+
+-- auto-generated definition
+create table users
+(
+    id       int auto_increment
+        primary key,
+    username varchar(50)                                               not null,
+    password varchar(255)                                              not null,
+    role     enum ('admin', 'cleaner', 'customer_service', 'customer') not null,
+    name     varchar(30)                                               not null,
+    constraint name
+        unique (name),
+    constraint username
+        unique (username)
+);
+
+
+-- auto-generated definition
+create table message_logs
+(
+    id        int auto_increment
+        primary key,
+    message   text         not null,
+    recipient varchar(255) not null,
+    send_time datetime     not null,
+    status    varchar(50)  not null
+);
+
+
+-- auto-generated definition
+create table cleaning_records
+(
+    id             int auto_increment
+        primary key,
+    cleaning_date  date                                not null comment '保洁日期',
+    cleaning_time  time                                not null comment '保洁时间',
+    address        varchar(255)                        not null comment '地址',
+    cleaner        varchar(50)                         not null comment '保洁员',
+    income1        decimal(10, 2)                      not null comment '收入1',
+    income2        decimal(10, 2)                      null comment '收入2',
+    notes          text                                null comment '备注',
+    subsidy        decimal(10, 2)                      null comment '补贴',
+    creator        varchar(50)                         not null comment '创建人',
+    source         varchar(100)                        null comment '来源',
+    invoice_status varchar(20)                         null comment '发票状态',
+    created_at     timestamp default CURRENT_TIMESTAMP not null comment '创建时间',
+    updated_at     timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间'
+)
+    comment '保洁服务记录表' charset = utf8mb4;
+
+-- auto-generated definition
+create table clean_teams
+(
+    id             int auto_increment
+        primary key,
+    team_name      varchar(50)                          not null comment '保洁组名称',
+    contact_number varchar(20)                          not null comment '联系电话',
+    is_active      tinyint(1) default 1                 not null comment '是否在职',
+    notes          text                                 null comment '备注',
+    created_at     timestamp  default CURRENT_TIMESTAMP not null comment '创建时间',
+    updated_at     timestamp  default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    has_abn        tinyint(1) default 0                 null comment '是否注册ABN',
+    constraint team_name
+        unique (team_name)
+)
+    comment '保洁组信息表';
+
