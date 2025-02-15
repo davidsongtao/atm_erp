@@ -12,6 +12,7 @@ import streamlit as st
 from datetime import datetime
 from sqlalchemy import text
 from configs.settings import *
+from utils.amount_calculator import calculate_total_amount
 from utils.utils import remove_active_session
 
 
@@ -32,27 +33,15 @@ def create_work_order(
         assigned_cleaner="暂未派单",
         subsidy=None, remarks=None
 ):
-    """创建新工单
-
-    Args:
-        order_date: 登记日期
-        created_by: 创建人
-        source: 来源
-        work_address: 工作地址
-        income1: 现金收入
-        income2: 转账收入
-        work_date: 工作日期(可选)
-        work_time: 工作时间(可选)
-        assigned_cleaner: 保洁组(默认暂未派单)
-        subsidy: 补贴金额(可选)
-        remarks: 备注(可选)
-    """
+    """创建新工单"""
     try:
-        # 计算订单金额和总金额
-        order_amount = income1 + income2
-        total_amount = income1 + (income2 * 1.1)  # 转账收入加10% GST
-
         conn = connect_db()
+
+        # 使用工具函数计算金额
+        order_amount, total_amount = calculate_total_amount(
+            income1, income2, assigned_cleaner, conn
+        )
+
         with conn.session as session:
             session.execute(
                 text("""
@@ -85,7 +74,6 @@ def create_work_order(
             )
             session.commit()
 
-        logger.success("工单创建成功")
         return True, None
     except Exception as e:
         logger.error(f"创建工单失败：{e}")
@@ -165,13 +153,7 @@ def get_work_orders_by_date_range(start_date, end_date):
 
 
 def update_work_order(data):
-    """更新工单信息
-
-    Args:
-        data (dict): 工单更新数据
-    Returns:
-        tuple: (success, error)
-    """
+    """更新工单信息"""
     try:
         conn = connect_db()
 
@@ -183,21 +165,30 @@ def update_work_order(data):
         if 'total_amount' in data:
             del data['total_amount']
 
-        # 如果更新了income1或income2,需要重新计算order_amount和total_amount
-        if 'income1' in data or 'income2' in data:
-            # 获取当前的income值
+        # 如果更新了income1、income2或assigned_cleaner，需要重新计算金额
+        if 'income1' in data or 'income2' in data or 'assigned_cleaner' in data:
+            # 获取当前的值
             current = conn.query(
-                "SELECT income1, income2 FROM work_orders WHERE id = :id",
+                """
+                SELECT income1, income2, assigned_cleaner 
+                FROM work_orders 
+                WHERE id = :id
+                """,
                 params={'id': data['id']},
                 ttl=0
             ).iloc[0]
 
             income1 = float(data.get('income1', current['income1']) or 0)
             income2 = float(data.get('income2', current['income2']) or 0)
+            assigned_cleaner = data.get('assigned_cleaner', current['assigned_cleaner'])
 
             # 计算新的金额
-            data['order_amount'] = income1 + income2
-            data['total_amount'] = income1 + (income2 * 1.1)
+            order_amount, total_amount = calculate_total_amount(
+                income1, income2, assigned_cleaner, conn
+            )
+
+            data['order_amount'] = order_amount
+            data['total_amount'] = total_amount
 
         for key, value in data.items():
             if key != 'id':  # 排除id字段
@@ -630,50 +621,126 @@ def update_clean_team(team_id: int, team_name: str, contact_number: str, has_abn
         # 检查是否存在相同名称的其他保洁组
         check_result = conn.query(
             """
-            SELECT id FROM clean_teams 
-            WHERE team_name = :team_name AND id != :team_id
+            SELECT id, team_name, has_abn FROM clean_teams 
+            WHERE id = :team_id
             """,
-            params={
-                'team_name': team_name,
-                'team_id': team_id
-            },
+            params={'team_id': team_id},
             ttl=0
         )
 
-        if not check_result.empty:
-            return False, "保洁组名称已存在"
+        if check_result.empty:
+            return False, "保洁组不存在"
 
-        # 获取旧的ABN状态
-        old_abn_status = conn.query(
-            "SELECT has_abn FROM clean_teams WHERE id = :team_id",
-            params={'team_id': team_id},
-            ttl=0
-        ).iloc[0]['has_abn']
+        old_team_name = check_result.iloc[0]['team_name']
+        old_has_abn = bool(check_result.iloc[0]['has_abn'])
 
-        # 更新保洁组信息
-        with conn.session as session:
-            session.execute(
-                text("""
-                UPDATE clean_teams 
-                SET team_name = :team_name,
-                    contact_number = :contact_number,
-                    has_abn = :has_abn,
-                    is_active = :is_active,
-                    notes = :notes,
-                    updated_at = NOW()
-                WHERE id = :team_id
-                """),
-                params={
-                    'team_name': team_name,
-                    'contact_number': contact_number,
-                    'has_abn': 1 if has_abn else 0,  # 确保转换为整数
-                    'is_active': 1 if is_active else 0,  # 确保转换为整数
-                    'notes': notes,
-                    'team_id': team_id
-                }
+        # 如果ABN状态发生改变，需要更新相关工单的总金额
+        if has_abn != old_has_abn:
+            # 获取该保洁组的所有工单
+            orders = conn.query(
+                """
+                SELECT id, income1, income2 
+                FROM work_orders 
+                WHERE assigned_cleaner = :team_name
+                """,
+                params={'team_name': old_team_name},
+                ttl=0
             )
 
-            session.commit()
+            # 更新保洁组信息
+            with conn.session as s1:
+                s1.execute(
+                    text("""
+                    UPDATE clean_teams 
+                    SET team_name = :team_name,
+                        contact_number = :contact_number,
+                        has_abn = :has_abn,
+                        is_active = :is_active,
+                        notes = :notes,
+                        updated_at = NOW()
+                    WHERE id = :team_id
+                    """),
+                    params={
+                        'team_name': team_name,
+                        'contact_number': contact_number,
+                        'has_abn': 1 if has_abn else 0,
+                        'is_active': 1 if is_active else 0,
+                        'notes': notes,
+                        'team_id': team_id
+                    }
+                )
+                s1.commit()
+
+            # 更新所有相关工单的总金额
+            if not orders.empty:
+                with conn.session as s2:
+                    for _, order in orders.iterrows():
+                        # 计算新的金额
+                        order_amount, total_amount = calculate_total_amount(
+                            float(order['income1']),
+                            float(order['income2']),
+                            team_name,
+                            conn
+                        )
+
+                        # 更新工单金额
+                        s2.execute(
+                            text("""
+                            UPDATE work_orders 
+                            SET order_amount = :order_amount,
+                                total_amount = :total_amount,
+                                assigned_cleaner = :new_team_name
+                            WHERE id = :order_id
+                            """),
+                            params={
+                                'order_amount': order_amount,
+                                'total_amount': total_amount,
+                                'new_team_name': team_name,
+                                'order_id': order['id']
+                            }
+                        )
+                    s2.commit()
+
+                # 记录日志
+                logger.info(f"已更新 {len(orders)} 个工单的金额")
+        else:
+            # 如果ABN状态没有改变，只更新保洁组信息
+            with conn.session as session:
+                session.execute(
+                    text("""
+                    UPDATE clean_teams 
+                    SET team_name = :team_name,
+                        contact_number = :contact_number,
+                        has_abn = :has_abn,
+                        is_active = :is_active,
+                        notes = :notes,
+                        updated_at = NOW()
+                    WHERE id = :team_id
+                    """),
+                    params={
+                        'team_name': team_name,
+                        'contact_number': contact_number,
+                        'has_abn': 1 if has_abn else 0,
+                        'is_active': 1 if is_active else 0,
+                        'notes': notes,
+                        'team_id': team_id
+                    }
+                )
+
+                # 如果team_name发生改变，更新工单表中的保洁组名称
+                if team_name != old_team_name:
+                    session.execute(
+                        text("""
+                        UPDATE work_orders 
+                        SET assigned_cleaner = :new_team_name
+                        WHERE assigned_cleaner = :old_team_name
+                        """),
+                        params={
+                            'new_team_name': team_name,
+                            'old_team_name': old_team_name
+                        }
+                    )
+                session.commit()
 
         return True, ""
 

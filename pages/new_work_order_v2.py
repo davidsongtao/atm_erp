@@ -11,6 +11,8 @@ import asyncio
 import time
 import streamlit as st
 from datetime import datetime, date
+
+from utils.amount_calculator import calculate_total_amount
 from utils.utils import navigation, check_login_state
 from utils.db_operations_v2 import create_work_order, connect_db
 from utils.styles import apply_global_styles
@@ -217,14 +219,20 @@ async def create_work_order_page():
                 help="工单补贴金额（可选）"
             )
 
-        # 显示自动计算的总金额
+        # 在显示总金额之前，使用计算函数
+        order_amount, total_amount = calculate_total_amount(
+            income1,
+            income2,
+            assigned_cleaner if assigned_cleaner else "暂未派单",
+            conn
+        )
+
+        # 显示金额
         col1, col2 = st.columns(2)
         with col1:
-            order_amount = income1 + income2
             st.info(f"订单金额：${order_amount:.2f}", icon="💰")
         with col2:
-            total_amount = income1 + (income2 * 1.1)  # 转账收入加10% GST
-            st.info(f"总金额(含GST)：${total_amount:.2f}", icon="💰")
+            st.info(f"总金额：${total_amount:.2f}", icon="💰")
 
         # 备注信息
         remarks = st.text_area(

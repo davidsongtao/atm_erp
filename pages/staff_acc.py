@@ -11,9 +11,65 @@ import time
 import pandas as pd
 import streamlit as st
 from datetime import datetime
-from utils.db_operations_v2 import get_all_staff_acc, delete_clean_team, get_all_clean_teams, create_clean_team, update_clean_team, get_active_clean_teams, get_team_monthly_orders
+from utils.db_operations_v2 import get_all_staff_acc, delete_clean_team, get_all_clean_teams, create_clean_team, update_clean_team, get_active_clean_teams, get_team_monthly_orders, connect_db
 from utils.utils import check_login_state, navigation, get_theme_color
 from utils.styles import apply_global_styles
+
+
+@st.dialog("确认修改ABN状态")
+def show_abn_change_confirmation(team_name: str, old_abn: bool, new_abn: bool):
+    """显示ABN状态修改确认对话框"""
+    st.markdown("""
+        <style>
+            .stDialog > div {
+                border: none;
+                border-radius: 0;
+                padding: 2rem;
+            }
+            .stDialog > div > div {
+                padding: 0;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 获取受影响的工单数量
+    conn = connect_db()
+    affected_orders = conn.query(
+        """
+        SELECT COUNT(*) as count 
+        FROM work_orders 
+        WHERE assigned_cleaner = :team_name
+        """,
+        params={'team_name': team_name},
+        ttl=0
+    ).iloc[0]['count']
+
+    st.warning(
+        f"您正在将保洁组 **{team_name}** 的ABN状态从" +
+        f"**{'已注册' if old_abn else '未注册'}** 改为 " +
+        f"**{'已注册' if new_abn else '未注册'}**",
+        icon="⚠️"
+    )
+
+    if affected_orders > 0:
+        st.info(
+            f"此操作将会影响 {affected_orders} 个工单的总金额计算。\n\n" +
+            "- 如果改为已注册ABN，相关工单将不再计算GST\n" +
+            "- 如果改为未注册ABN，相关工单将增加10%的GST",
+            icon="ℹ️"
+        )
+
+    st.divider()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("确认修改", use_container_width=True, type="primary"):
+            return True
+    with col2:
+        if st.button("取消", use_container_width=True):
+            return False
+
+    return None
 
 
 @st.dialog("删除保洁组")
@@ -53,41 +109,53 @@ def show_clean_team_deletion_dialog():
     if selected_team and selected_team != "请选择保洁组":
         selected_team_data = clean_teams_data[clean_teams_data['保洁组名称'] == selected_team].iloc[0]
 
-        # 显示确认信息
-        st.warning(
-            f"确定要删除保洁组 **{selected_team}** 吗？此操作不可恢复！",
-            icon="⚠️"
-        )
+        with st.form("update_clean_team_form", border=False):
+            team_name = st.text_input("保洁组名称", value=selected_team_data['保洁组名称'])
+            contact_number = st.text_input("联系电话（选填）", value=selected_team_data['联系电话'])
 
-        # # 显示保洁组当前信息
-        # st.info("保洁组信息", icon="ℹ️")
-        # st.write(f"保洁组名称: {selected_team_data['保洁组名称']}")
-        # st.write(f"联系电话: {selected_team_data['联系电话']}")
-        # st.write(f"在职状态: {selected_team_data['是否在职']}")
-        # if pd.notna(selected_team_data['备注']):
-        #     st.write(f"备注: {selected_team_data['备注']}")
+            # 获取当前ABN状态
+            current_abn = bool(selected_team_data.get('has_abn', False))
+            new_abn = st.checkbox("是否注册ABN", value=current_abn)
 
-        with st.form("delete_clean_team_form", border=False):
-            col1, col2 = st.columns(2)
-            with col1:
-                submitted = st.form_submit_button(
-                    "确认删除",
-                    use_container_width=True,
-                    type="primary"
-                )
-            with col2:
-                if st.form_submit_button("取消", use_container_width=True):
-                    st.rerun()
+            is_active = st.checkbox("是否在职", value=True if selected_team_data['是否在职'] == '在职' else False)
+            notes = st.text_area("备注", value=selected_team_data['备注'] if pd.notna(selected_team_data['备注']) else "")
+
+            submitted = st.form_submit_button("确认更新", use_container_width=True, type="primary")
 
             if submitted:
-                success, error = delete_clean_team(selected_team_data['id'])
+                if not team_name:
+                    st.error("请填写保洁组名称！", icon="⚠️")
+                    return
+
+                # 如果ABN状态发生变化，显示确认对话框
+                if new_abn != current_abn:
+                    confirm = show_abn_change_confirmation(
+                        team_name,
+                        current_abn,
+                        new_abn
+                    )
+
+                    if confirm is None:
+                        return
+                    elif not confirm:
+                        st.rerun()
+                        return
+
+                success, error = update_clean_team(
+                    selected_team_data['id'],
+                    team_name,
+                    contact_number or "",
+                    new_abn,
+                    is_active,
+                    notes
+                )
 
                 if success:
-                    st.success("保洁组删除成功！", icon="✅")
+                    st.success("保洁组信息更新成功！", icon="✅")
                     time.sleep(1)
                     st.rerun()
                 else:
-                    st.error(f"保洁组删除失败：{error}", icon="⚠️")
+                    st.error(f"保洁组信息更新失败：{error}", icon="⚠️")
 
 
 @st.dialog("更新保洁组信息")

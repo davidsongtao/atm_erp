@@ -10,7 +10,7 @@ Description:
 import time
 import streamlit as st
 import pandas as pd
-from utils.db_operations_v2 import get_work_orders, get_work_orders_by_date_range, update_work_order, get_active_clean_teams
+from utils.db_operations_v2 import get_work_orders, get_work_orders_by_date_range, update_work_order, get_active_clean_teams, connect_db
 from utils.utils import navigation, check_login_state
 from utils.styles import apply_global_styles
 
@@ -146,11 +146,12 @@ def show_statistics(filtered_df):
 
 
 def show_work_orders_table(df, cleaner_options):
-    """显示工单详情表格
-    Args:
-        df: 工单数据DataFrame
-        cleaner_options: 保洁组选项列表
-    """
+    """显示工单详情表格"""
+    conn = connect_db()
+    if not conn:
+        st.error("数据库连接失败")
+        return df
+
     # 初始化更新锁
     if 'update_in_progress' not in st.session_state:
         st.session_state.update_in_progress = False
@@ -334,9 +335,9 @@ def show_work_orders_table(df, cleaner_options):
 
     # 处理数据更新
     if st.session_state.get('show_work_orders_table', None) != edited_df.to_dict():
-        if not st.session_state.update_in_progress:  # 检查是否有更新正在进行
+        if not st.session_state.update_in_progress:
             try:
-                st.session_state.update_in_progress = True  # 设置更新锁
+                st.session_state.update_in_progress = True
                 st.session_state['show_work_orders_table'] = edited_df.to_dict()
 
                 # 获取原始数据用于对比
@@ -346,14 +347,6 @@ def show_work_orders_table(df, cleaner_options):
                 for index, row in edited_df.iterrows():
                     original_row = original_df.iloc[index]
                     if not row.equals(original_row):
-                        # 提取并转换金额数据
-                        income1 = float(row['收入1'].replace('$', '').replace(',', '')) if row['收入1'] else 0
-                        income2 = float(row['收入2'].replace('$', '').replace(',', '')) if row['收入2'] else 0
-                        subsidy = float(row['补贴'].replace('$', '').replace(',', '')) if row['补贴'] else 0
-
-                        # 计算新的总金额
-                        total_amount = income1 + income2 + subsidy
-
                         # 准备更新数据
                         update_data = {
                             'id': filtered_df.iloc[index]['id'],
@@ -361,25 +354,41 @@ def show_work_orders_table(df, cleaner_options):
                             'work_time': row['时间'],
                             'work_address': row['地址'],
                             'assigned_cleaner': row['保洁组'],
-                            'income1': income1,
-                            'income2': income2,
-                            'subsidy': subsidy,
-                            'total_amount': total_amount,
                             'source': row['来源'],
                             'remarks': row['备注']
                         }
+
+                        # 处理金额数据
+                        for field, column in [
+                            ('income1', '收入1'),
+                            ('income2', '收入2'),
+                            ('subsidy', '补贴')
+                        ]:
+                            value = row[column]
+                            if isinstance(value, str):
+                                # 去除货币符号和逗号，转换为浮点数
+                                value = float(value.replace('$', '').replace(',', '')) if value else 0
+                            update_data[field] = value
 
                         # 调用更新函数
                         success, error = update_work_order(update_data)
 
                         if success:
-                            # 先更新当前行的总金额显示
-                            edited_df.at[index, '总金额'] = f"${total_amount:.2f}"
+                            # 获取最新的金额数据
+                            latest_data = conn.query(
+                                """
+                                SELECT order_amount, total_amount 
+                                FROM work_orders 
+                                WHERE id = :id
+                                """,
+                                params={'id': update_data['id']},
+                                ttl=0
+                            ).iloc[0]
 
-                            # 设置更新成功的状态
+                            # 更新显示的金额
+                            edited_df.at[index, '总金额'] = f"${latest_data['total_amount']:.2f}"
+
                             st.session_state.show_success_toast = True
-
-                            # 重新加载页面以显示最新数据
                             st.rerun()
                         else:
                             st.error(f"更新失败：{error}")
@@ -392,9 +401,9 @@ def show_work_orders_table(df, cleaner_options):
                 st.error(f"更新失败：{str(e)}")
                 time.sleep(1)
             finally:
-                st.session_state.update_in_progress = False  # 释放更新锁
+                st.session_state.update_in_progress = False
 
-    return filtered_df  # 返回过滤后的数据用于统计
+    return filtered_df
 
 
 def work_order_statistics():
