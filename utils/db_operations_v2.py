@@ -31,7 +31,7 @@ def create_work_order(
         income1=0, income2=0,
         work_date=None, work_time=None,
         assigned_cleaner="暂未派单",
-        subsidy=None, remarks=None
+        subsidy=None, remarks=None, invoice_status='未开票'
 ):
     """创建新工单"""
     try:
@@ -48,12 +48,12 @@ def create_work_order(
                 INSERT INTO work_orders (
                     order_date, work_date, work_time, created_by, source,
                     work_address, assigned_cleaner, order_amount, total_amount, 
-                    subsidy, remarks, income1, income2
+                    subsidy, remarks, income1, income2, invoice_status
                 )
                 VALUES (
                     :order_date, :work_date, :work_time, :created_by, :source,
                     :work_address, :assigned_cleaner, :order_amount, :total_amount,
-                    :subsidy, :remarks, :income1, :income2
+                    :subsidy, :remarks, :income1, :income2, :invoice_status
                 )
                 """),
                 params={
@@ -69,7 +69,8 @@ def create_work_order(
                     'subsidy': subsidy,
                     'remarks': remarks,
                     'income1': income1,
-                    'income2': income2
+                    'income2': income2,
+                    'invoice_status': invoice_status
                 }
             )
             session.commit()
@@ -101,7 +102,7 @@ def get_work_orders(time_range='week'):
                 id, order_date, work_date, work_time, created_by,
                 source, work_address, assigned_cleaner, 
                 income1, income2, order_amount, total_amount,
-                subsidy, remarks
+                subsidy, remarks, invoice_status
             FROM work_orders 
             WHERE {time_filter}
             ORDER BY 
@@ -194,11 +195,14 @@ def update_work_order(data):
             data['total_amount'] = total_amount
 
         for key, value in data.items():
-            if key != 'id':  # 排除id字段
-                if key in ['work_date', 'work_time']:
+            if key not in ['id', '总金额']:  # 排除id字段
+                if key in ['日期', '时间']:
                     if value == '' or value is None:
                         update_fields.append(f"{key} = NULL")
                         continue
+                elif key == '发票状态':
+                    update_fields.append(f"invoice_status = :invoice_status")
+                    params['invoice_status'] = value
                 update_fields.append(f"{key} = :{key}")
                 params[key] = value
 

@@ -223,6 +223,7 @@ def show_work_orders_table(df, all_cleaner_options):
         'subsidy',  # 补贴
         'created_by',  # 创建人
         'source',  # 来源
+        'invoice_status',
     ]
 
     display_df = display_df[columns_to_display].copy()
@@ -239,7 +240,8 @@ def show_work_orders_table(df, all_cleaner_options):
         'subsidy': '补贴',
         'created_by': '创建人',
         'source': '来源',
-        'remarks': '备注'
+        'remarks': '备注',
+        'invoice_status': '发票状态',
     }
     display_df = display_df.rename(columns=column_labels)
 
@@ -252,6 +254,8 @@ def show_work_orders_table(df, all_cleaner_options):
             display_hour = hour if hour <= 12 else hour - 12
             time_str = f"{period} {display_hour:02d}:{minute:02d}"
             time_options.append(time_str)
+
+    invoice_status_options = ['未开票', '已开票', '不开票']
 
     # 使用传入的 cleaner_options
     edited_df = st.data_editor(
@@ -328,6 +332,12 @@ def show_work_orders_table(df, all_cleaner_options):
                 "来源",
                 help="工单来源",
                 width="small",
+            ),
+            "发票状态": st.column_config.SelectboxColumn(
+                "发票状态",
+                help="发票状态",
+                width="small",
+                options=invoice_status_options,
             ),
         }
     )

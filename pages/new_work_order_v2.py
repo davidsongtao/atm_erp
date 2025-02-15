@@ -219,6 +219,15 @@ async def create_work_order_page():
                 help="工单补贴金额（可选）"
             )
 
+        invoice_status_options = ['未开票', '已开票', '不开票']
+        invoice_status = st.selectbox(
+            "发票状态",
+            options=invoice_status_options,
+            index=None,
+            help="选择发票状态（可选）",
+            placeholder="请选择..."
+        )
+
         # 在显示总金额之前，使用计算函数
         order_amount, total_amount = calculate_total_amount(
             income1,
@@ -261,7 +270,8 @@ async def create_work_order_page():
                     income1=income1,
                     income2=income2,
                     subsidy=subsidy if subsidy > 0 else None,
-                    remarks=remarks
+                    remarks=remarks,
+                    invoice_status=invoice_status
                 )
 
                 if success:
