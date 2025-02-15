@@ -11,228 +11,12 @@ import time
 import pandas as pd
 import streamlit as st
 from datetime import datetime
-from utils.db_operations_v2 import get_all_staff_acc, delete_clean_team, get_all_clean_teams, create_clean_team, update_clean_team, get_active_clean_teams, get_team_monthly_orders, connect_db
+from utils.db_operations_v2 import (
+    get_all_staff_acc, get_all_clean_teams, create_clean_team,
+    get_active_clean_teams, get_team_monthly_orders
+)
 from utils.utils import check_login_state, navigation, get_theme_color
 from utils.styles import apply_global_styles
-
-
-@st.dialog("确认修改ABN状态")
-def show_abn_change_confirmation(team_name: str, old_abn: bool, new_abn: bool):
-    """显示ABN状态修改确认对话框"""
-    st.markdown("""
-        <style>
-            .stDialog > div {
-                border: none;
-                border-radius: 0;
-                padding: 2rem;
-            }
-            .stDialog > div > div {
-                padding: 0;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # 获取受影响的工单数量
-    conn = connect_db()
-    affected_orders = conn.query(
-        """
-        SELECT COUNT(*) as count 
-        FROM work_orders 
-        WHERE assigned_cleaner = :team_name
-        """,
-        params={'team_name': team_name},
-        ttl=0
-    ).iloc[0]['count']
-
-    st.warning(
-        f"您正在将保洁组 **{team_name}** 的ABN状态从" +
-        f"**{'已注册' if old_abn else '未注册'}** 改为 " +
-        f"**{'已注册' if new_abn else '未注册'}**",
-        icon="⚠️"
-    )
-
-    if affected_orders > 0:
-        st.info(
-            f"此操作将会影响 {affected_orders} 个工单的总金额计算。\n\n" +
-            "- 如果改为已注册ABN，相关工单将不再计算GST\n" +
-            "- 如果改为未注册ABN，相关工单将增加10%的GST",
-            icon="ℹ️"
-        )
-
-    st.divider()
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("确认修改", use_container_width=True, type="primary"):
-            return True
-    with col2:
-        if st.button("取消", use_container_width=True):
-            return False
-
-    return None
-
-
-@st.dialog("删除保洁组")
-def show_clean_team_deletion_dialog():
-    """删除保洁组的对话框"""
-    st.markdown("""
-        <style>
-            .stDialog > div {
-                border: none;
-                border-radius: 0;
-                padding: 2rem;
-            }
-
-            .stDialog > div > div {
-                padding: 0;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-    clean_teams_data, error_message = get_all_clean_teams()
-    if error_message:
-        st.error(error_message, icon="⚠️")
-        return
-
-    if clean_teams_data.empty:
-        st.warning("暂无保洁组数据", icon="⚠️")
-        return
-
-    team_options = ["请选择保洁组"] + clean_teams_data['保洁组名称'].tolist()
-
-    selected_team = st.selectbox(
-        "选择要删除的保洁组",
-        options=team_options,
-        key="team_selector_delete"
-    )
-
-    if selected_team and selected_team != "请选择保洁组":
-        selected_team_data = clean_teams_data[clean_teams_data['保洁组名称'] == selected_team].iloc[0]
-
-        with st.form("update_clean_team_form", border=False):
-            team_name = st.text_input("保洁组名称", value=selected_team_data['保洁组名称'])
-            contact_number = st.text_input("联系电话（选填）", value=selected_team_data['联系电话'])
-
-            # 获取当前ABN状态
-            current_abn = bool(selected_team_data.get('has_abn', False))
-            new_abn = st.checkbox("是否注册ABN", value=current_abn)
-
-            is_active = st.checkbox("是否在职", value=True if selected_team_data['是否在职'] == '在职' else False)
-            notes = st.text_area("备注", value=selected_team_data['备注'] if pd.notna(selected_team_data['备注']) else "")
-
-            submitted = st.form_submit_button("确认更新", use_container_width=True, type="primary")
-
-            if submitted:
-                if not team_name:
-                    st.error("请填写保洁组名称！", icon="⚠️")
-                    return
-
-                # 如果ABN状态发生变化，显示确认对话框
-                if new_abn != current_abn:
-                    confirm = show_abn_change_confirmation(
-                        team_name,
-                        current_abn,
-                        new_abn
-                    )
-
-                    if confirm is None:
-                        return
-                    elif not confirm:
-                        st.rerun()
-                        return
-
-                success, error = update_clean_team(
-                    selected_team_data['id'],
-                    team_name,
-                    contact_number or "",
-                    new_abn,
-                    is_active,
-                    notes
-                )
-
-                if success:
-                    st.success("保洁组信息更新成功！", icon="✅")
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error(f"保洁组信息更新失败：{error}", icon="⚠️")
-
-
-@st.dialog("更新保洁组信息")
-def show_clean_team_update_dialog():
-    """更新保洁组信息的对话框"""
-    st.markdown("""
-        <style>
-            .stDialog > div {
-                border: none;
-                border-radius: 0;
-                padding: 2rem;
-            }
-
-            .stDialog > div > div {
-                padding: 0;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-    clean_teams_data, error_message = get_all_clean_teams()
-    if error_message:
-        st.error(error_message, icon="⚠️")
-        return
-
-    if clean_teams_data.empty:
-        st.warning("暂无保洁组数据", icon="⚠️")
-        return
-
-    team_options = ["请选择保洁组"] + clean_teams_data['保洁组名称'].tolist()
-
-    selected_team = st.selectbox(
-        "选择要更新的保洁组",
-        options=team_options,
-        key="team_selector"
-    )
-
-    if selected_team and selected_team != "请选择保洁组":
-        selected_team_data = clean_teams_data[clean_teams_data['保洁组名称'] == selected_team].iloc[0]
-
-        with st.form("update_clean_team_form", border=False):
-            team_name = st.text_input("保洁组名称", value=selected_team_data['保洁组名称'])
-            contact_number = st.text_input("联系电话（选填）", value=selected_team_data['联系电话'])
-            has_abn = st.checkbox("是否注册ABN", value=bool(selected_team_data.get('has_abn', False)))
-            is_active = st.checkbox("是否在职", value=True if selected_team_data['是否在职'] == '在职' else False)
-            notes = st.text_area("备注", value=selected_team_data['备注'] if pd.notna(selected_team_data['备注']) else "")
-
-            col1, col2 = st.columns(2)
-            with col1:
-                submitted = st.form_submit_button(
-                    "确认更新",
-                    use_container_width=True,
-                    type="primary"
-                )
-            with col2:
-                if st.form_submit_button("取消", use_container_width=True):
-                    st.rerun()
-
-            if submitted:
-                if not team_name:
-                    st.error("请填写保洁组名称！", icon="⚠️")
-                    return
-
-                success, error = update_clean_team(
-                    selected_team_data['id'],
-                    team_name,
-                    contact_number or "",  # 如果为空则传入空字符串
-                    has_abn,
-                    is_active,
-                    notes
-                )
-
-                if success:
-                    st.success("保洁组信息更新成功！", icon="✅")
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error(f"保洁组信息更新失败：{error}", icon="⚠️")
 
 
 @st.dialog("创建新保洁组")
@@ -283,65 +67,6 @@ def show_clean_team_creation_dialog():
                 st.rerun()
             else:
                 st.error(f"保洁组创建失败：{error}", icon="⚠️")
-
-
-def select_clean_team():
-    """选择要更新的保洁组"""
-    clean_teams_data, error_message = get_all_clean_teams()
-    if error_message:
-        st.error(error_message, icon="⚠️")
-        return None
-
-    if clean_teams_data.empty:
-        st.warning("暂无保洁组数据", icon="⚠️")
-        return None
-
-    # 提取保洁组名称列表
-    team_options = clean_teams_data['保洁组名称'].tolist()
-
-    selected_team = st.selectbox(
-        "选择要更新的保洁组",
-        options=team_options,
-        key="team_selector"
-    )
-
-    if selected_team:
-        # 获取对应的完整数据行
-        selected_team_data = clean_teams_data[clean_teams_data['保洁组名称'] == selected_team]
-        return selected_team_data
-    return None
-
-
-def show_clean_team_update(team_data):
-    """显示更新保洁组信息的表单"""
-    with st.form("update_clean_team_form"):
-        st.subheader("更新保洁组信息")
-
-        # 获取选中行的数据
-        selected_team = team_data.iloc[0]
-
-        team_name = st.text_input("保洁组名称", value=selected_team['保洁组名称'])
-        contact_number = st.text_input("联系电话", value=selected_team['联系电话'])
-        is_active = st.checkbox("是否在职", value=bool(selected_team['是否在职']))
-        notes = st.text_area("备注", value=selected_team['备注'] if pd.notna(selected_team['备注']) else "")
-
-        submitted = st.form_submit_button("确认更新", use_container_width=True, type="primary")
-
-        if submitted:
-            if not all([team_name, contact_number]):
-                st.error("请填写所有必填信息！", icon="⚠️")
-                return
-
-            success, error = update_clean_team(
-                selected_team['id'], team_name, contact_number, is_active, notes
-            )
-
-            if success:
-                st.success("保洁组信息更新成功！", icon="✅")
-                time.sleep(1)
-                st.rerun()
-            else:
-                st.error(f"保洁组信息更新失败：{error}", icon="⚠️")
 
 
 def show_monthly_settlement():
@@ -518,12 +243,11 @@ def staff_acc():
 
                 with col2:
                     if st.button("✏️修改保洁组", use_container_width=True, type="primary"):
-                        show_clean_team_update_dialog()
+                        st.switch_page("pages/modify_clean_team.py")
 
                 with col3:
                     if st.button("❌删除保洁组", use_container_width=True, type="primary"):
-                        show_clean_team_deletion_dialog()
-
+                        st.switch_page("pages/delete_clean_team.py")
 
             else:
                 st.error(error_message, icon="⚠️")
