@@ -10,7 +10,7 @@ Description:
 import time
 import streamlit as st
 from utils.utils import navigation, check_login_state
-from utils.db_operations import get_all_staff_acc, delete_account
+from utils.db_operations_v2 import get_all_staff_acc, delete_account
 from utils.styles import apply_global_styles
 
 

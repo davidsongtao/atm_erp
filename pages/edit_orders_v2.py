@@ -30,7 +30,7 @@ def edit_order():
         if 'edit_order_data' not in st.session_state:
             st.error("未找到要编辑的工单！", icon="⚠️")
             time.sleep(2)
-            st.switch_page("pages/work_orders.py")
+            st.switch_page("pages/orders_statistics.py")
             return
 
         order_data = st.session_state['edit_order_data']
@@ -176,7 +176,7 @@ def edit_order():
                     if 'edit_order_data' in st.session_state:
                         del st.session_state['edit_order_data']
                     time.sleep(2)
-                    st.switch_page("pages/work_orders.py")
+                    st.switch_page("pages/orders_statistics.py")
                 else:
                     st.error(f"修改失败：{error}", icon="⚠️")
 
@@ -185,7 +185,7 @@ def edit_order():
                 # 清除session state中的编辑数据
                 if 'edit_order_data' in st.session_state:
                     del st.session_state['edit_order_data']
-                st.switch_page("pages/work_orders.py")
+                st.switch_page("pages/orders_statistics.py")
 
     else:
         error = st.error("您还没有登录！3秒后跳转至登录页面...", icon="⚠️")

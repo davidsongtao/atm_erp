@@ -12,9 +12,8 @@ import pandas as pd
 import streamlit as st
 from datetime import datetime
 
-from pages.work_orders import get_theme_color
 from utils.styles import apply_global_styles
-from utils.utils import check_login_state, navigation
+from utils.utils import check_login_state, navigation, get_theme_color
 from utils.db_operations_v2 import get_active_clean_teams, get_team_monthly_orders
 
 

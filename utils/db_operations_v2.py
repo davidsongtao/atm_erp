@@ -7,10 +7,12 @@ Description:
 @Time     ：2025/2/15 上午11:42
 @Contact  ：king.songtao@gmail.com
 """
+import pandas as pd
 import streamlit as st
 from datetime import datetime
 from sqlalchemy import text
 from configs.settings import *
+from utils.utils import remove_active_session
 
 
 def connect_db():
@@ -361,3 +363,320 @@ def get_team_monthly_orders(team_id, year, month):
     except Exception as e:
         logger.error(f"获取保洁组月度工单统计失败！错误信息：{e}")
         return pd.DataFrame(), f"获取保洁组月度工单统计失败：{str(e)}"
+
+
+def create_new_account(username, password, name, role):
+    """
+    创建新的用户账户
+    :param username: 用户名
+    :param password: 密码
+    :param name: 姓名
+    :param role: 角色
+    :return: 创建状态，错误信息
+    """
+    try:
+        conn = connect_db()
+
+        # 首先检查用户名是否已存在
+        check_query = conn.query(
+            "SELECT COUNT(*) as count FROM users WHERE username = :username",
+            params={'username': username}
+        ).to_dict()
+
+        if check_query['count'][0] > 0:
+            return False, "用户名已存在"
+
+        # 使用 text() 函数包装 SQL 语句
+        with conn.session as session:
+            session.execute(
+                text("""
+                INSERT INTO users (username, password, name, role) 
+                VALUES (:username, :password, :name, :role)
+                """),
+                params={
+                    'username': username,
+                    'password': password,
+                    'name': name,
+                    'role': role
+                }
+            )
+            session.commit()
+
+        logger.success(f"成功创建新用户：{username}")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"创建新用户失败，错误信息：{e}")
+        return False, str(e)
+
+
+def get_all_staff_acc():
+    try:
+        conn = connect_db()
+        # 将 ttl 设置为 0 以禁用缓存
+        query_result = conn.query("SELECT *  FROM users", ttl=0)
+        # 移除 id 列，只选择其他需要的列
+        df = query_result[['username', 'password', 'role', 'name']]
+        df['password'] = "********"
+        df = df.rename(columns=BaseConfig().CUSTOM_HEADER)
+        return df, None
+    except Exception as e:
+        logger.error(f"获取所有员工信息失败！错误信息：{e}")
+        error_message = "获取所有员工信息失败!"
+        return None, error_message
+
+
+def delete_account(username):
+    """
+    删除用户账户
+    :param username: 要删除的用户名
+    :return: 删除状态，错误信息
+    """
+    try:
+        # 检查是否是当前登录用户
+        current_user = st.session_state.get("logged_in_username")
+        if username == current_user:
+            return False, "不能删除自己的账户"
+
+        conn = connect_db()
+
+        # 使用session执行删除
+        with conn.session as session:
+            session.execute(
+                text("DELETE FROM users WHERE username = :username"),
+                params={'username': username}
+            )
+            session.commit()
+
+        # 只清除被删除用户的会话
+        remove_active_session(username)
+
+        logger.success(f"成功删除用户账户：{username}")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"删除用户账户失败，错误信息：{e}")
+        return False, str(e)
+
+
+def update_account(username, new_name, new_password=None, new_role=None):
+    try:
+        conn = connect_db()
+
+        # 构建UPDATE语句
+        update_fields = []
+        params = {'username': username, 'new_name': new_name}
+
+        update_fields.append("name = :new_name")
+
+        if new_password:
+            update_fields.append("password = :new_password")
+            params['new_password'] = new_password
+
+        if new_role:
+            update_fields.append("role = :new_role")
+            params['new_role'] = new_role
+
+        update_sql = f"""
+            UPDATE users 
+            SET {', '.join(update_fields)}
+            WHERE username = :username
+        """
+
+        # 使用session执行更新
+        with conn.session as session:
+            session.execute(text(update_sql), params)
+            session.commit()
+
+        # 获取新的数据库连接来验证更新
+        verify_conn = connect_db()
+
+        if new_password:
+            verify_query = verify_conn.query(
+                "SELECT password FROM users WHERE username = :username",
+                params={'username': username},
+                ttl=0
+            ).to_dict()
+            actual_password = verify_query['password'][0]
+            logger.info(f"更新后验证 - 数据库中的新密码: {actual_password}")
+
+            if actual_password != new_password:
+                raise Exception("密码更新验证失败")
+
+            remove_active_session(username)
+            logger.info(f"已移除用户 {username} 的活跃会话")
+
+        logger.success(f"成功更新用户信息：{username}")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"更新用户信息失败，错误信息：{e}")
+        return False, str(e)
+
+
+def delete_clean_team(team_id: int) -> tuple[bool, str]:
+    """删除保洁组
+
+    Args:
+        team_id (int): 保洁组ID
+
+    Returns:
+        tuple[bool, str]: (是否成功, 错误信息)
+    """
+    try:
+        conn = connect_db()
+
+        # 检查是否有关联的工单
+        check_result = conn.query(
+            """
+            SELECT COUNT(*) as count 
+            FROM work_orders wo 
+            JOIN clean_teams ct ON wo.assigned_cleaner = ct.team_name 
+            WHERE ct.id = :team_id
+            """,
+            params={'team_id': team_id},
+            ttl=0
+        ).to_dict()
+
+        if check_result['count'][0] > 0:
+            return False, "该保洁组有关联的工单,无法删除"
+
+        # 执行删除操作
+        with conn.session as session:
+            session.execute(
+                text("DELETE FROM clean_teams WHERE id = :team_id"),
+                params={'team_id': team_id}
+            )
+            session.commit()
+
+        return True, ""
+
+    except Exception as e:
+        logger.error(f"删除保洁组失败：{e}")
+        return False, str(e)
+
+
+def get_all_clean_teams():
+    """获取所有保洁组信息,包含ABN状态"""
+    try:
+        conn = connect_db()
+
+        df = conn.query("""
+            SELECT 
+                id, 
+                team_name AS '保洁组名称',
+                contact_number AS '联系电话',
+                CASE 
+                    WHEN is_active = 1 THEN '在职'
+                    ELSE '离职'
+                END AS '是否在职',
+                has_abn,  -- 直接获取has_abn列
+                notes AS '备注',
+                created_at AS '创建时间',
+                updated_at AS '更新时间'
+            FROM clean_teams 
+            WHERE team_name != '暂未派单'
+            ORDER BY is_active DESC, team_name ASC
+        """, ttl=0)
+
+        return df, None
+
+    except Exception as e:
+        logger.error(f"获取保洁组信息失败：{e}")
+        return None, str(e)
+
+
+def create_clean_team(team_name: str, contact_number: str, has_abn: bool = False, notes: str = None) -> tuple[bool, str]:
+    """创建新保洁组"""
+    try:
+        conn = connect_db()
+
+        # 检查名称是否存在
+        check_result = conn.query(
+            "SELECT id FROM clean_teams WHERE team_name = :team_name",
+            params={'team_name': team_name},
+            ttl=0
+        )
+
+        if not check_result.empty:
+            return False, "保洁组名称已存在"
+
+        # 插入新记录
+        with conn.session as session:
+            session.execute(
+                text("""
+                INSERT INTO clean_teams (team_name, contact_number, has_abn, notes)
+                VALUES (:team_name, :contact_number, :has_abn, :notes)
+                """),
+                params={
+                    'team_name': team_name,
+                    'contact_number': contact_number,
+                    'has_abn': 1 if has_abn else 0,  # 转换为整数
+                    'notes': notes
+                }
+            )
+            session.commit()
+
+        return True, ""
+
+    except Exception as e:
+        return False, str(e)
+
+
+def update_clean_team(team_id: int, team_name: str, contact_number: str, has_abn: bool, is_active: bool = True, notes: str = None) -> tuple[bool, str]:
+    try:
+        conn = connect_db()
+
+        # 检查是否存在相同名称的其他保洁组
+        check_result = conn.query(
+            """
+            SELECT id FROM clean_teams 
+            WHERE team_name = :team_name AND id != :team_id
+            """,
+            params={
+                'team_name': team_name,
+                'team_id': team_id
+            },
+            ttl=0
+        )
+
+        if not check_result.empty:
+            return False, "保洁组名称已存在"
+
+        # 获取旧的ABN状态
+        old_abn_status = conn.query(
+            "SELECT has_abn FROM clean_teams WHERE id = :team_id",
+            params={'team_id': team_id},
+            ttl=0
+        ).iloc[0]['has_abn']
+
+        # 更新保洁组信息
+        with conn.session as session:
+            session.execute(
+                text("""
+                UPDATE clean_teams 
+                SET team_name = :team_name,
+                    contact_number = :contact_number,
+                    has_abn = :has_abn,
+                    is_active = :is_active,
+                    notes = :notes,
+                    updated_at = NOW()
+                WHERE id = :team_id
+                """),
+                params={
+                    'team_name': team_name,
+                    'contact_number': contact_number,
+                    'has_abn': 1 if has_abn else 0,  # 确保转换为整数
+                    'is_active': 1 if is_active else 0,  # 确保转换为整数
+                    'notes': notes,
+                    'team_id': team_id
+                }
+            )
+
+            session.commit()
+
+        return True, ""
+
+    except Exception as e:
+        logger.error(f"更新保洁组信息失败：{e}")
+        return False, str(e)

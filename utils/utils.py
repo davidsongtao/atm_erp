@@ -392,7 +392,6 @@ def get_response_connie(prompt, memory):
             raise Exception(f"多次尝试后API调用仍然失败: {last_error}")
 
 
-
 def get_active_sessions():
     """获取所有活跃的会话"""
     if 'active_sessions' not in st.session_state:
@@ -411,3 +410,22 @@ def remove_active_session(username):
     sessions = get_active_sessions()
     if username in sessions:
         del sessions[username]
+
+
+def get_theme_color():
+    """
+    从 .streamlit/config.toml 读取主题色
+    Returns:
+        str: 主题色（十六进制颜色代码）
+    """
+    config_path = ".streamlit/config.toml"
+    default_color = "#FF4B4B"
+
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding='utf-8') as f:
+                config = toml.load(f)
+                return config.get("theme", {}).get("primaryColor", default_color)
+        return default_color
+    except Exception:
+        return default_color

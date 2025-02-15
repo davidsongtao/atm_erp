@@ -61,9 +61,6 @@ def main():
         if role == "admin":
             if st.button("跳转至管理员控制台", key="admin_button", use_container_width=True):
                 st.switch_page("pages/orders_statistics.py")
-        elif role == "customer_service":
-            if st.button("跳转至客服控制台", key="customer_service_button", use_container_width=True, type="primary"):
-                st.switch_page("pages/orders_statistics.py")
             if st.button("退出登录", key="logout_button", use_container_width=True):
                 log_out()
 
@@ -95,8 +92,6 @@ def main():
 
                     if role == "admin":
                         st.switch_page("pages/orders_statistics.py")
-                    elif role == "customer_service":
-                        st.switch_page("pages/customer_service_page.py")
                 elif error_message == "用户名不存在":
                     st.error("用户名不存在！", icon="⚠️")
                 elif error_message == "密码错误":

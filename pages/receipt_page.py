@@ -41,7 +41,7 @@ def cancel_confirm_dialog():
             for key in ['edit_order_data', 'custom_items', 'current_editing_order_id', 'previous_form_data']:
                 if key in st.session_state:
                     del st.session_state[key]
-            st.switch_page("pages/work_orders.py")
+            st.switch_page("pages/orders_statistics.py")
 
     with col2:
         if st.button("返回", use_container_width=True):
@@ -415,7 +415,7 @@ async def receipt_page():  # 继续 receipt_page 函数
 
     if role != "admin":
         if st.button("⬅️返回控制台", use_container_width=True):
-            st.switch_page("pages/customer_service_page.py")
+            st.switch_page("pages/orders_statistics.py")
         return
 
     # 初始化收据数据

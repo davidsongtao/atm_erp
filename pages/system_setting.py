@@ -11,7 +11,7 @@ import time
 
 import streamlit as st
 from utils.utils import navigation, check_login_state
-from utils.db_operations import update_account, login_auth
+from utils.db_operations_v2 import update_account, login_auth
 from utils.styles import apply_global_styles
 
 
@@ -72,7 +72,7 @@ def personal_info_settings():
         st.error("请勾选确认信息后进行提交！", icon="⚠️")
 
     if st.button("取消", use_container_width=True, type="secondary", key="personal_info_cancel"):
-        st.switch_page("pages/admin_page.py")
+        st.switch_page("pages/orders_statistics.py")
 
 
 def password_settings():
@@ -117,7 +117,7 @@ def password_settings():
         st.error("请勾选确认信息后进行提交！", icon="⚠️")
 
     if st.button("取消", use_container_width=True, type="secondary", key="confirm_password_change_no"):
-        st.switch_page("pages/admin_page.py")
+        st.switch_page("pages/orders_statistics.py")
 
 
 def appearance_settings():
@@ -199,7 +199,7 @@ def appearance_settings():
 
     if st.button("立即刷新", use_container_width=True, type="secondary",
                  key="change_theme_cancel"):
-        st.switch_page("pages/admin_page.py")
+        st.switch_page("pages/orders_statistics.py")
 
 
 def system_config_settings():
@@ -211,13 +211,13 @@ def system_config_settings():
         st.session_state.clear()
         st.success("缓存已清除！需要重新登录...")
         time.sleep(2)
-        st.switch_page("pages/login_page.py")
+        st.switch_page("app.py")
 
     elif clear_cache and not clear_cache_confirm:
         st.error("请勾选确认信息后进行提交！", icon="⚠️")
 
     if st.button("取消", use_container_width=True, type="secondary", key="clear_coach_no"):
-        st.switch_page("pages/admin_page.py")
+        st.switch_page("pages/orders_statistics.py")
 
 
 if __name__ == '__main__':

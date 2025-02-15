@@ -238,10 +238,8 @@ def work_order_statistics():
         col1, col3 = st.columns([1, 1])
         with col1:
             if st.button("新建工单", use_container_width=True, type="primary"):
-                st.switch_page("pages/new_work_order_v2.py")
-        # with col2:
-        #     if st.button("工单管理", use_container_width=True, type="primary"):
-        #         st.switch_page("pages/work_orders_v2.py")
+                st.switch_page("pages/orders_statistics.py")
+
         with col3:
             if st.button("月度结算", use_container_width=True, type="primary"):
                 st.switch_page("pages/monthly_review.py")
