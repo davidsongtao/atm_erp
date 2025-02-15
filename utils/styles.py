@@ -1,6 +1,6 @@
 """
-Description: 
-    
+Description:
+
 -*- Encoding: UTF-8 -*-
 @File     ：styles.py.py
 @Author   ：King Songtao
@@ -244,6 +244,19 @@ def apply_global_styles():
                 border-radius: 0 !important;
                 background-color: transparent !important;
             }
+            
+            .st-emotion-cache-1p3qzxk {
+                bottom: 1rem !important;
+                top: auto !important;
+                right: 1rem !important;
+                left: auto !important;
+                position: fixed !important;
+            }
+            
+            .st-emotion-cache-1p3qzxk > div {
+                border-radius: 0px !important;
+            }
+            
          
         </style>
     """, unsafe_allow_html=True)

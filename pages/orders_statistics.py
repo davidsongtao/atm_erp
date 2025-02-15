@@ -155,6 +155,12 @@ def show_work_orders_table(df, cleaner_options):
     if 'update_in_progress' not in st.session_state:
         st.session_state.update_in_progress = False
 
+    # 检查是否需要显示成功提示
+    if st.session_state.get('show_success_toast', False):
+        st.toast('数据更新成功！', icon='✅')
+        # 清除提示状态
+        st.session_state.show_success_toast = False
+
     filtered_df = df.copy()
 
     # 将所有的 NaN 和 None 值替换为空字符串
@@ -367,10 +373,14 @@ def show_work_orders_table(df, cleaner_options):
                         success, error = update_work_order(update_data)
 
                         if success:
-                            # 更新成功后，显示 toast 消息
-                            st.toast('数据更新成功！', icon='✅')
-                            time.sleep(0.5)  # 短暂延迟以确保用户能看到提示
-                            st.rerun()  # 重新加载页面以显示最新数据
+                            # 先更新当前行的总金额显示
+                            edited_df.at[index, '总金额'] = f"${total_amount:.2f}"
+
+                            # 设置更新成功的状态
+                            st.session_state.show_success_toast = True
+
+                            # 重新加载页面以显示最新数据
+                            st.rerun()
                         else:
                             st.error(f"更新失败：{error}")
                             time.sleep(1)
