@@ -151,6 +151,10 @@ def show_work_orders_table(df, cleaner_options):
         df: 工单数据DataFrame
         cleaner_options: 保洁组选项列表
     """
+    # 初始化更新锁
+    if 'update_in_progress' not in st.session_state:
+        st.session_state.update_in_progress = False
+
     filtered_df = df.copy()
 
     # 将所有的 NaN 和 None 值替换为空字符串
@@ -257,11 +261,11 @@ def show_work_orders_table(df, cleaner_options):
                 step=1,
                 width="small",
             ),
-            "时间": st.column_config.SelectboxColumn(  # 改为SelectboxColumn
+            "时间": st.column_config.SelectboxColumn(
                 "时间",
                 help="保洁时间",
                 width="small",
-                options=[""] + time_options,  # 添加空选项
+                options=[""] + time_options,
             ),
             "地址": st.column_config.TextColumn(
                 "地址",
@@ -322,40 +326,63 @@ def show_work_orders_table(df, cleaner_options):
         }
     )
 
-    # 在 show_work_orders_table 函数中的更新逻辑部分
+    # 处理数据更新
     if st.session_state.get('show_work_orders_table', None) != edited_df.to_dict():
-        st.session_state['show_work_orders_table'] = edited_df.to_dict()
+        if not st.session_state.update_in_progress:  # 检查是否有更新正在进行
+            try:
+                st.session_state.update_in_progress = True  # 设置更新锁
+                st.session_state['show_work_orders_table'] = edited_df.to_dict()
 
-        # 获取原始数据用于对比
-        original_df = display_df.copy()
+                # 获取原始数据用于对比
+                original_df = display_df.copy()
 
-        # 比较并处理修改过的行
-        for index, row in edited_df.iterrows():
-            original_row = original_df.iloc[index]
-            if not row.equals(original_row):
-                # 准备更新数据
-                update_data = {
-                    'id': filtered_df.iloc[index]['id'],
-                    'work_date': row['日期'] if pd.notna(row['日期']) else None,
-                    'work_time': row['时间'],
-                    'work_address': row['地址'],
-                    'assigned_cleaner': row['保洁组'],
-                    'income1': float(row['收入1'].replace('$', '').replace(',', '')) if row['收入1'] else 0,
-                    'income2': float(row['收入2'].replace('$', '').replace(',', '')) if row['收入2'] else 0,
-                    'subsidy': float(row['补贴'].replace('$', '').replace(',', '')) if row['补贴'] else 0,
-                    'source': row['来源'],
-                    'remarks': row['备注']
-                }
+                # 比较并处理修改过的行
+                for index, row in edited_df.iterrows():
+                    original_row = original_df.iloc[index]
+                    if not row.equals(original_row):
+                        # 提取并转换金额数据
+                        income1 = float(row['收入1'].replace('$', '').replace(',', '')) if row['收入1'] else 0
+                        income2 = float(row['收入2'].replace('$', '').replace(',', '')) if row['收入2'] else 0
+                        subsidy = float(row['补贴'].replace('$', '').replace(',', '')) if row['补贴'] else 0
 
-                # 调用更新函数
-                success, error = update_work_order(update_data)
+                        # 计算新的总金额
+                        total_amount = income1 + income2 + subsidy
 
-                if success:
-                    # 显示更新成功对话框
-                    show_update_dialog()
-                else:
-                    # 显示更新失败对话框
-                    show_error_dialog(error)
+                        # 准备更新数据
+                        update_data = {
+                            'id': filtered_df.iloc[index]['id'],
+                            'work_date': row['日期'] if pd.notna(row['日期']) else None,
+                            'work_time': row['时间'],
+                            'work_address': row['地址'],
+                            'assigned_cleaner': row['保洁组'],
+                            'income1': income1,
+                            'income2': income2,
+                            'subsidy': subsidy,
+                            'total_amount': total_amount,
+                            'source': row['来源'],
+                            'remarks': row['备注']
+                        }
+
+                        # 调用更新函数
+                        success, error = update_work_order(update_data)
+
+                        if success:
+                            # 更新成功后，显示 toast 消息
+                            st.toast('数据更新成功！', icon='✅')
+                            time.sleep(0.5)  # 短暂延迟以确保用户能看到提示
+                            st.rerun()  # 重新加载页面以显示最新数据
+                        else:
+                            st.error(f"更新失败：{error}")
+                            time.sleep(1)
+
+            except ValueError as e:
+                st.error(f"数据格式错误：{str(e)}")
+                time.sleep(1)
+            except Exception as e:
+                st.error(f"更新失败：{str(e)}")
+                time.sleep(1)
+            finally:
+                st.session_state.update_in_progress = False  # 释放更新锁
 
     return filtered_df  # 返回过滤后的数据用于统计
 
