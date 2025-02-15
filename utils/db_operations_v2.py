@@ -154,6 +154,9 @@ def get_work_orders_by_date_range(start_date, end_date):
 
 def update_work_order(data):
     """更新工单信息"""
+    if 'assigned_cleaner' in data and not data['assigned_cleaner']:
+        data['assigned_cleaner'] = '暂未派单'
+
     try:
         conn = connect_db()
 

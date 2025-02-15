@@ -144,7 +144,7 @@ def show_statistics(filtered_df):
         )
 
 
-def show_work_orders_table(df, cleaner_options):
+def show_work_orders_table(df, all_cleaner_options):
     """显示工单详情表格"""
     conn = connect_db()
     if not conn:
@@ -282,7 +282,7 @@ def show_work_orders_table(df, cleaner_options):
                 "保洁组",
                 help="保洁小组",
                 width="small",
-                options=["暂未派单"] + cleaner_options,
+                options=all_cleaner_options,
             ),
             "收入1": st.column_config.NumberColumn(
                 "收入1",
@@ -439,7 +439,7 @@ def work_order_statistics():
             return
 
         # 提取保洁组名称列表
-        cleaner_options = [team['team_name'] for team in teams]
+        all_cleaner_options = [team['team_name'] for team in teams]
 
         if error:
             st.error(f"获取数据失败：{error}")
@@ -464,7 +464,7 @@ def work_order_statistics():
                     return
 
             # 显示工单表格
-            filtered_df = show_work_orders_table(orders_df, cleaner_options)
+            filtered_df = show_work_orders_table(orders_df, all_cleaner_options)
         else:
             st.info("暂无工单数据")
 
