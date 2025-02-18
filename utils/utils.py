@@ -13,6 +13,7 @@ import streamlit as st
 import time
 import re
 from docx.shared import Pt
+from langchain.document_loaders import toml
 from langchain.memory import ConversationBufferMemory
 from configs.log_config import *
 
@@ -200,6 +201,10 @@ def navigation():
 
     if st.sidebar.button("👩‍👩‍👧‍👦月度结算", key="staff_management_button", use_container_width=True, type="primary"):
         st.switch_page("pages/monthly_review.py")
+
+    # 人员管理模块
+    if st.sidebar.button("🤖智能助理", key="ai_assistant", use_container_width=True, type="primary"):
+        st.switch_page("pages/ai_assistant.py")
 
     # 人员管理模块
     if st.sidebar.button("👥人员管理", key="user_management_button", use_container_width=True, type="primary"):

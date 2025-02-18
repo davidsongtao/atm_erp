@@ -113,12 +113,20 @@ def show_filters(df=None):
 
 def show_statistics(filtered_df):
     """显示统计信息"""
-    # 计算统计信息 - 使用原始的filtered_df进行计算
-    total_income1 = pd.to_numeric(filtered_df['income1'], errors='coerce').fillna(0).sum()
-    total_income2 = pd.to_numeric(filtered_df['income2'], errors='coerce').fillna(0).sum()
-    total_subsidy = pd.to_numeric(filtered_df['subsidy'], errors='coerce').fillna(0).sum()
-    total_order_amount = pd.to_numeric(filtered_df['order_amount'], errors='coerce').fillna(0).sum()
-    total_amount = pd.to_numeric(filtered_df['total_amount'], errors='coerce').fillna(0).sum()
+    # 检查DataFrame是否为空
+    if filtered_df.empty:
+        total_income1 = 0
+        total_income2 = 0
+        total_subsidy = 0
+        total_order_amount = 0
+        total_amount = 0
+    else:
+        # 计算统计信息 - 使用原始的filtered_df进行计算
+        total_income1 = pd.to_numeric(filtered_df['income1'], errors='coerce').fillna(0).sum()
+        total_income2 = pd.to_numeric(filtered_df['income2'], errors='coerce').fillna(0).sum()
+        total_subsidy = pd.to_numeric(filtered_df['subsidy'], errors='coerce').fillna(0).sum()
+        total_order_amount = pd.to_numeric(filtered_df['order_amount'], errors='coerce').fillna(0).sum()
+        total_amount = pd.to_numeric(filtered_df['total_amount'], errors='coerce').fillna(0).sum()
 
     col1, col2, col3 = st.columns(3)
 
@@ -426,18 +434,6 @@ def work_order_statistics():
         st.title("📊 工单管理")
         st.divider()
 
-        # # 操作按钮
-        # col1, col2, col3 = st.columns([1, 1, 1])
-        # with col1:
-        #     if st.button("新建工单", use_container_width=True, type="primary"):
-        #         st.switch_page("pages/new_work_order_v2.py")
-        # with col3:
-        #     if st.button("创建收据", use_container_width=True, type="primary"):
-        #         st.switch_page("pages/receipt_page.py")
-        # with col2:
-        #     if st.button("月度结算", use_container_width=True, type="primary"):
-        #         st.switch_page("pages/monthly_review.py")
-
         # 获取初始数据
         default_time_range = st.session_state.get('time_range', 'month')
         orders_df, error = get_work_orders(default_time_range)
@@ -460,18 +456,24 @@ def work_order_statistics():
             # 显示统计信息
             show_statistics(orders_df)
             st.divider()
+        else:
+            # 显示空的统计信息
+            show_statistics(pd.DataFrame())
+            st.divider()
 
-            # 显示筛选条件
-            selected_time_range = show_filters(orders_df)
+        # 显示筛选条件
+        selected_time_range = show_filters(orders_df)
 
+        # 只有当时间范围发生变化时才重新获取数据
+        if selected_time_range != default_time_range:
+            orders_df, error = get_work_orders(selected_time_range)
+            if error:
+                st.error(f"获取数据失败：{error}")
+                return
+
+        # 检查是否有数据需要显示
+        if orders_df is not None and not orders_df.empty:
             st.info("您可以直接在下面的表格中修改数据", icon="ℹ️")
-
-            # 只有当时间范围发生变化时才重新获取数据
-            if selected_time_range != default_time_range:
-                orders_df, error = get_work_orders(selected_time_range)
-                if error:
-                    st.error(f"获取数据失败：{error}")
-                    return
 
             # 显示工单表格
             filtered_df = show_work_orders_table(orders_df, all_cleaner_options)
